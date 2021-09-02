@@ -27,6 +27,9 @@
 #include "circular_buffer.h"
 #include "usbd_cdc_if.h"
 #include "handleGenericMessages.h"
+#include "inputValidation.h"
+#include "pinActuation.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,15 +47,6 @@
 #define ADC_CHANNEL_BUF_SIZE	100 // tbd 4kHz sampling means 25ms of data stored
 #define CIRCULAR_BUFFER_SIZE 64
 #define ULONG_MAX 0xFFFFFFFFUL
-#define PORT1 0x0002 // addresses for the pin outs
-#define PORT2 0x0008
-#define PORT3 0x0020
-#define PORT4 0x0080
-
-#define BUTTONPORT1 0x0020
-#define BUTTONPORT2 0x0010
-#define BUTTONPORT3 0x0008
-#define BUTTONPORT4 0x8000
 
 //-------------F4xx UID--------------------
 #define ID1 (*(unsigned long *)0x1FFF7A10)
@@ -68,7 +62,7 @@
  * 1.3 Add print heatsink temperature.
  */
 
-char softwareVersion[] = "1.3";
+char softwareVersion[] = "1.4";
 char productType[] = "AC Board";
 char mcuFamily[] = "STM32F401";
 char pcbVersion[] = "V5.6";
@@ -102,36 +96,12 @@ float current_bias = -0.1187;//-0.058;
 /*ADC-to-temperature calibration values*/
 float temp_scalar = 0.0806;
 
-
-/* Timing Switching */
-uint64_t offAfterStart[PORTS];
-uint64_t offAfter[PORTS];
-
 /* General */
 unsigned long lastPrintTime = 0;
-unsigned long lastCheckButtonTime = 0;
-
 int tsButton = 100;
-
-int actuationDuration[] = { 0, 0, 0, 0 };
-int actuationStart[] = { 0, 0, 0, 0 };
 
 float current[PORTS] = { 0 };
 float boardTemperature = 0;
-bool port_state[PORTS] = { 0 };
-
-// Software ports
-static const GPIO_TypeDef *const gpio_ports[] = { ctrl1_GPIO_Port,
-ctrl2_GPIO_Port, ctrl3_GPIO_Port, ctrl4_GPIO_Port };
-static const uint16_t *pins[] = { PORT1, PORT2, PORT3, PORT4 };
-
-// Button ports
-static const GPIO_TypeDef *const button_ports[] = { GPIOB, GPIOB, GPIOB,
-btn4_GPIO_Port };
-static const uint16_t *buttonPins[] = { BUTTONPORT1, BUTTONPORT2, BUTTONPORT3,
-BUTTONPORT4 };
-
-int pinouts[] = { 0, 2, 4, 6 };
 
 char inputBuffer[1024 * sizeof(uint8_t)];
 
@@ -256,111 +226,30 @@ void printCurrentArray() {	// calc and print current array.
 
 }
 
-bool isInputInt() {
-	int idx = 6; // idx 6 where duration value starts
-
-	while (idx < strlen(inputBuffer)) {
-		if (!isdigit(inputBuffer[idx])) {
-			return false;
-		}
-		idx++;
-	}
-	return true;
-}
-
-bool isInputValid() {
-	if (inputBuffer[0] != 'p') {
-		return false;
-	}
-
-	if (inputBuffer[2]!=' '){
-			return false;
-	}
-
-	if (inputBuffer[3]!='o'){
-		return false;
-	}
-
-	// Checking whether it is a 'px on YY' or 'px on' or 'px off' case.
-	if (inputBuffer[5]!=' ' && strlen(inputBuffer)!= 5 && strlen(inputBuffer)!= 6){
-		return false;
-	}
-
-	if (strlen(inputBuffer)>8){ // A two digit seconds actuation is maximum allowed.
-		return false;
-	}
-	return true;
-}
-
-void pinWrite(int pinNumber, bool val) {
-	HAL_GPIO_WritePin(gpio_ports[pinNumber], pins[pinNumber], val);
-}
-
-// Shuts off all pins.
-void allOff() {
-	for (int i = 0; i < 4; i++) {
-		pinWrite(i, RESET);
-		actuationDuration[i] = 0;
-		port_state[i] = 0;
-	}
-}
-
-// Turn on all pins.
-void allOn() {
-	for (int i = 0; i < 4; i++) {
-		pinWrite(i, SET);
-		actuationDuration[i] = 0; // actuationDuration=0 since it should be on indefinitely
-		port_state[i] = 1;
-	}
-}
-
-void turnOnPin(int pinNumber) {
-	pinWrite(pinNumber, SET);
-	actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
-	port_state[pinNumber] = 1;
-}
-
-void turnOffPin(int pinNumber) {
-	pinWrite(pinNumber, RESET);
-	actuationDuration[pinNumber] = 0;
-	port_state[pinNumber] = 0;
-}
-
-void actuatePin(int pinNumber) {
-
-	// Verify input format
-	if (!isInputValid()) {
-		handleGenericMessages((uint8_t*)inputBuffer);
-		return;
-	}
-
-	// Of the format "pX on" - meaning pin X on indefinitely
-	if (strlen(inputBuffer) == 5){
-		turnOnPin(pinNumber);
-	// If longer input then should be of format "pX on [0-9][0-9]"
-	} else if (strstr(inputBuffer, "on") != NULL) {
-
-		// Check if duration is put in correctly
-		if (!isInputInt()) {
-			handleGenericMessages((uint8_t*)inputBuffer);
-			return;
-		}
-
-		// Save user specified actuation time of pin
-		char *onTime[3] = { 0 };
-		memcpy(onTime, &inputBuffer[6], strlen(inputBuffer)); // Cannot overflow because of check in "isInputValid()".
-		actuationDuration[pinNumber] = atoi(onTime) * 1000; // Convert from milliseconds to seconds
-
-		// Turn on pin
-		pinWrite(pinNumber, SET);
-		actuationStart[pinNumber] = HAL_GetTick();
-		port_state[pinNumber] = 1;
-
-	} else if (strstr(inputBuffer, "off") != NULL) {
-		turnOffPin(pinNumber);
+void actuatePins(struct actuationInfo actuationInfo){
+	// all off (pin == -1 means all pins)
+	if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle==0){
+		allOff();
+	// all on (pin == -1 means all pins)
+	} else if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle==100){
+		allOn();
+	// pX on or pX off (timeOn == -1 means indefinite)
+	} else if (actuationInfo.timeOn == -1 && (actuationInfo.pwmDutyCycle==100 || actuationInfo.pwmDutyCycle==0)){
+		if (actuationInfo.pwmDutyCycle == 0){
+			turnOffPin(actuationInfo.pin);
+		} else {
+			turnOnPin(actuationInfo.pin);
+		}// pX on YY
+	} else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle == 100){
+		turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
+	// pX on ZZZ%
+	} else if (actuationInfo.timeOn == -1 && actuationInfo.pwmDutyCycle != 0 && actuationInfo.pwmDutyCycle != 100){
+		setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
+	// pX on YY ZZZ%
+	} else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle != 100){
+		setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
 	} else {
-		handleGenericMessages((uint8_t*)inputBuffer); // Should not be possible to reach, but in case of unknown, uncatched misreads
-											// this extra security is set in place.
+		handleGenericMessages(inputBuffer); // should never reach this, but is implemented for potentially unknown errors.
 	}
 }
 
@@ -374,54 +263,13 @@ void handleUserInputs() {
 		return;
 	}
 
-	if (strstr(inputBuffer, "all off") != NULL) {
-		allOff();
-	} else if (strstr(inputBuffer, "all on") != NULL) {
-		allOn();
-	} else if (strstr(inputBuffer, "p1") != NULL) {
-		actuatePin(0);
-	} else if (strstr(inputBuffer, "p2") != NULL) {
-		actuatePin(1);
-	} else if (strstr(inputBuffer, "p3") != NULL) {
-		actuatePin(2);
-	} else if (strstr(inputBuffer, "p4") != NULL) {
-		actuatePin(3);
-	} else {
+	struct actuationInfo actuationInfo = parseAndValidateInput(inputBuffer);
+
+	if (!actuationInfo.isInputValid){
 		handleGenericMessages(inputBuffer);
+		return;
 	}
-}
-
-// Shut off pins if they have been on for the specified duration
-void autoOff() {
-	uint64_t now = HAL_GetTick();
-	for (int i = 0; i < 4; i++) {
-		if ((now - actuationStart[i]) > actuationDuration[i]
-				&& actuationDuration[i] != 0) {
-			turnOffPin(i);
-		}
-	}
-}
-
-// Turn on and off from button press
-void handleButtonPress() {
-	for (int i = 0; i < 4; i++) {
-		if (HAL_GPIO_ReadPin(button_ports[i], buttonPins[i]) == 0) {
-			HAL_GPIO_WritePin(gpio_ports[i], pins[i], SET);
-
-		// Button press can not shut off pins if they are programmatically set
-		} else if (HAL_GPIO_ReadPin(button_ports[i], buttonPins[i]) == 1
-				&& port_state[i] != 1) {
-			HAL_GPIO_WritePin(gpio_ports[i], pins[i], RESET);
-		}
-	}
-}
-
-void checkButtonPress() {
-	uint64_t now = HAL_GetTick();
-	if (now - lastCheckButtonTime > tsButton) {
-		handleButtonPress();
-		lastCheckButtonTime = HAL_GetTick();
-	}
+	actuatePins(actuationInfo);
 }
 
 void clearLineAndBuffer(){
@@ -487,6 +335,7 @@ int main(void)
 
 		// see if 100ms has passed
 		if ((HAL_GetTick() - lastPrintTime) > tsUpload && isComPortOpen) {
+			lastPrintTime = HAL_GetTick();
 
 			// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
 			if (isFirstWrite){
@@ -494,8 +343,10 @@ int main(void)
 			}
 
 			printCurrentArray(); // calc and print currents ( 100ms check inside here.)
-			lastPrintTime = HAL_GetTick();
 		}
+
+		// Toggle pins if needed when in pwm mode
+		actuatePWM();
 
 		// Turn off pins if they have run for requested time
 		autoOff();
