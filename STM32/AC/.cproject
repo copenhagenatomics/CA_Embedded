@@ -106,6 +106,10 @@
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Libraries/handleGenericMessages/Inc}&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Libraries/jumpToBootloader/Inc}&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/InputValidation/Inc}&quot;"/>
+                                    									
+                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/PinActuation/Inc}&quot;"/>
                                     								
                                 </option>
                                 								
@@ -163,6 +167,8 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
                         						
+                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="InputValidation"/>
+                        						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/USBprint"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/circularBuffer"/>
@@ -172,6 +178,8 @@
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/jumpToBootloader"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+                        						
+                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="PinActuation"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_DEVICE"/>
                         					
@@ -331,9 +339,13 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
                         						
+                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+                        						
+                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="InputValidation"/>
+                        						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
                         						
-                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="PinActuation"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_DEVICE"/>
                         					
