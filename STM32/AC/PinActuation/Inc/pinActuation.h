@@ -8,16 +8,18 @@
 #ifndef INC_PINACTUATION_H_
 #define INC_PINACTUATION_H_
 
-int actuationDuration[];
-int actuationStart[];
-int actuationPWMStart[];
-bool port_state[];
+#define PORTS	4
+
+int actuationDuration[PORTS];
+int actuationStart[PORTS];
+int actuationPWMStart[PORTS];
+bool port_state[PORTS];
 
 /*PWM variables*/
 float duty_frequency;
-float onPeriods[];
-float offPeriods[];
-bool isPinPWMOn[];
+float onPeriods[PORTS];
+float offPeriods[PORTS];
+bool isPinPWMOn[PORTS];
 
 
 void pinWrite(int pinNumber, bool val);
