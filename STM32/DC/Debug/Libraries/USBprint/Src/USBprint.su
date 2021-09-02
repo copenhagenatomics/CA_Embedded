@@ -1,0 +1,2 @@
+USBprint.c:15:6:USBprintf	160	static
+USBprint.c:71:5:USBnprintf	16	static

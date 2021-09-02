@@ -1,0 +1,7 @@
+usbd_cdc_if.c:139:6:circularBufferInit	8	static
+usbd_cdc_if.c:162:15:CDC_Init_FS	8	static
+usbd_cdc_if.c:176:15:CDC_DeInit_FS	4	static
+usbd_cdc_if.c:190:15:CDC_Control_FS	24	static
+usbd_cdc_if.c:288:15:CDC_Receive_FS	24	static
+usbd_cdc_if.c:320:9:CDC_Transmit_FS	24	static
+usbd_cdc_if.c:346:15:CDC_TransmitCplt_FS	32	static

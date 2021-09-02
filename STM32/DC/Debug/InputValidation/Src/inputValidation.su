@@ -1,0 +1,3 @@
+inputValidation.c:22:5:getNumberDigits	24	static
+inputValidation.c:37:6:isInputInt	32	static
+inputValidation.c:52:22:parseAndValidateInput	120	static
