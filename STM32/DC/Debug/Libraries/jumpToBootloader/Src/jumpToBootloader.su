@@ -1,2 +1,0 @@
-jumpToBootloader.c:14:6:JumpToBootloader	24	static,ignoring_inline_asm
-jumpToBootloader.c:97:6:checkBootloader	64	static
