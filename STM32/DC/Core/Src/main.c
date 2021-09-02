@@ -124,7 +124,7 @@ bool isFirstWrite = true;
 
 // Software ports
 
-static uint32_t* ccr_offsets[] = {PWMPIN1, PWMPIN2, PWMPIN3, PWMPIN4};
+//static uint32_t* ccr_offsets[] = {PWMPIN1, PWMPIN2, PWMPIN3, PWMPIN4};
 //static const GPIO_TypeDef *const gpio_ports[] = {Ctrl_1_GPIO_Port, Ctrl_2_GPIO_Port, Ctrl_3_GPIO_Port, Ctrl_4_GPIO_Port};
 //static const uint16_t *pins[] = {GPIOPIN1, GPIOPIN2, GPIOPIN3, GPIOPIN4};
 
@@ -180,35 +180,53 @@ void popBuff() { // move the ADC_result to the ADC_Buffer. TempSense (PA0) ADC_B
 }
 
 
-double ADCtoCurrent(double adc_val){
-	return current_scalar*adc_val + current_bias;
+static double meanVoltage(uint8_t channel)
+{
+    uint64_t sum = 0;
+
+    for (uint32_t k = 0; k < ADC_CHANNEL_BUF_SIZE; k++)
+    { // sum squares of values zero to preBuf
+        sum += ADC_Buffer[channel][k];
+    }
+    return sum / ADC_CHANNEL_BUF_SIZE;
 }
 
-double avgCurrent(uint8_t channel) { // calculate all currents.
-
-	// RMS (current board example)
-	uint16_t k = 0;
-	uint64_t sum = 0;
-	int16_t val = 0;
-
-	for (k = 0; k < ADC_CHANNEL_BUF_SIZE; k++) { // sum squares of values zero to preBuf
-		val = ADC_Buffer[channel][k];
-		sum = sum + val; // add squared values to sum
-	}
-	double avg_port = sum / ADC_CHANNEL_BUF_SIZE;
-	return ADCtoCurrent(avg_port);
+static double meanCurrent(uint8_t channel)
+{
+    return current_scalar * meanVoltage(channel) + current_bias;
 }
 
-void printCurrentArray() {	// calc and print current array.
-	si7051Val = si7051Temp();
-	//fill current array with rmsCurrents.
-	for (int i = 0; i < PORTS; i++) {
-		current[i] = avgCurrent(i);
-	}
+static double rmsVoltage(uint8_t channel)
+{
+    uint16_t k = 0;
+    uint64_t sum = 0;
+    int16_t val = 0;
 
-	USBprintf("fsfsfsfsf", current[0], ", ", current[1], ", ", current[2], ", ",
-			current[3], ", ", si7051Val);	//	printCurrent.
+    for (k = 0; k < ADC_CHANNEL_BUF_SIZE; k++) { // sum squares of values zero to preBuf
+        val = ADC_Buffer[channel][k];
+        sum += val * val; // add squared values to sum
+    }
+    return sqrt(sum / ADC_CHANNEL_BUF_SIZE);
+}
 
+static uint16_t maxVoltage(uint8_t channel)
+{
+    uint16_t max = 0;
+    for (uint32_t k = 0; k < ADC_CHANNEL_BUF_SIZE; k++)
+    {
+        if (max < abs(ADC_Buffer[channel][k]))
+            max = abs(ADC_Buffer[channel][k]);
+    }
+    return max;
+}
+
+void printResult()
+{
+    const double temp = si7051Temp();
+
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d",
+            meanCurrent(0), meanCurrent(1), meanCurrent(2), meanCurrent(3),
+            temp, rmsVoltage(5), maxVoltage(5));
 }
 
 void setPWMPin(int pinNumber, int pwmState, int duration) {
@@ -449,7 +467,7 @@ int main(void)
 				clearLineAndBuffer();
 			}
 
-			printCurrentArray(); // calc and print currents ( 100ms check inside here.)
+			printResult(); // calc and print currents ( 100ms check inside here.)
 
 		}
 
