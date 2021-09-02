@@ -5,7 +5,7 @@
  *      Author: alexander.mizrahi@copenhagenAtomics.com
  */
 
-#include "..\Inc\sht35.h"
+#include "sht35.h"
 
 #include <assert.h>
 
