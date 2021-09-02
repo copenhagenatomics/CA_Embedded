@@ -222,7 +222,7 @@ static uint16_t maxVoltage(uint8_t channel)
 
 void printResult()
 {
-    const double temp = si7051Temp();
+    const double temp = si7051Temp(&hi2c1);
 
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d",
             meanCurrent(0), meanCurrent(1), meanCurrent(2), meanCurrent(3),
