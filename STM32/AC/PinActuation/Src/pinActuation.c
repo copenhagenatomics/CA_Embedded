@@ -10,8 +10,6 @@
 #include <stdbool.h>
 #include "pinActuation.h"
 
-#define PORTS	4
-
 
 const uint16_t port1 = 0x0002; // addresses for the pin outs
 const uint16_t port2 =  0x0008;
