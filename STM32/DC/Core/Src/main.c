@@ -35,6 +35,7 @@
 #include "handleGenericMessages.h"
 #include "si7051.h"
 #include "inputValidation.h"
+#include "ADCMonitor.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,11 +45,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define DMA_BUF_SIZE 	6
 #define ADC_CHANNELS	6
-#define PORTS	6
 #define ACTUATIONPORTS 4
-#define ADC_CHANNEL_BUF_SIZE	100 // tbd 4kHz sampling means 1000ms of data stored
+#define ADC_CHANNEL_BUF_SIZE	400 // 400 samples each 100mSec
 
 // Address offsets for the TIM5 timer
 #define PWMPIN1 0x34
@@ -94,10 +93,8 @@ TIM_HandleTypeDef htim5;
 /* USER CODE BEGIN PV */
 
 /* ADC handling */
-uint16_t ADC_result[DMA_BUF_SIZE];
-volatile int16_t ADC_Buffer[ADC_CHANNELS][ADC_CHANNEL_BUF_SIZE]; // array for all ADC readings, filled by DMA.
+int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 uint16_t current_calibration[ADC_CHANNELS];
-uint16_t dmaBufIndex = 0;
 
 /* ADC to current calibration values */
 float current_scalar = -0.011;
@@ -116,17 +113,11 @@ int actuationStart[ACTUATIONPORTS] = { 0 };
 bool port_state[ACTUATIONPORTS] = { 0 };
 uint32_t ccr_states[ACTUATIONPORTS] = {0};
 
-double current[PORTS] = { 0 };
-
 float si7051Val = 0;
 
 bool isFirstWrite = true;
 
 // Software ports
-
-//static uint32_t* ccr_offsets[] = {PWMPIN1, PWMPIN2, PWMPIN3, PWMPIN4};
-//static const GPIO_TypeDef *const gpio_ports[] = {Ctrl_1_GPIO_Port, Ctrl_2_GPIO_Port, Ctrl_3_GPIO_Port, Ctrl_4_GPIO_Port};
-//static const uint16_t *pins[] = {GPIOPIN1, GPIOPIN2, GPIOPIN3, GPIOPIN4};
 
 char inputBuffer[1024 * sizeof(uint8_t)];
 
@@ -141,7 +132,7 @@ static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void clearLineAndBuffer();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -161,67 +152,25 @@ void printHeader() {
 	USBprintf("ss", "PCB Version: ", pcbVersion);
 }
 
-void popBuff() { // move the ADC_result to the ADC_Buffer. TempSense (PA0) ADC_Buffer[0], P1(PA2) ADC_Buffer[1], P2(PA4) ADC_Buffer[2], P3(PA6) ADC_Buffer[4], P4(PB0) ADC_Buffer[5]
-
-	for (uint8_t var = 0; var < DMA_BUF_SIZE; var++) {
-		// Subtract calibration of current sensings
-		ADC_Buffer[var][dmaBufIndex] = ADC_result[var];
-	}
-	dmaBufIndex++;
-
-	if (dmaBufIndex == ADC_CHANNEL_BUF_SIZE) {
-		dmaBufIndex = 0;
-	}
+static double meanCurrent(const int16_t *pData, uint16_t channel)
+{
+    return current_scalar * ADCMean(pData, channel) + current_bias;
 }
 
-
-static double meanVoltage(uint8_t channel)
+void printResult(const int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
-    uint64_t sum = 0;
-
-    for (uint32_t k = 0; k < ADC_CHANNEL_BUF_SIZE; k++)
-    { // sum squares of values zero to preBuf
-        sum += ADC_Buffer[channel][k];
-    }
-    return sum / ADC_CHANNEL_BUF_SIZE;
-}
-
-static double meanCurrent(uint8_t channel)
-{
-    return current_scalar * meanVoltage(channel) + current_bias;
-}
-
-static double rmsVoltage(uint8_t channel)
-{
-    uint16_t k = 0;
-    uint64_t sum = 0;
-    int16_t val = 0;
-
-    for (k = 0; k < ADC_CHANNEL_BUF_SIZE; k++) { // sum squares of values zero to preBuf
-        val = ADC_Buffer[channel][k];
-        sum += val * val; // add squared values to sum
-    }
-    return sqrt(sum / ADC_CHANNEL_BUF_SIZE);
-}
-
-static uint16_t maxVoltage(uint8_t channel)
-{
-    uint16_t max = 0;
-    for (uint32_t k = 0; k < ADC_CHANNEL_BUF_SIZE; k++)
+    if (!isComPortOpen)
     {
-        if (max < abs(ADC_Buffer[channel][k]))
-            max = abs(ADC_Buffer[channel][k]);
+        isFirstWrite=true;
+        return;
     }
-    return max;
-}
+    if (isFirstWrite)
+        clearLineAndBuffer();
 
-void printResult()
-{
     const double temp = si7051Temp(&hi2c1);
-
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d",
-            meanCurrent(0), meanCurrent(1), meanCurrent(2), meanCurrent(3),
-            temp, rmsVoltage(5), maxVoltage(5));
+            meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1), meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
+            temp, ADCrms(pBuffer, 5), ADCmax(pBuffer, 5));
 }
 
 void setPWMPin(int pinNumber, int pwmState, int duration) {
@@ -391,7 +340,7 @@ void checkButtonPress(){
 	}
 }
 
-void clearLineAndBuffer(){
+static void clearLineAndBuffer(){
 	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
 	USBprintf("s","reconnected");
 	circular_buf_reset(cbuf);
@@ -435,8 +384,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
-
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC_result, sizeof(ADC_result)/sizeof(ADC_result[0]));
+  ADCMonitorInit(&hadc1, ADCBuffer, sizeof(ADCBuffer)/sizeof(ADCBuffer[0]));
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_Base_Start_IT(&htim5);
 
@@ -457,28 +405,12 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+      handleUserInputs();
+      ADCMonitorLoop(printResult);
 
-		handleUserInputs();
-
-		// see if 100ms has passed
-		if ((HAL_GetTick() - lastPrintTime) > tsUpload && isComPortOpen) {
-			lastPrintTime = HAL_GetTick();
-			// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-			if (isFirstWrite){
-				clearLineAndBuffer();
-			}
-
-			printResult(); // calc and print currents ( 100ms check inside here.)
-
-		}
-
-		// Turn off pins if they have run for requested time
-		autoOff();
-		checkButtonPress();
-
-		if (!isComPortOpen){
-			isFirstWrite=true;
-		}
+      // Turn off pins if they have run for requested time
+      autoOff();
+      checkButtonPress();
   }
   /* USER CODE END 3 */
 }
@@ -823,11 +755,6 @@ static void MX_GPIO_Init(void)
 
 }
 
-/* USER CODE BEGIN 4 */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-	/* This is called after the conversion is completed */
-	popBuff();
-}
 /* USER CODE END 4 */
 
 /**
