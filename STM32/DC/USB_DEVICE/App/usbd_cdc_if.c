@@ -247,19 +247,13 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 		pbuf[6] = LineCoding.datatype;
     break;
 
-    case CDC_SET_CONTROL_LINE_STATE:{
+    case CDC_SET_CONTROL_LINE_STATE: {
         USBD_SetupReqTypedef * req = (USBD_SetupReqTypedef *)pbuf;
-        if(req->wValue &0x0001 != 0){
-      	  isComPortOpen = true;
-        } else {
-          isComPortOpen = false;
-        }
+        isComPortOpen = ((req->wValue & 0x0001) != 0);
     }
-
     break;
 
     case CDC_SEND_BREAK:
-
     break;
 
   default:

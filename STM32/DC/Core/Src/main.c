@@ -128,11 +128,6 @@ bool isFirstWrite = true;
 //static const GPIO_TypeDef *const gpio_ports[] = {Ctrl_1_GPIO_Port, Ctrl_2_GPIO_Port, Ctrl_3_GPIO_Port, Ctrl_4_GPIO_Port};
 //static const uint16_t *pins[] = {GPIOPIN1, GPIOPIN2, GPIOPIN3, GPIOPIN4};
 
-// Button ports
-static const GPIO_TypeDef *const button_ports[] = {Btn_2_GPIO_Port, Btn_1_GPIO_Port, Btn_4_GPIO_Port, Btn_3_GPIO_Port};
-static const uint16_t *buttonPins[] = {Btn_2_Pin, Btn_1_Pin, Btn_4_Pin, Btn_3_Pin};
-
-
 char inputBuffer[1024 * sizeof(uint8_t)];
 
 /* USER CODE END PV */
@@ -222,7 +217,7 @@ static uint16_t maxVoltage(uint8_t channel)
 
 void printResult()
 {
-    const double temp = si7051Temp();
+    const double temp = si7051Temp(&hi2c1);
 
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d",
             meanCurrent(0), meanCurrent(1), meanCurrent(2), meanCurrent(3),
@@ -364,8 +359,14 @@ void autoOff() {
 	}
 }
 
-void handleButtonPress(){
-	for (int i=0; i<4; i++){
+void handleButtonPress()
+{
+    // Button ports
+    GPIO_TypeDef* button_ports[] = { Btn_2_GPIO_Port, Btn_1_GPIO_Port, Btn_4_GPIO_Port, Btn_3_GPIO_Port };
+    const uint16_t buttonPins[] = {Btn_2_Pin, Btn_1_Pin, Btn_4_Pin, Btn_3_Pin};
+
+	for (int i=0; i<4; i++)
+	{
 		if (HAL_GPIO_ReadPin(button_ports[i], buttonPins[i]) == 0){
 			pinWrite(i, SET);
 		} else if (HAL_GPIO_ReadPin(button_ports[i], buttonPins[i]) == 1){
@@ -435,7 +436,7 @@ int main(void)
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_ADC_Start_DMA(&hadc1, ADC_result, DMA_BUF_SIZE);
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC_result, sizeof(ADC_result)/sizeof(ADC_result[0]));
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_Base_Start_IT(&htim5);
 
