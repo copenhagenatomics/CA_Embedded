@@ -15,7 +15,7 @@ extern "C" {
  *                               CH0{sM}, CH2{sM},,,, CHN{SN} ], N,M =[0:inf]
  * SInce this modules does not has a fixed format the buffer is a one dimensional array and
  * each sample is fetched using pData[SampleNo * noOfChannls + channelNumber] */
-typedef void (*ADCCallBack)(const int16_t *pBuffer, int noOfChannels, int noOfSamples);
+typedef void (*ADCCallBack)(int16_t *pBuffer, int noOfChannels, int noOfSamples);
 
 // ADC Monitor initialisation function. MUST be called before call to any other function
 // Must only be called once.
@@ -28,6 +28,7 @@ void ADCMonitorLoop(ADCCallBack cb);
 // Standard helper function where noOfChannles/NoOfSamples is
 // used from ADCMonitorInit. Can be used for skeleton locally.
 double ADCMean(const int16_t *pData, uint16_t channel);
+double ADCAbsMean(const int16_t *pData, uint16_t channel);
 double ADCrms(const int16_t *pData, uint16_t channel);
 uint16_t ADCmax(const int16_t *pData, uint16_t channel);
 
