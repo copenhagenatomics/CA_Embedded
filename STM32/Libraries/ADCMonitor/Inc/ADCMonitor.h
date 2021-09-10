@@ -32,6 +32,13 @@ double ADCAbsMean(const int16_t *pData, uint16_t channel);
 double ADCrms(const int16_t *pData, uint16_t channel);
 uint16_t ADCmax(const int16_t *pData, uint16_t channel);
 
+// @Description Set offset on each sample in channel, Xi = Xi + offset
+// @Param pData Pointer to buffer from callback function
+// @Param offset to adjust channel
+// @param channel Channel in sample Data to adjust.
+// Note, no check for overflow since ADC is 12 bit's
+void ADCSetOffset(int16_t* pData, int16_t offset, uint16_t channel);
+
 #ifdef __cplusplus
 }
 #endif

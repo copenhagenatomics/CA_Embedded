@@ -29,6 +29,7 @@
 #include "handleGenericMessages.h"
 #include "inputValidation.h"
 #include "pinActuation.h"
+#include "ADCMonitor.h"
 
 /* USER CODE END Includes */
 
@@ -40,13 +41,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-#define DMA_BUF_SIZE 	5
 #define ADC_CHANNELS	5
-#define PORTS	4
-#define TEMP_CHANNEL	0
 #define ADC_CHANNEL_BUF_SIZE	100 // tbd 4kHz sampling means 25ms of data stored
-#define CIRCULAR_BUFFER_SIZE 64
-#define ULONG_MAX 0xFFFFFFFFUL
 
 //-------------F4xx UID--------------------
 #define ID1 (*(unsigned long *)0x1FFF7A10)
@@ -84,10 +80,7 @@ TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN PV */
 
 /* ADC handling */
-uint16_t ADC_result[DMA_BUF_SIZE];
-volatile int16_t ADC_Buffer[ADC_CHANNELS][ADC_CHANNEL_BUF_SIZE]; // array for all ADC readings, filled by DMA.
-uint16_t current_calibration[ADC_CHANNELS];
-uint16_t dmaBufIndex = 0;
+int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
 /*ADC-to-current calibration values*/
 float current_scalar = 0.0125;
@@ -136,79 +129,46 @@ void printHeader()
     USBnprintf(buf);
 }
 
-void popBuff() { // move the ADC_result to the ADC_Buffer. TempSense (PA0) ADC_Buffer[0], P1(PA2) ADC_Buffer[1], P2(PA4) ADC_Buffer[2], P3(PA6) ADC_Buffer[4], P4(PB0) ADC_Buffer[5]
-
-	for (uint8_t var = 0; var < DMA_BUF_SIZE; var++) {
-		// Subtract calibration of current readings
-		ADC_Buffer[var][dmaBufIndex] = ADC_result[var]
-				- current_calibration[var];
-	}
-
-	dmaBufIndex++;
-
-	if (dmaBufIndex == ADC_CHANNEL_BUF_SIZE) {
-		dmaBufIndex = 0;
-	}
-
-	//(dmaBufIndex % ADC_CHANNEL_BUF_SIZE == 0) && (dmaBufIndex = 0);
-
-}
-
-void current_init() {	// not sure we want to tare calibration here..
-
-	uint8_t i = 0;
-	uint16_t j = 0;
-	uint64_t sum;
-
-	for (i = 1; i < ADC_CHANNELS; i++) { // finding the average of each channel array to subtract from the readings
-		sum = 0;
-		for (j = 0; j < ADC_CHANNEL_BUF_SIZE; j++) {
-			sum = sum + ADC_Buffer[i][j];
-		}
-		current_calibration[i] = (sum / ADC_CHANNEL_BUF_SIZE);
-	}
-}
-
-float ADCtoCurrent(float adc_val) {
+double ADCtoCurrent(double adc_val) {
 	return current_scalar * adc_val + current_bias;
 }
 
-float ADCtoTemperature(float adc_val) {
+double ADCtoTemperature(double adc_val) {
 	return temp_scalar * adc_val;
 }
 
-double rmsCurrent(uint8_t channel) { // calculate all currents.
-
-	// RMS (current board example)
-	uint16_t k = 0;
-	uint64_t sum = 0;
-	int16_t cur_val = 0;
-
-	for (k = 0; k < ADC_CHANNEL_BUF_SIZE; k++) { // sum squares of values zero to preBuf
-		cur_val = ADC_Buffer[channel][k];
-		sum = sum + (cur_val * cur_val); // add squared values to sum
-	}
-	float adc_avg = sqrt(sum / ADC_CHANNEL_BUF_SIZE);
-	return ADCtoCurrent(adc_avg);
-}
-
-double tempAvg(){
-
-	uint64_t sum = 0;
-	int16_t cur_val = 0;
-
-	for (uint16_t k = 0; k < ADC_CHANNEL_BUF_SIZE; k++) { // sum squares of values zero to preBuf
-		cur_val = ADC_Buffer[TEMP_CHANNEL][k];
-		sum += cur_val; // add squared values to sum
-	}
-	float adc_avg = sum / ADC_CHANNEL_BUF_SIZE;
-	return ADCtoTemperature(adc_avg);
-}
-
-void printCurrentArray()
+static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
+    // Make calibration static since this should be done only once.
+    static bool isCalibrationDone = false;
+    static int16_t current_calibration[ADC_CHANNELS];
+
+    if (!isComPortOpen)
+        return;
+
+    if (!isCalibrationDone)
+    {
+        // Go from channel 1 since 0 is temperature.
+        for (int i = 1; i < noOfChannels; i++)
+        {
+            // finding the average of each channel array to subtract from the readings
+            current_calibration[i] = -ADCMean(pData, i);
+        }
+        isCalibrationDone = true;
+    }
+
+    // Set bias for each channel.
+    for (int i = 1; i < noOfChannels; i++) {
+        // Go from channel 1 since 0 is temperature.
+        ADCSetOffset(pData, current_calibration[i] , i);
+    }
+
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f",
-            rmsCurrent(0), rmsCurrent(1), rmsCurrent(2), rmsCurrent(3), tempAvg());
+            ADCtoCurrent(ADCrms(pData, 1)),
+            ADCtoCurrent(ADCrms(pData, 2)),
+            ADCtoCurrent(ADCrms(pData, 3)),
+            ADCtoCurrent(ADCrms(pData, 4)),
+            ADCtoTemperature(ADCMean(pData, 0)));
 }
 
 void actuatePins(struct actuationInfo actuationInfo){
@@ -298,36 +258,32 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_ADC1_Init();
   MX_TIM2_Init();
+
   /* USER CODE BEGIN 2 */
-
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC_result, DMA_BUF_SIZE);
-
+    ADCMonitorInit(&hadc1, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
 	HAL_TIM_Base_Start_IT(&htim2);
-
-	HAL_Delay(30);  // Takes 25ms for the buffer to fill up which is necessary for correct current calibration. Added 5ms for security.
-	current_init();
 	circularBufferInit();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	int tsUpload = 100;
 	while (1) {
     /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
-		handleUserInputs();
+        /* USER CODE BEGIN 3 */
+	    handleUserInputs();
+	    ADCMonitorLoop(printCurrentArray);
 
-		// see if 100ms has passed
-		if ((HAL_GetTick() - lastPrintTime) > tsUpload && isComPortOpen) {
-			lastPrintTime = HAL_GetTick();
-
+		if (isComPortOpen)
+		{
 			// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
 			if (isFirstWrite){
 				clearLineAndBuffer();
 			}
-
-			printCurrentArray(); // calc and print currents ( 100ms check inside here.)
+		}
+		else
+		{
+		    isFirstWrite=true;
 		}
 
 		// Toggle pins if needed when in pwm mode
@@ -337,10 +293,6 @@ int main(void)
 		autoOff();
 
 		checkButtonPress();
-
-		if (!isComPortOpen){
-			isFirstWrite=true;
-		}
 	}
   /* USER CODE END 3 */
 }
@@ -583,10 +535,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc) {
-	/* This is called after the conversion is completed */
-	popBuff();
-}
 /* USER CODE END 4 */
 
 /**
