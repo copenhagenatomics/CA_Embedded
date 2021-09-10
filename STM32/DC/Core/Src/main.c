@@ -137,20 +137,19 @@ static void clearLineAndBuffer();
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void printHeader() {
-
-	USBprintf("sXXX", "Serial Number: ", ID1, ID2, ID3);
-
-	USBprintf("ss", "Product Type: ", productType);
-
-	USBprintf("ss", "Software Version: ", softwareVersion);
-
-	USBprintf("ss", "Compile Date: ", compileDate);
-
-	USBprintf("ss", "MCU Family: ", mcuFamily);
-
-	USBprintf("ss", "PCB Version: ", pcbVersion);
+void printHeader()
+{
+    char buf[250] = { 0 };
+    int len = 0;
+    len  = snprintf(&buf[len], sizeof(buf) - len, "Serial Number: %lX%lX%lX", ID1, ID2, ID3);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s", productType);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s", softwareVersion);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s", compileDate);
+    len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s", mcuFamily);
+    len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %s", pcbVersion);
+    USBnprintf(buf);
 }
+
 
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
@@ -342,7 +341,7 @@ void checkButtonPress(){
 
 static void clearLineAndBuffer(){
 	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-	USBprintf("s","reconnected");
+	USBnprintf("reconnected");
 	circular_buf_reset(cbuf);
 	isFirstWrite=false;
 }

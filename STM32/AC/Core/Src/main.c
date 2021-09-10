@@ -123,19 +123,17 @@ static void MX_TIM2_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void printHeader() {
-
-	USBprintf("sXXX", "Serial Number: ", ID1, ID2, ID3);
-
-	USBprintf("ss", "Product Type: ", productType);
-
-	USBprintf("ss", "Software Version: ", softwareVersion);
-
-	USBprintf("ss", "Compile Date: ", compileDate);
-
-	USBprintf("ss", "MCU Family: ", mcuFamily);
-
-	USBprintf("ss", "PCB Version: ", pcbVersion);
+void printHeader()
+{
+    char buf[250] = { 0 };
+    int len = 0;
+    len  = snprintf(&buf[len], sizeof(buf) - len, "Serial Number: %lX%lX%lX", ID1, ID2, ID3);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s", productType);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s", softwareVersion);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s", compileDate);
+    len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s", mcuFamily);
+    len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %s", pcbVersion);
+    USBnprintf(buf);
 }
 
 void popBuff() { // move the ADC_result to the ADC_Buffer. TempSense (PA0) ADC_Buffer[0], P1(PA2) ADC_Buffer[1], P2(PA4) ADC_Buffer[2], P3(PA6) ADC_Buffer[4], P4(PB0) ADC_Buffer[5]
@@ -207,23 +205,10 @@ double tempAvg(){
 	return ADCtoTemperature(adc_avg);
 }
 
-void printCurrentArray() {	// calc and print current array.
-
-
-
-	//fill current array with rmsCurrents.
-	for (int i = 0; i <= PORTS; i++) {
-		if (i==0){
-			boardTemperature = tempAvg();
-		} else {
-			current[i - 1] = rmsCurrent(i);
-		}
-
-	}
-
-	USBprintf("fsfsfsfsf", current[0], ", ", current[1], ", ", current[2], ", ",
-			current[3], ", ", boardTemperature);	//	printCurrent.
-
+void printCurrentArray()
+{
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f",
+            rmsCurrent(0), rmsCurrent(1), rmsCurrent(2), rmsCurrent(3), tempAvg());
 }
 
 void actuatePins(struct actuationInfo actuationInfo){
@@ -274,7 +259,7 @@ void handleUserInputs() {
 
 void clearLineAndBuffer(){
 	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-	USBprintf("s","reconnected");
+	USBnprintf("reconnected");
 	circular_buf_reset(cbuf);
 	isFirstWrite=false;
 }
@@ -315,7 +300,7 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
-    HAL_ADC_Start_DMA(&hadc1, ADC_result, DMA_BUF_SIZE);
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t *) ADC_result, DMA_BUF_SIZE);
 
 	HAL_TIM_Base_Start_IT(&htim2);
 
