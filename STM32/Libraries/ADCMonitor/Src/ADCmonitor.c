@@ -46,7 +46,7 @@ void ADCMonitorLoop(ADCCallBack callback)
     if (ADCMonitorData.activeBuffer != lastBuffer)
     {
         lastBuffer = ADCMonitorData.activeBuffer;
-        const int16_t *pData = (ADCMonitorData.activeBuffer == First)
+        int16_t *pData = (ADCMonitorData.activeBuffer == First)
                 ? ADCMonitorData.pData : &ADCMonitorData.pData[ADCMonitorData.length / 2];
         callback(pData, ADCMonitorData.noOfChannels, ADCMonitorData.noOfSamples);
     }
@@ -84,6 +84,24 @@ double ADCMean(const int16_t *pData, uint16_t channel)
     for (uint32_t sampleId = 0; sampleId < ADCMonitorData.noOfSamples; sampleId++)
     {
         sum += pData[sampleId*ADCMonitorData.noOfChannels + channel];
+    }
+
+    return (sum / ADCMonitorData.noOfSamples);
+}
+
+double ADCAbsMean(const int16_t *pData, uint16_t channel)
+{
+    if (ADCMonitorData.activeBuffer == NotAvailable ||
+        pData == NULL ||
+        channel >= ADCMonitorData.noOfChannels)
+    {
+        return 0;
+    }
+
+    uint64_t sum = 0;
+    for (uint32_t sampleId = 0; sampleId < ADCMonitorData.noOfSamples; sampleId++)
+    {
+        sum += abs(pData[sampleId*ADCMonitorData.noOfChannels + channel]);
     }
 
     return (sum / ADCMonitorData.noOfSamples);

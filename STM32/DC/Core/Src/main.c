@@ -157,7 +157,7 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
     return current_scalar * ADCMean(pData, channel) + current_bias;
 }
 
-void printResult(const int16_t *pBuffer, int noOfChannels, int noOfSamples)
+void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
     if (!isComPortOpen)
     {
