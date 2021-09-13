@@ -42,7 +42,7 @@
 /* USER CODE BEGIN PD */
 
 #define ADC_CHANNELS	5
-#define ADC_CHANNEL_BUF_SIZE	100 // tbd 4kHz sampling means 25ms of data stored
+#define ADC_CHANNEL_BUF_SIZE	400
 
 //-------------F4xx UID--------------------
 #define ID1 (*(unsigned long *)0x1FFF7A10)
