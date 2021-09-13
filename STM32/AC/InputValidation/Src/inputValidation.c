@@ -38,7 +38,7 @@ int getNumberDigits(int inputNumber){
 bool isInputInt(char * inputBuffer, int startIdx, int endIdx) {
 	int idx = startIdx;
 	while (idx <= endIdx) {
-		if (!isdigit(inputBuffer[idx])) {
+		if (!isdigit((int) inputBuffer[idx])) {
 			if (inputBuffer[idx] == ' ' && idx != startIdx){
 				break;
 			}
@@ -91,7 +91,7 @@ struct actuationInfo parseAndValidateInput(char * inputBuffer){
 	}
 
 	// Check if X in pX is int and valid
-	if (!isdigit(inputBuffer[1]) || atoi(&inputBuffer[1]) > 4 || atoi(&inputBuffer[1]) == 0){
+	if (!isdigit((int) inputBuffer[1]) || atoi(&inputBuffer[1]) > 4 || atoi(&inputBuffer[1]) == 0){
 		return info;
 	} else {
 		info.pin = atoi(&inputBuffer[1]) - 1; // User uses 1-indexed ports
@@ -126,7 +126,7 @@ struct actuationInfo parseAndValidateInput(char * inputBuffer){
 			return info;
 		}
 		// Save user specified actuation time of pin
-		char *timeOn[3] = {0};
+		char timeOn[3] = {0};
 		memcpy(timeOn, &inputBuffer[6], len-6+1);
 
 		info.pwmDutyCycle = 100;
@@ -149,7 +149,7 @@ struct actuationInfo parseAndValidateInput(char * inputBuffer){
 		}
 
 		// Save user specified pwm of pin
-		char *pwmPct[4] = {0};
+		char pwmPct[4] = {0};
 		memcpy(pwmPct, &inputBuffer[6], len-2-5);
 		int pwmPctTmp = atoi(pwmPct);
 		int pwmDutyCycle = (int)(pwmPctTmp/100.0f * maxPWM);
@@ -169,7 +169,7 @@ struct actuationInfo parseAndValidateInput(char * inputBuffer){
 		}
 
 		// Save user specified actuation time of pin
-		char *timeOn[3] = {0};
+		char timeOn[3] = {0};
 		memcpy(timeOn, &inputBuffer[6], 2);
 		info.timeOn = atoi(timeOn)*1000;
 
@@ -181,7 +181,7 @@ struct actuationInfo parseAndValidateInput(char * inputBuffer){
 		}
 
 		// Save user specified pwm of pin
-		char *pwmPct[4] = {0};
+		char pwmPct[4] = {0};
 		memcpy(pwmPct, &inputBuffer[6+lenTimeOn+1], len-2-lenTimeOn-5);
 		int pwmPctTmp = atoi(pwmPct);
 

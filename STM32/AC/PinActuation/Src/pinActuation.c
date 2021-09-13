@@ -35,16 +35,15 @@ bool isPinPWMOn[PORTS] = { 0 };
 
 
 /* Actuation pin outs */
-static const GPIO_TypeDef *const gpio_ports[] = { ctrl1_GPIO_Port,
-ctrl2_GPIO_Port, ctrl3_GPIO_Port, ctrl4_GPIO_Port };
-static const uint16_t *pins[] = { port1, port2, port3, port4 };
+static GPIO_TypeDef* const gpio_ports[] = { ctrl1_GPIO_Port, ctrl2_GPIO_Port, ctrl3_GPIO_Port, ctrl4_GPIO_Port };
+static const uint16_t pins[] = { port1, port2, port3, port4 };
 
 
 /* Button pin outs */
 unsigned long lastCheckButtonTime = 0;
-static const GPIO_TypeDef *const button_ports[] = { GPIOB, GPIOB, GPIOB,
+static GPIO_TypeDef* const button_ports[] = { GPIOB, GPIOB, GPIOB,
 btn4_GPIO_Port };
-static const uint16_t *buttonPins[] = { buttonport1, buttonport2, buttonport3, buttonport4 };
+static const uint16_t buttonPins[] = { buttonport1, buttonport2, buttonport3, buttonport4 };
 
 
 void pinWrite(int pinNumber, bool val) {

@@ -126,6 +126,23 @@ uint16_t ADCmax(const int16_t *pData, uint16_t channel)
     return max;
 }
 
+void ADCSetOffset(int16_t* pData, int16_t offset, uint16_t channel)
+{
+    if (ADCMonitorData.activeBuffer == NotAvailable ||
+        pData == NULL ||
+        channel >= ADCMonitorData.noOfChannels)
+    {
+        return;
+    }
+    uint16_t max = 0;
+    for (uint32_t sampleId = 0; sampleId < ADCMonitorData.noOfSamples; sampleId++)
+    {
+        // No need to addjust for overflow since ADC is 12 bits.
+        pData[sampleId*ADCMonitorData.noOfChannels + channel] += offset;
+    }
+}
+
+
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 {
     ADCMonitorData.activeBuffer = First;
