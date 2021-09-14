@@ -24,8 +24,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <float.h>
-#include "circular_buffer.h"
-#include "usbd_cdc_if.h"
+#include "usb_cdc_fops.h"
 #include "handleGenericMessages.h"
 #include "inputValidation.h"
 #include "pinActuation.h"
@@ -90,7 +89,7 @@ int tsButton = 100;
 float current[PORTS] = { 0 };
 float boardTemperature = 0;
 
-char inputBuffer[1024 * sizeof(uint8_t)];
+char inputBuffer[CIRCULAR_BUFFER_SIZE];
 
 
 bool isFirstWrite = true;
@@ -129,7 +128,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
 
-    if (!isComPortOpen)
+    if (!isComPortOpen())
         return;
 
     if (!isCalibrationDone)
@@ -187,7 +186,7 @@ void actuatePins(struct actuationInfo actuationInfo){
 void handleUserInputs() {
 
 	// Read user input
-	circular_read_command(cbuf, (uint8_t*) inputBuffer);
+    usb_cdc_rx((uint8_t *)inputBuffer);
 
 	// Check if there is new input
 	if (inputBuffer[0] == '\0') {
@@ -206,7 +205,7 @@ void handleUserInputs() {
 void clearLineAndBuffer(){
 	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
 	USBnprintf("reconnected");
-	circular_buf_reset(cbuf);
+	usb_cdc_rx_flush();
 	isFirstWrite=false;
 }
 
@@ -248,7 +247,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
     ADCMonitorInit(&hadc1, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
 	HAL_TIM_Base_Start_IT(&htim2);
-	circularBufferInit();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -257,10 +255,10 @@ int main(void)
     /* USER CODE END WHILE */
 
         /* USER CODE BEGIN 3 */
-	    handleUserInputs();
-	    ADCMonitorLoop(printCurrentArray);
+        handleUserInputs();
+        ADCMonitorLoop(printCurrentArray);
 
-		if (isComPortOpen)
+		if (isComPortOpen())
 		{
 			// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
 			if (isFirstWrite){

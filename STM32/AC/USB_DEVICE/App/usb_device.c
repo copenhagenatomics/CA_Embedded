@@ -28,7 +28,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "usb_cdc_fops.h" // Replace the USBD_Interface_fops_FS defined in usbd_cdc_if.c.
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -65,6 +65,7 @@ USBD_HandleTypeDef hUsbDeviceFS;
 void MX_USB_DEVICE_Init(void)
 {
   /* USER CODE BEGIN USB_DEVICE_Init_PreTreatment */
+    USBD_Interface_fops_FS = usb_cdc_fops;
 
   /* USER CODE END USB_DEVICE_Init_PreTreatment */
 
