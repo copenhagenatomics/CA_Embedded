@@ -355,11 +355,15 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 	// Upload data every "tsUpload" ms.
-	if (HAL_GetTick() - timeStamp > tsUpload && isComPortOpen){
-		if (isFirstWrite){
-			clearLineAndBuffer();
-		}
-		printTemperatures();
+	if (HAL_GetTick() - timeStamp > tsUpload)
+	{
+	    timeStamp = HAL_GetTick();
+	    if (isComPortOpen)
+	    {
+	        if (isFirstWrite)
+	            clearLineAndBuffer();
+	        printTemperatures();
+	    }
 	}
 
 	for (port = 0; port < PORT_NUMBER; port++) {	// for loop to run function that circulates through port switch cases updating temperatures[]
