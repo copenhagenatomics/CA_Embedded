@@ -79,7 +79,5 @@ int USBnprintf(const char * format, ... )
     va_end (args);
 
     CDC_Transmit_FS((uint8_t*)buffer, len);
-    HAL_Delay(2);
-
     return len;
 }

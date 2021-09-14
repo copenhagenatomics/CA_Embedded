@@ -94,7 +94,6 @@ bool isComPortOpen;
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-extern uint8_t serialBuffer[64];
 cbuf_handle_t cbuf;
 /* USER CODE END EXPORTED_VARIABLES */
 
@@ -110,7 +109,10 @@ cbuf_handle_t cbuf;
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
+
+// TODO: remove this, main should not know about internal circular buffers.
 void circularBufferInit();
+
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**

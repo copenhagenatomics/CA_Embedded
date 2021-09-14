@@ -99,10 +99,17 @@ USBD_CDC_LineCodingTypeDef LineCoding = {
 uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 
 /** Data to send over USB CDC are stored in this buffer   */
-uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-uint8_t circularBuffer[CIRCULAR_BUFFER_SIZE * sizeof(uint8_t)]; //malloc(CIRCULAR_BUFFER_SIZE * sizeof(uint8_t));
+uint8_t circularBuffer[CIRCULAR_BUFFER_SIZE];
+
+static struct
+{
+    cbuf_handle_t tx;
+    uint8_t txBuf[CIRCULAR_BUFFER_SIZE];  // Upper layer section for IRQ
+    uint8_t txIrqBuf[APP_TX_DATA_SIZE];   // lower layer buffer for IRQ
+} usb_cdc_if;
+
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -141,18 +148,6 @@ void circularBufferInit(){
 	cbuf = circular_buf_init(circularBuffer, CIRCULAR_BUFFER_SIZE);
 }
 
-/*
-void updateSerialBuffer(cbuf_handle_t cbuf){
-	int i = 0;
-	uint8_t tmpBuf[CIRCULAR_BUFFER_SIZE];
-	while(!circular_buf_empty(cbuf)){
-		uint8_t data;
-		circular_buf_get(cbuf, &data);
-		tmpBuf[i] = data;
-		i++;
-	}
-	memcpy(serialBuffer, tmpBuf, strlen(tmpBuf));
-}*/
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
 /**
@@ -177,7 +172,9 @@ static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
   /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, usb_cdc_if.txIrqBuf, 0);
+  usb_cdc_if.tx = circular_buf_init(usb_cdc_if.txBuf, sizeof(usb_cdc_if.txBuf));
+
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
   return (USBD_OK);
   /* USER CODE END 3 */
@@ -335,11 +332,30 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
   USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
-    return USBD_BUSY;
+
+  if (hcdc->TxState != 0)
+  {
+      // USB CDC is transmitting data to the network. Leave transmit handling to CDC_TransmitCplt_FS
+      for (int len = 0;len < Len; len++)
+      {
+          if (circular_buf_put2(usb_cdc_if.tx, *Buf))
+              break; // No more space in buffer.
+          Buf++;
+      }
+      return USBD_OK;
   }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
+
+  // Fill in the data from buffer directly, no need copy bytes
+  if (Len > sizeof(usb_cdc_if.txIrqBuf))
+  {
+      // remaining bytes could be moved to circular buffer but in this case,
+      // system is possible in a lack of resources. That problem can not be solved hear.
+      Len = sizeof(usb_cdc_if.txIrqBuf);
+  }
+  memcpy(usb_cdc_if.txIrqBuf, Buf, Len);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, usb_cdc_if.txIrqBuf, Len);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+
   /* USER CODE END 7 */
   return result;
 }
@@ -360,15 +376,26 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 13 */
-  UNUSED(Buf);
-  UNUSED(Len);
-  UNUSED(epnum);
+
+  // Fill in the next number of bytes.
+  uint16_t len = 0;
+  for (uint8_t *ptr = usb_cdc_if.txIrqBuf; ptr < &usb_cdc_if.txIrqBuf[sizeof(usb_cdc_if.txIrqBuf)]; ptr++)
+  {
+      if (circular_buf_get(usb_cdc_if.tx, ptr) != 0) {
+          break; // No more bytes ready to transmit.
+      }
+      len++; // Yet another byte to send.
+  }
+  if (len != 0) {
+      USBD_CDC_SetTxBuffer(&hUsbDeviceFS, usb_cdc_if.txIrqBuf, len);
+      result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+  }
+
   /* USER CODE END 13 */
   return result;
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
-
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**
