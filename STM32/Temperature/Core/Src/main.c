@@ -78,7 +78,7 @@ SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 
-uint8_t inputBuffer[1024*sizeof(uint8_t)];
+char inputBuffer[1024*sizeof(uint8_t)];
 float temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 float junction_temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 
@@ -100,24 +100,22 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-void printHeader() {
-
-	USBprintf("sXXX", "Serial Number: ", ID1, ID2, ID3);
-
-	USBprintf("ss", "Product Type: ", productType);
-
-	USBprintf("ss", "Software Version: ", softwareVersion);
-
-	USBprintf("ss", "Compile Date: ", compileDate);
-
-	USBprintf("ss", "MCU Family: ", mcuFamily);
-
-	USBprintf("ss", "PCB Version: ", pcbVersion);
+void printHeader()
+{
+    char buf[250] = { 0 };
+    int len = 0;
+    len  = snprintf(&buf[len], sizeof(buf) - len, "Serial Number: %lX%lX%lX", ID1, ID2, ID3);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s", productType);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s", softwareVersion);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s", compileDate);
+    len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s", mcuFamily);
+    len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %s", pcbVersion);
+    USBnprintf(buf);
 }
 
 void handleInput() { // list all board specific commands.
 
-	circular_read_command(cbuf, inputBuffer);
+	circular_read_command(cbuf, (uint8_t *) inputBuffer);
 
 	// Check if there is new input
 	if (inputBuffer[0]=='\0'){
@@ -271,7 +269,7 @@ void popTemp(int port) {
 		break;
 
 	case 10:
-		temperatures[port]=si7051Temp();
+		temperatures[port]=si7051Temp(&hi2c1);
 		break;
 
 	/*
@@ -291,16 +289,16 @@ void popTemp(int port) {
 
 }
 
-void printTemperatures(void) {
-	USBprintf("fsfsfsfsfsfsfsfsfsfsf", temperatures[0], ", ", temperatures[1], ", ", temperatures[2], ", ",
-			                           temperatures[3], ", ", temperatures[4], ", ", temperatures[5], ", ",
-									   temperatures[6], ", ", temperatures[7], ", ", temperatures[8], ", ",
-									   temperatures[9], ", ", temperatures[10]);
+void printTemperatures(void)
+{
+    USBnprintf("%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f",
+            temperatures[0], temperatures[1], temperatures[2], temperatures[3], temperatures[4],
+            temperatures[5], temperatures[6], temperatures[7], temperatures[8], temperatures[9], temperatures[10]);
 }
 
 void clearLineAndBuffer(){
 	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-	USBprintf("s","reconnected");
+	USBnprintf("reconnected");
 	circular_buf_reset(cbuf);
 	isFirstWrite=false;
 }
@@ -357,11 +355,15 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 	// Upload data every "tsUpload" ms.
-	if (HAL_GetTick() - timeStamp > tsUpload && isComPortOpen){
-		if (isFirstWrite){
-			clearLineAndBuffer();
-		}
-		printTemperatures();
+	if (HAL_GetTick() - timeStamp > tsUpload)
+	{
+	    timeStamp = HAL_GetTick();
+	    if (isComPortOpen)
+	    {
+	        if (isFirstWrite)
+	            clearLineAndBuffer();
+	        printTemperatures();
+	    }
 	}
 
 	for (port = 0; port < PORT_NUMBER; port++) {	// for loop to run function that circulates through port switch cases updating temperatures[]

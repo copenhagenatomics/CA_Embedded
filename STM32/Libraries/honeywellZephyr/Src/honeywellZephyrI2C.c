@@ -14,22 +14,23 @@ Description:
 #include "stm32f4xx_hal.h"
 #include "string.h"
 
-const uint8_t zephyrADDR = 0x49;
-const uint8_t readSerialNBADDR = 0x01;
-const uint8_t readSensorADDR = 0x00;
+#define ZephyrADDR 0x49
 
 I2C_HandleTypeDef hi2c1;
 
-HAL_StatusTypeDef ZephyrRead(float *flowData, uint8_t SLPM){
-	uint8_t addata[2];
+HAL_StatusTypeDef ZephyrRead(float *flowData, uint8_t SLPM)
+{
+    uint8_t readSensorADDR = 0x00;
+
+    uint8_t addata[2];
 	int32_t placeHolder;
 	HAL_StatusTypeDef ret;
-	ret = HAL_I2C_Master_Transmit(&hi2c1, (uint16_t)(zephyrADDR << 1), &readSensorADDR, 2, 50);
+	ret = HAL_I2C_Master_Transmit(&hi2c1, (uint16_t)(ZephyrADDR << 1), &readSensorADDR, 2, 50);
 	if(ret != HAL_OK){
 		return ret;
 	}
 
-	ret = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)(zephyrADDR << 1)|0x01, addata, 2, 50);
+	ret = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)(ZephyrADDR << 1)|0x01, addata, 2, 50);
 	if(ret != HAL_OK){
 		return ret;
 	}
@@ -46,20 +47,22 @@ HAL_StatusTypeDef flowSensorInit(uint32_t *serialNB){
  * The sensor prints out 2 bytes on startup with its serial number
  *
  */
+    uint8_t readSerialNBADDR = 0x01;
+
 	uint8_t addata1[4];
 	HAL_StatusTypeDef ret;
-	ret = HAL_I2C_Master_Transmit(&hi2c1, (uint16_t)(zephyrADDR << 1), &readSerialNBADDR, 1, 50);
+	ret = HAL_I2C_Master_Transmit(&hi2c1, (uint16_t)(ZephyrADDR << 1), &readSerialNBADDR, 1, 50);
 	if(ret != HAL_OK){
 		return ret;
 	}
 	HAL_Delay(2);
-	ret = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)(zephyrADDR << 1)|0x01, &addata1[0], 2, 50);
+	ret = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)(ZephyrADDR << 1)|0x01, &addata1[0], 2, 50);
 	if(ret != HAL_OK){
 		return ret;
 	}
 
 	HAL_Delay(10);
-	ret = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)(zephyrADDR << 1)|0x01, &addata1[2], 2, 50);
+	ret = HAL_I2C_Master_Receive(&hi2c1, (uint16_t)(ZephyrADDR << 1)|0x01, &addata1[2], 2, 50);
 	if(ret != HAL_OK){
 		return ret;
 	}
