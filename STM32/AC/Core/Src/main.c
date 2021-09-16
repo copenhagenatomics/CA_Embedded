@@ -120,11 +120,11 @@ void printHeader()
 {
     char buf[250] = { 0 };
     int len = 0;
-    len  = snprintf(&buf[len], sizeof(buf) - len, "Serial Number: %lX%lX%lX", ID1, ID2, ID3);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s", productType);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s", softwareVersion);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s", compileDate);
-    len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s", mcuFamily);
+    len  = snprintf(&buf[len], sizeof(buf) - len, "Serial Number: %lX%lX%lX\r\n", ID1, ID2, ID3);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s\r\n", productType);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s\r\n", softwareVersion);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s\r\n", compileDate);
+    len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s\r\n", mcuFamily);
     len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %s", pcbVersion);
     USBnprintf(buf);
 }
