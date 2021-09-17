@@ -11,8 +11,6 @@
 #include "stm32f4xx_hal.h"
 #include "stdarg.h"
 
-void USBprintf(const char* data, ...);
-
 // Wrap vsnprintf(char *str, size_t size, const char *format, va_list ap)
 // and send data to USB port. The n indicates that buffer overflow is handled.
 // String/n is max 256 bytes.
