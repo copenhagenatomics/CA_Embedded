@@ -2,3 +2,4 @@ Debug
 .settings
 *.launch
 *.mxproject
+githash.h
