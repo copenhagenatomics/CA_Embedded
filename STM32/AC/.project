@@ -35,5 +35,10 @@
 			<type>2</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Libraries</locationURI>
 		</link>
+		<link>
+			<name>Util</name>
+			<type>2</type>
+			<location>/home/agp/work/CA_Embedded/STM32/Libraries/Util</location>
+		</link>
 	</linkedResources>
 </projectDescription>

@@ -30,6 +30,7 @@
 #include "inputValidation.h"
 #include "pinActuation.h"
 #include "ADCMonitor.h"
+#include "systemInfo.h"
 
 /* USER CODE END Includes */
 
@@ -44,11 +45,6 @@
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
 
-//-------------F4xx UID--------------------
-#define ID1 (*(unsigned long *)0x1FFF7A10)
-#define ID2 (*(unsigned long *)0x1FFF7A14)
-#define ID3 (*(unsigned long *)0x1FFF7A18)
-
 // ***** PRODUCT INFO *****
 /*
  * Versions:
@@ -58,11 +54,9 @@
  * 1.3 Add print heatsink temperature.
  */
 
-char softwareVersion[] = "1.4";
-char productType[] = "AC Board";
-char mcuFamily[] = "STM32F401";
-char pcbVersion[] = "V5.6";
-char compileDate[] = __DATE__ " " __TIME__;
+#define ProductType "AC Board"
+#define McuFamily   "STM32F401"
+#define PCBVersion  "V5.6"
 
 /* USER CODE END PD */
 
@@ -118,15 +112,7 @@ static void MX_TIM2_Init(void);
 
 void printHeader()
 {
-    char buf[250] = { 0 };
-    int len = 0;
-    len  = snprintf(&buf[len], sizeof(buf) - len, "Serial Number: %lX%lX%lX\r\n", ID1, ID2, ID3);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s\r\n", productType);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s\r\n", softwareVersion);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s\r\n", compileDate);
-    len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s\r\n", mcuFamily);
-    len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %s", pcbVersion);
-    USBnprintf(buf);
+    USBnprintf(systemInfo(ProductType, McuFamily, PCBVersion));
 }
 
 double ADCtoCurrent(double adc_val) {
