@@ -47,7 +47,7 @@
 #define ID3 (*(unsigned long *)0x1FFF7A18)
 
 // ***** PRODUCT INFO *****
-char softwareVersion[] = "1.1";
+char softwareVersion[] = "1.2";
 char productType[] = "Temperature";
 char mcuFamily[] = "STM32F401";
 char pcbVersion[] = "V4.3";
@@ -82,6 +82,16 @@ char inputBuffer[1024*sizeof(uint8_t)];
 float temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 float junction_temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 
+/* Actuation pin outs */
+static GPIO_TypeDef* const gpio_temp[TEMP_VALUES-1] = { SEL0_GPIO_Port, SEL1_GPIO_Port, SEL2_GPIO_Port,
+										   	   	   	    SEL3_GPIO_Port, SEL4_GPIO_Port, SEL5_GPIO_Port,
+														SEL6_GPIO_Port, SEL7_GPIO_Port, SEL8_GPIO_Port,
+														SEL9_GPIO_Port};
+
+static const uint16_t pins_temp[TEMP_VALUES-1] = { SEL0_Pin, SEL1_Pin, SEL2_Pin,
+								 	 	 	 	   SEL3_Pin, SEL4_Pin, SEL5_Pin,
+												   SEL6_Pin, SEL7_Pin, SEL8_Pin,
+												   SEL9_Pin};
 
 int tsUpload = 100;
 
@@ -126,17 +136,11 @@ void handleInput() { // list all board specific commands.
 
 }
 
-void GPIO_INIT(void) {	// set all Chip Select pins high at startup.
-	  HAL_GPIO_WritePin(SEL0_GPIO_Port, SEL0_Pin, 1);
-	  HAL_GPIO_WritePin(SEL1_GPIO_Port, SEL1_Pin, 1);
-	  HAL_GPIO_WritePin(SEL2_GPIO_Port, SEL2_Pin, 1);
-	  HAL_GPIO_WritePin(SEL3_GPIO_Port, SEL3_Pin, 1);
-	  HAL_GPIO_WritePin(SEL4_GPIO_Port, SEL4_Pin, 1);
-	  HAL_GPIO_WritePin(SEL5_GPIO_Port, SEL5_Pin, 1);
-	  HAL_GPIO_WritePin(SEL6_GPIO_Port, SEL6_Pin, 1);
-	  HAL_GPIO_WritePin(SEL7_GPIO_Port, SEL7_Pin, 1);
-	  HAL_GPIO_WritePin(SEL8_GPIO_Port, SEL8_Pin, 1);
-	  HAL_GPIO_WritePin(SEL9_GPIO_Port, SEL9_Pin, 1);
+// Set all SPI pins high to be enable for communication
+void GPIO_INIT(){
+	for (int i = 0; i<TEMP_VALUES-1; i++){
+		HAL_GPIO_WritePin(gpio_temp[i], pins_temp[i], SET);
+	}
 }
 
 
@@ -201,92 +205,17 @@ void Max31855_Read_Temp(float *temp_probe, float *temp_junction){
 	*temp_junction = *temp_junction * 0.0625;
 }
 
-
-void popTemp(int port) {
-
-	// toggles through each chip, reads probe and junction temperature.
-	switch (port) {
-
-	case 0:
-		HAL_GPIO_WritePin(SEL0_GPIO_Port,SEL0_Pin,GPIO_PIN_RESET);       // Low State to enable SPI Communication
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL0_GPIO_Port,SEL0_Pin,GPIO_PIN_SET);         // High State to disable SPI Communication
-		break;
-
-	case 1:
-		HAL_GPIO_WritePin(SEL1_GPIO_Port,SEL1_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL1_GPIO_Port,SEL1_Pin,GPIO_PIN_SET);
-		break;
-
-	case 2:
-		HAL_GPIO_WritePin(SEL2_GPIO_Port,SEL2_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL2_GPIO_Port,SEL2_Pin,GPIO_PIN_SET);
-		break;
-
-	case 3:
-		HAL_GPIO_WritePin(SEL3_GPIO_Port,SEL3_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL3_GPIO_Port,SEL3_Pin,GPIO_PIN_SET);
-		break;
-
-	case 4:
-		HAL_GPIO_WritePin(SEL4_GPIO_Port,SEL4_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL4_GPIO_Port,SEL4_Pin,GPIO_PIN_SET);
-		break;
-
-	case 5:
-		HAL_GPIO_WritePin(SEL5_GPIO_Port,SEL5_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL5_GPIO_Port,SEL5_Pin,GPIO_PIN_SET);
-		break;
-
-	case 6:
-		HAL_GPIO_WritePin(SEL6_GPIO_Port,SEL6_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL6_GPIO_Port,SEL6_Pin,GPIO_PIN_SET);
-		break;
-
-	case 7:
-		HAL_GPIO_WritePin(SEL7_GPIO_Port,SEL7_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL7_GPIO_Port,SEL7_Pin,GPIO_PIN_SET);
-		break;
-
-	case 8:
-		HAL_GPIO_WritePin(SEL8_GPIO_Port,SEL8_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL8_GPIO_Port,SEL8_Pin,GPIO_PIN_SET);
-		break;
-
-	case 9:
-		HAL_GPIO_WritePin(SEL9_GPIO_Port,SEL9_Pin,GPIO_PIN_RESET);
-		Max31855_Read_Temp(&temperatures[port], &junction_temperatures[port]);
-		HAL_GPIO_WritePin(SEL9_GPIO_Port,SEL9_Pin,GPIO_PIN_SET);
-		HAL_Delay(1);
-		break;
-
-	case 10:
-		temperatures[port]=si7051Temp(&hi2c1);
-		break;
-
-	/*
-	case 11:
-	//Change PORT_NUMBER to 12
-	//Average Max31855 juction temps. Can serve as an alternative to si7051 if this fails.
-		float sum = 0;
-
-		for (int i = 0; i < 10; i++){
-			sum =+ junction_temperatures[i];
-		}
-		temperatures[port] = sum/10;
-		break;
-
-*/
+void readTemperatures(){
+	// Read from thermocouple ports
+	for (int i = 0; i < TEMP_VALUES-1; i++){
+		HAL_GPIO_WritePin(gpio_temp[i],pins_temp[i],RESET);       // Low State to enable SPI Communication
+		Max31855_Read_Temp(&temperatures[i], &junction_temperatures[i]);
+		HAL_GPIO_WritePin(gpio_temp[i],pins_temp[i],SET);         // High State to disable SPI Communication
 	}
 
+	// On board temperature
+	HAL_Delay(1);
+	temperatures[TEMP_VALUES-1]=si7051Temp(&hi2c1);
 }
 
 void printTemperatures(void)
@@ -313,8 +242,7 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-	unsigned long timeStamp = 0;
-	int port;
+  unsigned long timeStamp = 0;
 
   /* USER CODE END 1 */
 
@@ -357,22 +285,24 @@ int main(void)
 	// Upload data every "tsUpload" ms.
 	if (HAL_GetTick() - timeStamp > tsUpload)
 	{
+
 	    timeStamp = HAL_GetTick();
 	    if (isComPortOpen)
 	    {
 	        if (isFirstWrite)
+	        {
 	            clearLineAndBuffer();
+	        }
+
+	        readTemperatures();
 	        printTemperatures();
 	    }
 	}
 
-	for (port = 0; port < PORT_NUMBER; port++) {	// for loop to run function that circulates through port switch cases updating temperatures[]
-		popTemp(port);
-	}
-
 	handleInput();
 
-	if (!isComPortOpen){
+	if (!isComPortOpen)
+	{
 		isFirstWrite=true;
 	}
 
