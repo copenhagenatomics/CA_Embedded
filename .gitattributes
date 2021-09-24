@@ -1,2 +1,4 @@
 *.ioc binary
+*.c text=lf
+*.h text=lf
 
