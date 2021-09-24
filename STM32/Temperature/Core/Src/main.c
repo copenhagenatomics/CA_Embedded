@@ -283,11 +283,14 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 	// Upload data every "tsUpload" ms.
-	if (HAL_GetTick() - timeStamp > tsUpload){
+	if (HAL_GetTick() - timeStamp > tsUpload)
+	{
 
 	    timeStamp = HAL_GetTick();
-	    if (isComPortOpen){
-	        if (isFirstWrite){
+	    if (isComPortOpen)
+	    {
+	        if (isFirstWrite)
+	        {
 	            clearLineAndBuffer();
 	        }
 
@@ -298,7 +301,8 @@ int main(void)
 
 	handleInput();
 
-	if (!isComPortOpen){
+	if (!isComPortOpen)
+	{
 		isFirstWrite=true;
 	}
 
