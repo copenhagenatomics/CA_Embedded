@@ -45,6 +45,8 @@
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
 
+#define MAX_CURRENT_DRAW 9
+#define MAX_BOARD_TEMP 50
 // ***** PRODUCT INFO *****
 /*
  * Versions:
@@ -116,11 +118,22 @@ void printHeader()
 }
 
 double ADCtoCurrent(double adc_val) {
-	return current_scalar * adc_val + current_bias;
+
+	double currentChannel = current_scalar * adc_val + current_bias;
+	if (currentChannel > MAX_CURRENT_DRAW){
+		allOff();
+		USBnprintf("warning: max current exceeded.");
+	}
+	return currentChannel;
 }
 
 double ADCtoTemperature(double adc_val) {
-	return temp_scalar * adc_val;
+	double board_temp = temp_scalar * adc_val;
+	if (board_temp > MAX_BOARD_TEMP){
+		allOff();
+		USBnprintf("warning: max current exceeded.");
+	}
+	return board_temp;
 }
 
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)

@@ -63,6 +63,9 @@
 #define TURNONPWM 999
 #define TURNOFFPWM 0
 
+#define MAX_CURRENT_DRAW 2
+#define MAX_BOARD_TEMP 50
+
 //-------------F4xx UID--------------------
 #define ID1 (*(unsigned long *)0x1FFF7A10)
 #define ID2 (*(unsigned long *)0x1FFF7A14)
@@ -150,10 +153,25 @@ void printHeader()
     USBnprintf(buf);
 }
 
+void shutChannelOffAndReport(uint16_t channel){
+	turnOffPin(channel);
+	USBnprintf("warning: max current exceeded.");
+}
+
+void shutAllOffAndReport(){
+	allOff();
+	USBnprintf("warning: max temp exceeded.");
+}
 
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
-    return current_scalar * ADCMean(pData, channel) + current_bias;
+    double meanCurrent = current_scalar * ADCMean(pData, channel) + current_bias;
+
+    // If component draws more current than max allowed then operation is shut off
+    if (meanCurrent > MAX_CURRENT_DRAW){
+    	shutChannelOffAndReport(channel);
+    }
+    return meanCurrent;
 }
 
 void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
@@ -167,6 +185,11 @@ void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
         clearLineAndBuffer();
 
     const double temp = si7051Temp(&hi2c1);
+    // If board temp exceeds 50C shut down operation
+    if (temp>MAX_BOARD_TEMP){
+    	shutAllOffAndReport();
+    }
+
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1), meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
             temp, ADCrms(pBuffer, 5), ADCmax(pBuffer, 5));
