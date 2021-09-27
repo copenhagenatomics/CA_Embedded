@@ -55,6 +55,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Temperature/Libraries/jumpToBootloader/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Temperature/Libraries/USBprint/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Temperature/Libraries/SI7051/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Temperature/Libraries/Util/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.627552117" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -85,6 +86,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/SI7051"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/USBprint"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/Util"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/circularBuffer"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/handleGenericMessages"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/jumpToBootloader"/>

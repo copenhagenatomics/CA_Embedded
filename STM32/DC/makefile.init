@@ -1,0 +1,31 @@
+# git commit version and date
+
+GIT_VERSION := $(shell git --no-pager describe --tags --always --dirty)
+GIT_DATE := $(firstword $(shell git --no-pager show --date=short --format="%ad" --name-only))
+GIT_SHA := $(shell git rev-parse HEAD)
+
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir := $(dir $(mkfile_path))
+
+TARGET := ${mkfile_dir}/Core/Inc/githash.h
+
+all: $(TARGET)
+.PHONY: force
+
+define git_info
+// Auto generated file from makefile.init, do not edit!
+
+#ifndef GIT_HASH_H
+#define GIT_HASH_H
+
+#define GIT_SHA \"$(GIT_SHA)\"
+#define GIT_DATE  \"$(GIT_DATE)\"
+#define GIT_VERSION \"$(GIT_VERSION)\"
+
+#endif // GIT_HASH_H
+endef
+
+.ONESHELL:
+$(TARGET): force
+	@echo "$(git_info)" > $@
+
