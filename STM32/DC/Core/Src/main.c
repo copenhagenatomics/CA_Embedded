@@ -153,12 +153,8 @@ void printHeader()
     USBnprintf(buf);
 }
 
-void shutChannelOffAndReport(uint16_t channel){
-	turnOffPin(channel);
-	USBnprintf("warning: max current exceeded.");
-}
 
-void shutAllOffAndReport(){
+void shutOffAndReport(){
 	allOff();
 	USBnprintf("warning: max temp exceeded.");
 }
@@ -169,7 +165,7 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
 
     // If component draws more current than max allowed then operation is shut off
     if (meanCurrent > MAX_CURRENT_DRAW){
-    	shutChannelOffAndReport(channel);
+    	shutOffAndReport();
     }
     return meanCurrent;
 }
@@ -187,7 +183,7 @@ void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
     const double temp = si7051Temp(&hi2c1);
     // If board temp exceeds 50C shut down operation
     if (temp>MAX_BOARD_TEMP){
-    	shutAllOffAndReport();
+    	shutOffAndReport();
     }
 
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d",
