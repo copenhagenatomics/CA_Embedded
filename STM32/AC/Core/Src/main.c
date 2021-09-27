@@ -117,16 +117,21 @@ void printHeader()
     USBnprintf(systemInfo(ProductType, McuFamily, PCBVersion));
 }
 
-void shutOffAndReport(){
+void shutOffAndReport(bool isCurrentExceeded){
 	allOff();
-	USBnprintf("warning: max temp exceeded.");
+	if (isCurrentExceeded){
+		USBnprintf("warning: max current draw exceeded.");
+	} else {
+		USBnprintf("warning: max temp exceeded.");
+	}
 }
 
 double ADCtoCurrent(double adc_val) {
 
 	double currentChannel = current_scalar * adc_val + current_bias;
 	if (currentChannel > MAX_CURRENT_DRAW){
-		shutOffAndReport();
+		bool isCurrentExceeded = true;
+		shutOffAndReport(isCurrentExceeded);
 	}
 	return currentChannel;
 }
@@ -134,7 +139,8 @@ double ADCtoCurrent(double adc_val) {
 double ADCtoTemperature(double adc_val) {
 	double board_temp = temp_scalar * adc_val;
 	if (board_temp > MAX_BOARD_TEMP){
-		shutOffAndReport();
+		bool isCurrentExceeded = false;
+		shutOffAndReport(isCurrentExceeded);
 	}
 	return board_temp;
 }
