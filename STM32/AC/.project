@@ -38,7 +38,7 @@
 		<link>
 			<name>Util</name>
 			<type>2</type>
-			<location>/home/agp/work/CA_Embedded/STM32/Libraries/Util</location>
+			<locationURI>PARENT-1-PROJECT_LOC/Libraries/Util</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

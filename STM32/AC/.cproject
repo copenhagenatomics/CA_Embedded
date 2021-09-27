@@ -56,7 +56,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/InputValidation/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/PinActuation/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Libraries/ADCMonitor/Inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Libraries/Util/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Util/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1215116355" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -94,7 +94,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="PinActuation"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_DEVICE"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Util"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Util"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
