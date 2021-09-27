@@ -36,6 +36,7 @@
 #include "si7051.h"
 #include "inputValidation.h"
 #include "ADCMonitor.h"
+#include "systemInfo.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -63,17 +64,10 @@
 #define TURNONPWM 999
 #define TURNOFFPWM 0
 
-//-------------F4xx UID--------------------
-#define ID1 (*(unsigned long *)0x1FFF7A10)
-#define ID2 (*(unsigned long *)0x1FFF7A14)
-#define ID3 (*(unsigned long *)0x1FFF7A18)
-
 // ***** PRODUCT INFO *****
-char softwareVersion[] = "1.4";
 char productType[] = "DC Board";
 char mcuFamily[] = "STM32F401";
 char pcbVersion[] = "V2.2";
-char compileDate[] = __DATE__ " " __TIME__;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -139,17 +133,8 @@ static void clearLineAndBuffer();
 /* USER CODE BEGIN 0 */
 void printHeader()
 {
-    char buf[250] = { 0 };
-    int len = 0;
-    len  = snprintf(&buf[len], sizeof(buf) - len, "Serial Number: %lX%lX%lX\r\n", ID1, ID2, ID3);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s\r\n", productType);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s\r\n", softwareVersion);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s\r\n", compileDate);
-    len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s\r\n", mcuFamily);
-    len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %s", pcbVersion);
-    USBnprintf(buf);
+    USBnprintf(systemInfo(productType, mcuFamily, pcbVersion));
 }
-
 
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
