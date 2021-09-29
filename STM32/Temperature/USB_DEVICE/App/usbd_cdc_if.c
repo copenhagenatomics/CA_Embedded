@@ -23,8 +23,6 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-#include "circular_buffer.h"
-#include <stdbool.h>
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -72,7 +70,6 @@ USBD_CDC_LineCodingTypeDef LineCoding = {
   */
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
-#define CIRCULAR_BUFFER_SIZE 1028
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -105,7 +102,6 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
-uint8_t circularBuffer[CIRCULAR_BUFFER_SIZE * sizeof(uint8_t)]; //malloc(CIRCULAR_BUFFER_SIZE * sizeof(uint8_t));
 /* USER CODE END PRIVATE_VARIABLES */
 
 /**
@@ -120,7 +116,6 @@ uint8_t circularBuffer[CIRCULAR_BUFFER_SIZE * sizeof(uint8_t)]; //malloc(CIRCULA
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-bool isComPortOpen = false;
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -139,11 +134,6 @@ static int8_t CDC_Receive_FS(uint8_t* pbuf, uint32_t *Len);
 static int8_t CDC_TransmitCplt_FS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
-
-void circularBufferInit(){
-	cbuf = circular_buf_init(circularBuffer, CIRCULAR_BUFFER_SIZE);
-}
-
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
 /**
@@ -167,9 +157,6 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
-  /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, UserTxBufferFS, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, UserRxBufferFS);
   return (USBD_OK);
   /* USER CODE END 3 */
 }
@@ -195,83 +182,7 @@ static int8_t CDC_DeInit_FS(void)
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
   /* USER CODE BEGIN 5 */
-  switch(cmd)
-  {
-    case CDC_SEND_ENCAPSULATED_COMMAND:
-
-    break;
-
-    case CDC_GET_ENCAPSULATED_RESPONSE:
-
-    break;
-
-    case CDC_SET_COMM_FEATURE:
-
-    break;
-
-    case CDC_GET_COMM_FEATURE:
-
-    break;
-
-    case CDC_CLEAR_COMM_FEATURE:
-
-    break;
-
-  /*******************************************************************************/
-  /* Line Coding Structure                                                       */
-  /*-----------------------------------------------------------------------------*/
-  /* Offset | Field       | Size | Value  | Description                          */
-  /* 0      | dwDTERate   |   4  | Number |Data terminal rate, in bits per second*/
-  /* 4      | bCharFormat |   1  | Number | Stop bits                            */
-  /*                                        0 - 1 Stop bit                       */
-  /*                                        1 - 1.5 Stop bits                    */
-  /*                                        2 - 2 Stop bits                      */
-  /* 5      | bParityType |  1   | Number | Parity                               */
-  /*                                        0 - None                             */
-  /*                                        1 - Odd                              */
-  /*                                        2 - Even                             */
-  /*                                        3 - Mark                             */
-  /*                                        4 - Space                            */
-  /* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
-  /*******************************************************************************/
-    case CDC_SET_LINE_CODING:
-
-    	LineCoding.bitrate = (uint32_t)(pbuf[0] | (pbuf[1] << 8) |\
-    	(pbuf[2] << 16) | (pbuf[3] << 24));
-    	LineCoding.format = pbuf[4];
-    	LineCoding.paritytype = pbuf[5];
-    	LineCoding.datatype = pbuf[6];
-
-    break;
-
-    case CDC_GET_LINE_CODING:
-
-    	pbuf[0] = (uint8_t)(LineCoding.bitrate);
-    	pbuf[1] = (uint8_t)(LineCoding.bitrate >> 8);
-    	pbuf[2] = (uint8_t)(LineCoding.bitrate >> 16);
-    	pbuf[3] = (uint8_t)(LineCoding.bitrate >> 24);
-    	pbuf[4] = LineCoding.format;
-    	pbuf[5] = LineCoding.paritytype;
-    	pbuf[6] = LineCoding.datatype;
-
-    break;
-
-    case CDC_SET_CONTROL_LINE_STATE:{
-        USBD_SetupReqTypedef * req = (USBD_SetupReqTypedef *)pbuf;
-        isComPortOpen = (req->wValue & 0x0001) != 0;
-    }
-
-    break;
-
-    case CDC_SEND_BREAK:
-
-    break;
-
-  default:
-    break;
-  }
-
-  return (USBD_OK);
+    return (USBD_OK);
   /* USER CODE END 5 */
 }
 
@@ -293,20 +204,6 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-	USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
-	  USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-
-	  uint16_t len = (uint16_t)*Len;
-	  // Update circular buffer with incoming values
-	  for(uint8_t i = 0; i < len; i++){
-		  circular_buf_put(cbuf, Buf[i]);
-		  // Checking for '\r' is there for debugging purposes which is sent by putty and minicom.
-		  // In production only '\n' is sent. Therefore, there is no check for '\r\n' case.
-		  if (Buf[i]=='\n'||Buf[i]=='\r'){
-			  circular_buf_add_input(cbuf);
-		  }
-	  }
-	  memset(Buf, '\0', len);   // clear the Buf also
 	  return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -326,12 +223,6 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 7 */
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
-  if (hcdc->TxState != 0){
-    return USBD_BUSY;
-  }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceFS, Buf, Len);
-  result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
   /* USER CODE END 7 */
   return result;
 }
@@ -352,9 +243,6 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 13 */
-  UNUSED(Buf);
-  UNUSED(Len);
-  UNUSED(epnum);
   /* USER CODE END 13 */
   return result;
 }
