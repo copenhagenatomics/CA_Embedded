@@ -33,7 +33,9 @@ uint8_t usb_cdc_transmit(uint8_t* Buf, uint16_t len);
 void usb_cdc_rx(uint8_t* buf);
 void usb_cdc_rx_flush();
 
+#ifdef USE_COMMON_USB_CDC
 bool isComPortOpen();
+#endif
 
 #ifdef __cplusplus
 }

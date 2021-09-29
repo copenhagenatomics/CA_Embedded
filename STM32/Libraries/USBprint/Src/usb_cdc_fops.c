@@ -40,9 +40,11 @@ static struct
     bool isComPortOpen;
 } usb_cdc_if = { {0}, {0}, false };
 
+#ifdef USE_COMMON_USB_CDC
 bool isComPortOpen() {
     return usb_cdc_if.isComPortOpen;
 }
+#endif
 
 /**
   * @brief  Initializes the CDC media low layer over the FS USB IP
