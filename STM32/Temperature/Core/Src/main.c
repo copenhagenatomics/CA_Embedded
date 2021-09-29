@@ -28,8 +28,7 @@
 /* USER CODE BEGIN Includes */
 
 #include "handleGenericMessages.h"
-#include "circular_buffer.h"
-#include "usbd_cdc_if.h"
+#include "usb_cdc_fops.h"
 #include "si7051.h"
 
 /* USER CODE END Includes */
@@ -72,7 +71,7 @@ SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
 
-char inputBuffer[1024*sizeof(uint8_t)];
+char inputBuffer[CIRCULAR_BUFFER_SIZE];
 float temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 float junction_temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 
@@ -111,7 +110,7 @@ void printHeader()
 
 void handleInput() { // list all board specific commands.
 
-	circular_read_command(cbuf, (uint8_t *) inputBuffer);
+	usb_cdc_rx((uint8_t *) inputBuffer);
 
 	// Check if there is new input
 	if (inputBuffer[0]=='\0'){
@@ -214,7 +213,7 @@ void printTemperatures(void)
 void clearLineAndBuffer(){
 	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
 	USBnprintf("reconnected");
-	circular_buf_reset(cbuf);
+	usb_cdc_rx_flush();
 	isFirstWrite=false;
 }
 
@@ -254,10 +253,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-
   GPIO_INIT();
-  circularBufferInit();
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -273,7 +269,7 @@ int main(void)
 	{
 
 	    timeStamp = HAL_GetTick();
-	    if (isComPortOpen)
+	    if (isComPortOpen())
 	    {
 	        if (isFirstWrite)
 	        {
@@ -287,7 +283,7 @@ int main(void)
 
 	handleInput();
 
-	if (!isComPortOpen)
+	if (!isComPortOpen())
 	{
 		isFirstWrite=true;
 	}
