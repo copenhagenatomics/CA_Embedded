@@ -31,7 +31,6 @@
 #include "usbd_cdc.h"
 
 /* USER CODE BEGIN INCLUDE */
-#include "circular_buffer.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -66,7 +65,6 @@
   */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
-bool isComPortOpen;
 /* USER CODE END EXPORTED_TYPES */
 
 /**
@@ -95,7 +93,6 @@ bool isComPortOpen;
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-cbuf_handle_t cbuf;
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -110,7 +107,6 @@ cbuf_handle_t cbuf;
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
-void circularBufferInit();
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**

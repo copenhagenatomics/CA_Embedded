@@ -30,8 +30,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <float.h>
-#include "circular_buffer.h"
-#include "usbd_cdc_if.h"
+#include "usb_cdc_fops.h"
 #include "handleGenericMessages.h"
 #include "si7051.h"
 #include "inputValidation.h"
@@ -96,10 +95,8 @@ float current_bias = 23.43; // Offset calibrated to USB hubs.
 
 
 /* General */
-unsigned long lastPrintTime = 0;
 unsigned long lastCheckButtonTime = 0;
 int tsButton = 100;
-int tsUpload = 100;
 
 
 int actuationDuration[ACTUATIONPORTS] = { 0 };
@@ -108,12 +105,9 @@ bool port_state[ACTUATIONPORTS] = { 0 };
 uint32_t ccr_states[ACTUATIONPORTS] = {0};
 
 float si7051Val = 0;
-
 bool isFirstWrite = true;
 
-// Software ports
-
-char inputBuffer[1024 * sizeof(uint8_t)];
+char inputBuffer[CIRCULAR_BUFFER_SIZE];
 
 /* USER CODE END PV */
 
@@ -143,7 +137,7 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
 
 void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
-    if (!isComPortOpen)
+    if (!isComPortOpen())
     {
         isFirstWrite=true;
         return;
@@ -266,7 +260,7 @@ void actuatePins(struct actuationInfo actuationInfo){
 void handleUserInputs() {
 
 	// Read user input
-	circular_read_command(cbuf, (uint8_t*) inputBuffer);
+	usb_cdc_rx((uint8_t *)inputBuffer);
 
 	// Check if there is new input
 	if (inputBuffer[0] == '\0') {
@@ -327,7 +321,7 @@ void checkButtonPress(){
 static void clearLineAndBuffer(){
 	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
 	USBnprintf("reconnected");
-	circular_buf_reset(cbuf);
+	usb_cdc_rx_flush();
 	isFirstWrite=false;
 }
 
@@ -378,8 +372,6 @@ int main(void)
   HAL_TIM_PWM_Start(&htim5,TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim5,TIM_CHANNEL_4);
 
-
-  circularBufferInit();
   /* USER CODE END 2 */
 
   /* Infinite loop */
