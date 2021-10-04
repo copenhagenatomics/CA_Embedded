@@ -39,6 +39,10 @@ uint16_t ADCmax(const int16_t *pData, uint16_t channel);
 // Note, no check for overflow since ADC is 12 bit's
 void ADCSetOffset(int16_t* pData, int16_t offset, uint16_t channel);
 
+// Find index at end of data matching value and gradient of curve.
+// @Return Index or channel if no matching index was found.
+int16_t sineRBegin(const int16_t* pData, uint16_t channel);
+
 #ifdef __cplusplus
 }
 #endif
