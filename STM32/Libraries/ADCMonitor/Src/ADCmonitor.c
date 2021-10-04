@@ -142,6 +142,34 @@ void ADCSetOffset(int16_t* pData, int16_t offset, uint16_t channel)
     }
 }
 
+int16_t sineRBegin(const int16_t* pData, uint16_t channel)
+{
+    // RMS (and other) should be done on full waves of sine.
+    // Procedure: Take first point, pData[channel] and find mathcing value
+    // and gradient from end.
+    const uint16_t firstPoint = pData[channel];
+    const uint32_t noOfChannels = ADCMonitorData.noOfChannels;
+    const uint32_t noOfSamples = ADCMonitorData.noOfSamples;
+    const bool raise = pData[noOfChannels + channel] > firstPoint;
+
+    uint32_t end = noOfChannels * (noOfSamples-2) + channel;
+    for (;end > noOfChannels; end -= noOfChannels)
+    {
+        const int16_t current = pData[end];
+        const int16_t prev = pData[end-noOfChannels];
+        const bool isRaise = current > prev;
+
+        if (isRaise != raise)
+            continue; // Wrong section of sine wave.
+
+        if (((raise && (firstPoint <= current && firstPoint > prev)) ||
+            (!raise && (firstPoint <= prev    && firstPoint > current))))
+        {
+            return end;
+        }
+    }
+    return channel; // Invalid sine curve.
+}
 
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 {
