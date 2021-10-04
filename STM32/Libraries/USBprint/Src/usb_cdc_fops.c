@@ -6,6 +6,8 @@
 #include "circular_buffer.h"
 #include <stdbool.h>
 
+#define CDC_INIT_TIME 10
+
 static int8_t CDC_Init_FS(void);
 static int8_t CDC_DeInit_FS(void);
 static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length);
@@ -37,12 +39,24 @@ static struct
         uint8_t buf[CIRCULAR_BUFFER_SIZE];      // Upper layer buffer for user application
         uint8_t irqBuf[CIRCULAR_BUFFER_SIZE];   // lower layer buffer for IRQ USB_CDC driver callback
     } tx, rx;
-    bool isComPortOpen;
-} usb_cdc_if = { {0}, {0}, false };
+    enum {
+    	closed,
+		preOpen,
+		open
+    } isComPortOpen;
+    unsigned long portOpenTime;
+} usb_cdc_if = { {0}, {0}, closed, 0};
 
 #ifdef USE_COMMON_USB_CDC
 bool isComPortOpen() {
-    return usb_cdc_if.isComPortOpen;
+	// The USB CDC needs to be initialised and open for some time before the COM port is opened properly
+	if (usb_cdc_if.isComPortOpen == open ||
+	   (HAL_GetTick() - usb_cdc_if.portOpenTime > CDC_INIT_TIME && usb_cdc_if.isComPortOpen == preOpen))
+	{
+		usb_cdc_if.isComPortOpen = open;
+		return true;
+	}
+	return false;
 }
 #endif
 
@@ -129,7 +143,15 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
     break;
 
     case CDC_SET_CONTROL_LINE_STATE:
-        usb_cdc_if.isComPortOpen = (((USBD_SetupReqTypedef *) pbuf)->wValue & 0x0001) != 0;
+    	if ((((USBD_SetupReqTypedef *) pbuf)->wValue & 0x0001) == 0)
+    	{
+    		usb_cdc_if.isComPortOpen = closed;
+    	}
+    	else
+    	{
+    		usb_cdc_if.isComPortOpen = preOpen;
+    		usb_cdc_if.portOpenTime = HAL_GetTick();
+    	}
     break;
 
     case CDC_SEND_BREAK:    break;
