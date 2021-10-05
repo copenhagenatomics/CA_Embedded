@@ -7,7 +7,6 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -142,33 +141,45 @@ void ADCSetOffset(int16_t* pData, int16_t offset, uint16_t channel)
     }
 }
 
-int16_t sineRBegin(const int16_t* pData, uint16_t channel)
+static uint32_t sinePeakIdx(const int16_t* pData, uint16_t channel, bool reverse)
 {
-    // RMS (and other) should be done on full waves of sine.
-    // Procedure: Take first point, pData[channel] and find mathcing value
-    // and gradient from end.
-    const uint16_t firstPoint = pData[channel];
-    const uint32_t noOfChannels = ADCMonitorData.noOfChannels;
-    const uint32_t noOfSamples = ADCMonitorData.noOfSamples;
-    const bool raise = pData[noOfChannels + channel] > firstPoint;
+    uint32_t begin = channel;
+    uint32_t end = channel + (ADCMonitorData.noOfSamples-1)*ADCMonitorData.noOfChannels;
 
-    uint32_t end = noOfChannels * (noOfSamples-2) + channel;
-    for (;end > noOfChannels; end -= noOfChannels)
+    // Sets initial search values
+    uint32_t idx   = (!reverse) ? begin : end - ADCMonitorData.noOfChannels;
+    bool direction = (!reverse) ? pData[idx] < pData[ADCMonitorData.noOfChannels + idx]
+                                : pData[idx - ADCMonitorData.noOfChannels] <  pData[idx];
+
+    while (idx >= begin && idx <= end && idx != ((!reverse) ? end : begin))
     {
-        const int16_t current = pData[end];
-        const int16_t prev = pData[end-noOfChannels];
-        const bool isRaise = current > prev;
+        int16_t next;
+        int16_t current;
 
-        if (isRaise != raise)
-            continue; // Wrong section of sine wave.
-
-        if (((raise && (firstPoint <= current && firstPoint > prev)) ||
-            (!raise && (firstPoint <= prev    && firstPoint > current))))
-        {
-            return end;
+        if (!reverse) {
+            next = pData[idx+ADCMonitorData.noOfChannels];
+            current = pData[idx];
+        } else {
+            next = pData[idx];
+            current = pData[idx - ADCMonitorData.noOfChannels];
         }
+
+        bool gradient = current < next;
+        if (direction != gradient)
+            return (idx-channel)/ADCMonitorData.noOfChannels;
+
+        idx += (!reverse) ? ADCMonitorData.noOfChannels : -ADCMonitorData.noOfChannels;
     }
-    return channel; // Invalid sine curve.
+
+    // Failed, sine curve to small/not found
+    uint32_t errIdx = (!reverse) ? begin : end;
+    return (errIdx - channel)/ADCMonitorData.noOfChannels;
+}
+
+SineWave sineWave(const int16_t* pData, uint16_t channel)
+{
+    SineWave result = { sinePeakIdx(pData, channel, false), sinePeakIdx(pData, channel, true) };
+    return result;
 }
 
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
