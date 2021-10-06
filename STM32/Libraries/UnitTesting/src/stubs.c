@@ -1,13 +1,16 @@
 #include <stdio.h>
+#include <string.h>
 #include "stm32f4xx_hal.h"
 #include <ADCMonitor.h>
+#include <CAProtocol.h>
 #include <math.h>
 #include <assert.h>
 
-// HW depended functions
-void HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length)
-{
-}
+// HW depended functions, stub these.
+void HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length) {}
+void HAL_Delay(uint32_t var) {}
+int USBnprintf(const char * format, ... ) {}
+void JumpToBootloader() {};
 
 static void generate4Sine(int16_t* pData, int length, int offset, int freq)
 {
@@ -19,6 +22,7 @@ static void generate4Sine(int16_t* pData, int length, int offset, int freq)
         pData[4*i+3] = (42 + i) & 0xFFFF;
     }
 }
+
 
 // Helper function to be used during debug.
 static void debugPData(const int16_t* pData, int length, int channel)
@@ -75,14 +79,57 @@ int testCMAverage()
     return 0;
 }
 
+static struct {
+    CACalibration cal[10];
+    int noOfCallibration;
+} calData;
+void CAClibrationCb(int noOfPorts, const CACalibration *catAr) {
+    calData.noOfCallibration = noOfPorts;
+    memcpy(calData.cal, catAr, sizeof(calData.cal));
+}
+int calCompare(int noOfPorts, const CACalibration* catAr)
+{
+    if (noOfPorts != calData.noOfCallibration)
+        return 1;
+    for (int i=0; i<noOfPorts; i++)
+    {
+        if (calData.cal[i].port  != catAr[i]. port ||
+            calData.cal[i].alpha != catAr[i].alpha ||
+            calData.cal[i].beta  != catAr[i]. beta)
+        { return 2; }
+    }
+
+    return 0; // All good
+}
+
+int testCAProtocol()
+{
+    CAProtocolCtx caProto = { 0 };
+    caProto.calibration = CAClibrationCb;
+    initCAProtocol(&caProto);
+
+    inputCAProtocol(&caProto, "CAL 3,0.05,1.56\n");
+    if (calCompare(1, (CACalibration[]) {{3, 0.05, 1.56}} )) return __LINE__;
+
+    inputCAProtocol(&caProto, "CAL 3,0.05,1.56 2,0.04,.36\n");
+    if (calCompare(2, (CACalibration[]) {{3, 0.05, 1.56},{2, 0.04, 0.36}} )) return __LINE__;
+
+    inputCAProtocol(&caProto, "CAL 3,0.05,1.56 2,344,36\n");
+    if (calCompare(2, (CACalibration[]) {{3, 0.05, 1.56},{2, 344, 36}} )) return __LINE__;
+    return 0; // All good.
+}
+
 int main(int argc, char *argv[])
 {
     int line = 0;
     if (line = testSine()) {
-        printf("\nTestSine failed at line %d\n", line);
+        printf("TestSine failed at line %d\n", line);
     }
     if (line = testCMAverage()) {
-        printf("\nTestSine failed at line %d\n", line);
+        printf("TestSine failed at line %d\n", line);
     }
-
+    if (line = testCAProtocol()) {
+        printf("testCAProtocol failed at line %d\n", line);
+    }
+    printf("All test performed\n");
 }
