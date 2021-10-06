@@ -36,6 +36,7 @@
 #include "inputValidation.h"
 #include "ADCMonitor.h"
 #include "systemInfo.h"
+#include "USBprint.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

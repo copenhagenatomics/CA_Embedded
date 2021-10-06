@@ -5,8 +5,13 @@
  *      Author: alema
  */
 
-
+#include <string.h>
+#include "stm32f4xx_hal.h"
+#include "jumpToBootloader.h"
+#include "USBprint.h"
 #include "handleGenericMessages.h"
+
+__weak void printHeader() {};
 
 void handleGenericMessages(char * inputBuffer)
 {

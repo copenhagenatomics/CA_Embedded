@@ -30,6 +30,7 @@
 #include "handleGenericMessages.h"
 #include "usb_cdc_fops.h"
 #include "si7051.h"
+#include "USBprint.h"
 
 /* USER CODE END Includes */
 

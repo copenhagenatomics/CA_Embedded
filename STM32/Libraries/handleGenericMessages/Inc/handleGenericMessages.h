@@ -8,16 +8,8 @@
 #ifndef INC_HANDLEGENERICMESSAGES_H_
 #define INC_HANDLEGENERICMESSAGES_H_
 
-
+void printHeader(); // declared weak in handleGenericMessages.c, overwrite if needed.
+void handleGenericMessages(char * inputBuffer);
 
 #endif /* INC_HANDLEGENERICMESSAGES_H_ */
 
-#include "stm32f4xx_hal.h"
-#include "string.h"
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
-#include "jumpToBootloader.h"
-#include "USBprint.h"
-
-extern void printHeader();
-void handleGenericMessages(char * inputBuffer);
