@@ -4,16 +4,14 @@
 #include <math.h>
 #include <assert.h>
 
-#define NO_SAMPLES 120
-
 // HW depended functions
 void HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length)
 {
 }
 
-static void generate4Sine(int16_t* pData, int offset, int freq)
+static void generate4Sine(int16_t* pData, int length, int offset, int freq)
 {
-    for (int i = 0; i<NO_SAMPLES; i++)
+    for (int i = 0; i<length; i++)
     {
         pData[4*i+0] = 2041 + (2041.0 * sin( (i*freq + offset      )/180.0 * M_PI));
         pData[4*i+1] = 2041 + (2041.0 * sin( (i*freq + offset + 120)/180.0 * M_PI));
@@ -23,9 +21,9 @@ static void generate4Sine(int16_t* pData, int offset, int freq)
 }
 
 // Helper function to be used during debug.
-static void debugSine(const int16_t* pData, int channel)
+static void debugPData(const int16_t* pData, int length, int channel)
 {
-    for (int i = 0; i<NO_SAMPLES; i++)
+    for (int i = 0; i<length; i++)
     {
         if ((i) % 10 == 0)
             printf("%4d: ", i);
@@ -36,14 +34,15 @@ static void debugSine(const int16_t* pData, int channel)
     }
 }
 
-const int testSine()
+int testSine()
 {
     // Create an array used for buffer data.
-    int16_t pData[NO_SAMPLES*4*2];
-    generate4Sine(pData, 0, 10);
+    const int noOfSamples = 120;
+    int16_t pData[noOfSamples*4*2];
+    generate4Sine(pData, noOfSamples, 0, 10);
 
     ADC_HandleTypeDef dommy = { { 4 } };
-    ADCMonitorInit(&dommy, pData, NO_SAMPLES*4*2);
+    ADCMonitorInit(&dommy, pData, noOfSamples*4*2);
 
     SineWave s = sineWave(pData, 0);
 
@@ -58,10 +57,32 @@ const int testSine()
     return 0;
 }
 
+int testCMAverage()
+{
+    const int noOfSamples = 10;
+    int16_t pData[noOfSamples*4*2];
+
+    for (int i = 0; i<noOfSamples; i++)
+    {
+        pData[4*i] = (i % 10) * 20;
+    }
+    ADC_HandleTypeDef dommy = { { 4 } };
+    ADCMonitorInit(&dommy, pData, noOfSamples*4*2);
+
+    if (cmaAvarage(pData, 0, 85, 5) != 112)
+        return __LINE__;
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     int line = 0;
     if (line = testSine()) {
-        printf("TestSine failed at line %d", line);
+        printf("\nTestSine failed at line %d\n", line);
     }
+    if (line = testCMAverage()) {
+        printf("\nTestSine failed at line %d\n", line);
+    }
+
 }

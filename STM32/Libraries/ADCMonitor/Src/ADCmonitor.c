@@ -38,6 +38,18 @@ void ADCMonitorInit(ADC_HandleTypeDef* hadc, int16_t *pData, uint32_t length)
     HAL_ADC_Start_DMA(hadc, (uint32_t *) pData, length);
 }
 
+int16_t cmaAvarage(int16_t *pData, uint16_t channel, int16_t cma, int k)
+{
+    for (uint32_t sampleId = 0; sampleId < ADCMonitorData.noOfSamples; sampleId++)
+    {
+        // cumulative moving average
+        int16_t* ptr = &pData[ADCMonitorData.noOfChannels * sampleId + channel];
+        cma = cma + (*ptr - cma)/(k+1);
+        *ptr = cma; // write in buffer
+    }
+    return cma;
+}
+
 void ADCMonitorLoop(ADCCallBack callback)
 {
     static int lastBuffer = NotAvailable;

@@ -25,6 +25,12 @@ void ADCMonitorInit(ADC_HandleTypeDef* hadc, int16_t *pData, uint32_t Length);
 // ADCCallBack function. If new buffer, callback is called, else nothing is done.
 void ADCMonitorLoop(ADCCallBack cb);
 
+// perform a Cumulative moving average on data in buffer.
+// Note, data is altereed in buffer.
+// @param preveous calculated cma
+// @param k is the length of cumulative buffer.
+int16_t cmaAvarage(int16_t *pData, uint16_t channel, int16_t cma, int k);
+
 // Standard helper function where noOfChannles/NoOfSamples is
 // used from ADCMonitorInit. Can be used for skeleton locally.
 double ADCMean(const int16_t *pData, uint16_t channel);
