@@ -8,8 +8,11 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "-O0 -g3")
 set(CMAKE_C_FLAGS "-O0 -g3")
 
-include_directories(../ADCMonitor/Inc Inc)
+include_directories(../ADCMonitor/Inc
+                    ../Util/Inc
+                    ../USBprint/Inc
+                    Inc )
 
 enable_testing()
-add_executable(CA_UnitTesting  ../ADCMonitor/Src/ADCmonitor.c src/stubs.c)
+add_executable(CA_UnitTesting ../ADCMonitor/Src/ADCmonitor.c ../Util/Src/CAProtocol.c src/stubs.c)
 target_link_libraries(CA_UnitTesting PRIVATE m)
