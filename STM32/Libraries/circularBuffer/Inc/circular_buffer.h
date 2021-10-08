@@ -3,8 +3,6 @@
 
 #include <stdbool.h>
 
-#define BUFFER_SIZE 64
-
 /// Opaque circular buffer structure
 typedef struct circular_buf_t circular_buf_t;
 
@@ -37,6 +35,7 @@ void circular_buf_remove_input(cbuf_handle_t cbuf);
 
 size_t circular_buf_get_noinput(cbuf_handle_t cbuf);
 
+size_t circular_readline(cbuf_handle_t cbuf, uint8_t *tmpBuf, size_t maxLength);
 void circular_read_command(cbuf_handle_t cbuf, uint8_t *tmpBuf);
 
 /// Put Version 2 rejects new data if the buffer is full
