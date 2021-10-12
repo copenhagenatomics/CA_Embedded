@@ -8,6 +8,7 @@
 #ifndef INC_CAPROTOCOL_H_
 #define INC_CAPROTOCOL_H_
 
+#include <stdbool.h>
 typedef struct
 {
     int port;
@@ -24,8 +25,9 @@ typedef struct
     void (*printHeader)();
     void (*jumpToBootLoader)();
 
-    // Calibration request. overwrite if calibration is supported by module.
+    // Calibration request.
     void (*calibration)(int noOfCalibrations, const CACalibration* calibrations);
+    void (*calibrationRW)(bool write);     // Read or write calibration values to flash
 
     struct CAProtocolData *data; // Private data for CAProtocol.
 } CAProtocolCtx;

@@ -25,6 +25,12 @@ static void calibration(CAProtocolCtx* ctx, const char* input)
         ctx->undefined(input); // arguments.
         return;
     }
+    if (idx[1] == 'w' || idx[1] == 'r')
+    {
+        if (ctx->calibrationRW)
+            ctx->calibrationRW(idx[1] == 'w');
+        return;
+    }
 
     // Next follow a port,alpha,beta entry
     while (idx != NULL && noOfCalibrations < MAX_NO_CALIBRATION)
