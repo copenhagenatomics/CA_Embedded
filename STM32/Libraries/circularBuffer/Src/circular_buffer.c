@@ -65,34 +65,42 @@ size_t circular_get_number_input(cbuf_handle_t cbuf){
 	return cbuf->noInputs;
 }
 
-void circular_read_command(cbuf_handle_t cbuf, uint8_t *tmpBuf){
+size_t circular_readline(cbuf_handle_t cbuf, uint8_t *tmpBuf, size_t maxLength)
+{
+    // If no inputs are available
+    if (circular_get_number_input(cbuf)==0){
+        tmpBuf[0]='\0';
+        return 0;
+    }
 
-	// If no inputs are available
-	if (circular_get_number_input(cbuf)==0){
-		tmpBuf[0]='\0';
-		return;
-	}
-
-	// Read command
-	uint16_t i = 0;
-	while(!circular_buf_empty(cbuf)){
-		uint8_t data;
-		circular_buf_get(cbuf, &data);
-		// Checking for '\r' is there for debugging purposes which is sent by putty and minicom.
-		// In production only '\n' is sent. Therefore, there is no check for '\r\n' case.
-		if (data=='\n'||data=='\r'){
-			tmpBuf[i] = '\0';
-			circular_buf_remove_input(cbuf);
-			break;
-		}
-		tmpBuf[i] = data;
-		i++;
-	}
-	return;
+    // Read command
+    size_t count = 0;
+    while( count<maxLength && !circular_buf_empty(cbuf) )
+    {
+        uint8_t data;
+        circular_buf_get(cbuf, &data);
+        // Checking for '\r' is there for debugging purposes which is sent by putty and minicom.
+        // In production only '\n' is sent. Therefore, there is no check for '\r\n' case.
+        if (data=='\n'||data=='\r')
+        {
+            tmpBuf[count] = '\0';
+            circular_buf_remove_input(cbuf);
+            if (count == 0)
+                continue; // Empty or invalid line, possible trailing \n after \r
+            else
+                break; // End of Line detected.
+        }
+        tmpBuf[count] = data;
+        count++;
+    }
+    return count;
 }
 
-
-//#pragma mark - APIs -
+#include "usb_cdc_fops.h" // TODO: remove this include, user should use
+void circular_read_command(cbuf_handle_t cbuf, uint8_t *tmpBuf)
+{
+    circular_readline(cbuf, tmpBuf, CIRCULAR_BUFFER_SIZE);
+}
 
 cbuf_handle_t circular_buf_init(uint8_t* buffer, size_t size)
 {
