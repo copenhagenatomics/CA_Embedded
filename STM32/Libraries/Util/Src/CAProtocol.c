@@ -54,6 +54,20 @@ static void calibration(CAProtocolCtx* ctx, const char* input)
         ctx->undefined(input);
 }
 
+void logging(CAProtocolCtx* ctx, const char *input)
+{
+    char* idx = index(input, ' ');
+
+    if (!idx) {
+        ctx->undefined(input); // arguments.
+        return;
+    }
+    if (idx[1] == 'b' || idx[1] == 's')
+    {
+        ctx->logging(idx[1] == 'b');
+    }
+}
+
 void inputCAProtocol(CAProtocolCtx* ctx, const char *input)
 {
     if (input[0] == '\0') {
@@ -69,10 +83,15 @@ void inputCAProtocol(CAProtocolCtx* ctx, const char *input)
         if (ctx->jumpToBootLoader)
             ctx->jumpToBootLoader();
     }
-    else if (strcmp(input, "CAL"))
+    else if (strncmp(input, "CAL", 3) == 0)
     {
         if (ctx->calibration)
             calibration(ctx, input);
+    }
+    else if (strncmp(input, "LOG", 3) == 0)
+    {
+        if (ctx->logging)
+            logging(ctx, input);
     }
     else if (ctx->undefined)
     {

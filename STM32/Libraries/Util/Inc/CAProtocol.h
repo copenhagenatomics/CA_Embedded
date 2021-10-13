@@ -29,6 +29,9 @@ typedef struct
     void (*calibration)(int noOfCalibrations, const CACalibration* calibrations);
     void (*calibrationRW)(bool write);     // Read or write calibration values to flash
 
+    // Data logger request
+    void (*logging)(bool start);
+
     struct CAProtocolData *data; // Private data for CAProtocol.
 } CAProtocolCtx;
 
