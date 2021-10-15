@@ -57,14 +57,19 @@ static void calibration(CAProtocolCtx* ctx, const char* input)
 void logging(CAProtocolCtx* ctx, const char *input)
 {
     char* idx = index(input, ' ');
+    int port;
 
     if (!idx) {
         ctx->undefined(input); // arguments.
         return;
     }
-    if (idx[1] == 'b' || idx[1] == 's')
-    {
-        ctx->logging(idx[1] == 'b');
+
+    idx++;
+    if (sscanf(idx, "p%d", &port) == 1) {
+        ctx->logging(port);
+    }
+    else {
+        ctx->undefined(input);
     }
 }
 
