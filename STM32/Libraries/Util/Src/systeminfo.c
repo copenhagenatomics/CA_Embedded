@@ -23,8 +23,8 @@ const char* systemInfo(const char* productType, const char* mcuFamily, const cha
     len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s\r\n", mcuFamily);
     len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s\r\n", GIT_VERSION);
     len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s\r\n", GIT_DATE);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Git SHA %s", GIT_SHA);
-    len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %s\r\n", pcbVersion);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Git SHA %s\r\n", GIT_SHA);
+    len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %s", pcbVersion);
 
     return buf;
 }
