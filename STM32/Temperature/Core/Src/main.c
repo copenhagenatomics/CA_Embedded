@@ -201,7 +201,9 @@ void readTemperatures(){
 
 	// On board temperature
 	HAL_Delay(1);
-	temperatures[TEMP_VALUES-1]=si7051Temp(&hi2c1);
+    if (si7051Temp(&hi2c1, &temperatures[TEMP_VALUES-1]) != HAL_OK) {
+        temperatures[TEMP_VALUES-1] = 10000;
+    }
 }
 
 void printTemperatures(void)
