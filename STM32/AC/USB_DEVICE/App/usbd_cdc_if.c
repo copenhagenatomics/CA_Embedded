@@ -98,6 +98,7 @@ USBD_CDC_LineCodingTypeDef LineCoding = {
 uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 
 /** Data to send over USB CDC are stored in this buffer   */
+uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 /* USER CODE END PRIVATE_VARIABLES */
@@ -156,7 +157,6 @@ static int8_t CDC_Init_FS(void)
 {
   /* USER CODE BEGIN 3 */
   /* USER CODE END 3 */
-    return (USBD_OK);
 }
 
 /**
@@ -181,7 +181,6 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
   /* USER CODE BEGIN 5 */
   /* USER CODE END 5 */
-  return (USBD_OK);
 }
 
 /**
@@ -203,7 +202,6 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
   /* USER CODE END 6 */
-  return (USBD_OK);
 }
 
 /**
