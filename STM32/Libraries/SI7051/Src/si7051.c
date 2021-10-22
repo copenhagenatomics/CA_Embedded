@@ -10,7 +10,7 @@
 #define SI7051_I2C_ADDR          0x40
 #define SI7051_TEMPERATUR_OFFSET 0xF3
 
-float si7051Temp(I2C_HandleTypeDef *hi2c1)
+HAL_StatusTypeDef si7051Temp(I2C_HandleTypeDef *hi2c1, float* siValue)
 {
     uint8_t readSensorADDR = SI7051_TEMPERATUR_OFFSET;
 
@@ -25,7 +25,7 @@ float si7051Temp(I2C_HandleTypeDef *hi2c1)
         if (HAL_OK == ret)
         {
             uint16_t si7051_temp = addata[0] << 8 | addata[1];
-            return (175.72*si7051_temp) / 65536 - 46.85;
+            *siValue = (175.72*si7051_temp) / 65536 - 46.85;
         }
     }
 

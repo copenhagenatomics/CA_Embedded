@@ -146,7 +146,10 @@ void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
     if (isFirstWrite)
         clearLineAndBuffer();
 
-    const double temp = si7051Temp(&hi2c1);
+    double temp;
+    if (si7051Temp(&hi2c1, &temp) != HAL_OK)
+        temp = 10000;
+
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1), meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
             temp, ADCrms(pBuffer, 5), ADCmax(pBuffer, 5));
