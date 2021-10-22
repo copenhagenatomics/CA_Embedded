@@ -244,7 +244,6 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_ADC1_Init();
   MX_TIM2_Init();
-
   /* USER CODE BEGIN 2 */
     ADCMonitorInit(&hadc1, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
 	HAL_TIM_Base_Start_IT(&htim2);
@@ -255,7 +254,7 @@ int main(void)
 	while (1) {
     /* USER CODE END WHILE */
 
-        /* USER CODE BEGIN 3 */
+    /* USER CODE BEGIN 3 */
         handleUserInputs();
         ADCMonitorLoop(printCurrentArray);
 
@@ -366,7 +365,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_144CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -399,7 +398,6 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_8;
   sConfig.Rank = 5;
-  sConfig.SamplingTime = ADC_SAMPLETIME_84CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();

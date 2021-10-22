@@ -474,7 +474,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_144CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -731,6 +731,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(Btn_1_GPIO_Port, &GPIO_InitStruct);
 
 }
+
+/* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
 
