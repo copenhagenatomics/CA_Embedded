@@ -11,7 +11,8 @@
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 
-void JumpToBootloader(void) {
+void JumpToBootloader(void)
+{
     void (*SysMemBootJump)(void);
 
     /**
@@ -22,11 +23,13 @@ void JumpToBootloader(void) {
      */
     volatile uint32_t addr = 0x1FFF0000;
 
+
     /**
      * Step: Disable RCC, set it to default (after reset) settings
      *       Internal clock, no PLL, etc.
      */
 #if defined(USE_HAL_DRIVER)
+    HAL_SuspendTick();
     HAL_RCC_DeInit();
     HAL_DeInit(); // add by ctien
 #endif /* defined(USE_HAL_DRIVER) */
@@ -42,9 +45,14 @@ void JumpToBootloader(void) {
     SysTick->VAL = 0;
 
     /**
-     * Step: Disable all interrupts
+     * Step: Disable/Clear all interrupts and registers to default state.
      */
-//    __disable_irq(); // changed by ctien
+    for (int i=0;i<5;i++)
+    {
+        NVIC->ICER[i]=0xFFFFFFFF;
+        NVIC->ICPR[i]=0xFFFFFFFF;
+    }
+
 
     /**
      * Step: Remap system memory to address 0x0000 0000 in address space
