@@ -21,5 +21,5 @@ struct actuationInfo{
 };
 
 int getNumberDigits(int inputNumber);
-struct actuationInfo parseAndValidateInput(char * inputBuffer);
+struct actuationInfo parseAndValidateInput(const char * inputBuffer);
 bool isInputInt(char * inputBuffer, int startIdx);

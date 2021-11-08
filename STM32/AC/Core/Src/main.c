@@ -25,12 +25,13 @@
 #include <stdbool.h>
 #include <float.h>
 #include "usb_cdc_fops.h"
-#include "handleGenericMessages.h"
 #include "inputValidation.h"
 #include "pinActuation.h"
 #include "ADCMonitor.h"
 #include "systemInfo.h"
 #include "USBprint.h"
+#include "CAProtocol.h"
+#include "CAProtocolStm.h"
 
 /* USER CODE END Includes */
 
@@ -74,11 +75,11 @@ TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN PV */
 
 /* ADC handling */
-int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
+static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
 /*ADC-to-current calibration values*/
-float current_scalar = 0.0125;
-float current_bias = -0.1187;//-0.058;
+static float current_scalar = 0.0125;
+static float current_bias = -0.1187;//-0.058;
 
 /*ADC-to-temperature calibration values*/
 float temp_scalar = 0.0806;
@@ -90,8 +91,19 @@ int tsButton = 100;
 float current[PORTS] = { 0 };
 float boardTemperature = 0;
 
-char inputBuffer[CIRCULAR_BUFFER_SIZE];
+static void printHeader()
+{
+    USBnprintf(systemInfo(ProductType, McuFamily, PCBVersion));
+}
+static void handleUndefined(const char* input);
 
+char inputBuffer[CIRCULAR_BUFFER_SIZE];
+static CAProtocolCtx caProto = {
+        .undefined = handleUndefined, // special handling of inputs.
+        .printHeader = printHeader,
+        .jumpToBootLoader = HALJumpToBootloader,
+        .calibration = NULL // TODO: change method for calibration?
+};
 
 bool isFirstWrite = true;
 
@@ -109,11 +121,6 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-void printHeader()
-{
-    USBnprintf(systemInfo(ProductType, McuFamily, PCBVersion));
-}
 
 double ADCtoCurrent(double adc_val) {
 	return current_scalar * adc_val + current_bias;
@@ -180,27 +187,25 @@ void actuatePins(struct actuationInfo actuationInfo){
 	} else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle != 100){
 		setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
 	} else {
-		handleGenericMessages(inputBuffer); // should never reach this, but is implemented for potentially unknown errors.
+	    HALundefined(inputBuffer); // should never reach this, but is implemented for potentially unknown errors.
 	}
 }
 
-void handleUserInputs() {
 
-	// Read user input
+static void handleUndefined(const char* input)
+{
+    struct actuationInfo actuationInfo = parseAndValidateInput(input);
+
+    if (actuationInfo.isInputValid)
+        actuatePins(actuationInfo);
+    else
+        HALundefined(input);
+}
+
+void handleUserInputs()
+{
     usb_cdc_rx((uint8_t *)inputBuffer);
-
-	// Check if there is new input
-	if (inputBuffer[0] == '\0') {
-		return;
-	}
-
-	struct actuationInfo actuationInfo = parseAndValidateInput(inputBuffer);
-
-	if (!actuationInfo.isInputValid){
-		handleGenericMessages(inputBuffer);
-		return;
-	}
-	actuatePins(actuationInfo);
+    inputCAProtocol(&caProto, inputBuffer);
 }
 
 void clearLineAndBuffer(){
@@ -245,8 +250,9 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+
     ADCMonitorInit(&hadc1, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
-	HAL_TIM_Base_Start_IT(&htim2);
+    HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
