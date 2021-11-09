@@ -105,13 +105,11 @@
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Libraries/USBprint/Inc}&quot;"/>
                                     									
-                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Libraries/handleGenericMessages/Inc}&quot;"/>
-                                    									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Libraries/jumpToBootloader/Inc}&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/InputValidation/Inc}&quot;"/>
                                     									
-                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/PinActuation/Inc}&quot;"/>
+				    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/HeatCtrl/Inc}&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/AC/Libraries/ADCMonitor/Inc}&quot;"/>
                                     									
@@ -177,11 +175,9 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/circularBuffer"/>
                         						
-                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="PinActuation"/>
+                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="HeatCtrl"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/ADCMonitor"/>
-                        						
-                        <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/handleGenericMessages"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
                         						
@@ -349,7 +345,7 @@
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="InputValidation"/>
                         						
-                        <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="PinActuation"/>
+			<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="HeatCtrl"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
                         						

@@ -26,7 +26,7 @@
 #include <float.h>
 #include "usb_cdc_fops.h"
 #include "inputValidation.h"
-#include "pinActuation.h"
+#include "HeatCtrl.h"
 #include "ADCMonitor.h"
 #include "systemInfo.h"
 #include "USBprint.h"
@@ -74,22 +74,14 @@ TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
 
+/* GPIO settings. */
+static struct {
+    StmGpio heater;
+    StmGpio button;
+} heaterPorts[4];
+
 /* ADC handling */
 static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
-
-/*ADC-to-current calibration values*/
-static float current_scalar = 0.0125;
-static float current_bias = -0.1187;//-0.058;
-
-/*ADC-to-temperature calibration values*/
-float temp_scalar = 0.0806;
-
-/* General */
-unsigned long lastPrintTime = 0;
-int tsButton = 100;
-
-float current[PORTS] = { 0 };
-float boardTemperature = 0;
 
 static void printHeader()
 {
@@ -121,13 +113,36 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define NO_PORTS 4
+static void GpioInit()
+{
+    static GPIO_TypeDef* const buttonsBlk[] = { GPIOB, GPIOB, GPIOB, btn4_GPIO_Port };
+    static const uint16_t buttonsPin[]      = { 0x0020, 0x0010, 0x0008, 0x8000 };
 
-double ADCtoCurrent(double adc_val) {
-	return current_scalar * adc_val + current_bias;
+    static GPIO_TypeDef* const pinsBlk[] = { ctrl1_GPIO_Port, ctrl2_GPIO_Port, ctrl3_GPIO_Port, ctrl4_GPIO_Port };
+    static const uint16_t pins[] = { 0x0002, 0x0008, 0x0020, 0x0080 };
+
+    for (int i=0; i<NO_PORTS; i++)
+    {
+        stmGpioInit(&heaterPorts[i].button, buttonsBlk[i], buttonsPin[i]);
+        stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i]);
+        heatCtrlAdd(&heaterPorts[i].heater, &heaterPorts[i].button);
+    }
+}
+double ADCtoCurrent(double adc_val)
+{
+    // TODO: change method for calibration?
+    static float current_scalar = 0.0125;
+    static float current_bias = -0.1187;//-0.058;
+
+    return current_scalar * adc_val + current_bias;
 }
 
 double ADCtoTemperature(double adc_val) {
-	return temp_scalar * adc_val;
+    // TODO: change method for calibration?
+    static float temp_scalar = 0.0806;
+
+    return temp_scalar * adc_val;
 }
 
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
@@ -253,6 +268,7 @@ int main(void)
 
     ADCMonitorInit(&hadc1, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
     HAL_TIM_Base_Start_IT(&htim2);
+    GpioInit();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -277,12 +293,7 @@ int main(void)
 		}
 
 		// Toggle pins if needed when in pwm mode
-		actuatePWM();
-
-		// Turn off pins if they have run for requested time
-		autoOff();
-
-		checkButtonPress();
+		heaterLoop();
 	}
   /* USER CODE END 3 */
 }
