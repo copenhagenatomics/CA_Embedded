@@ -35,7 +35,7 @@ int getNumberDigits(int inputNumber){
 }
 
 
-bool isInputInt(char * inputBuffer, int startIdx, int endIdx) {
+bool isInputInt(const char * inputBuffer, int startIdx, int endIdx) {
 	int idx = startIdx;
 	while (idx <= endIdx) {
 		if (!isdigit((int) inputBuffer[idx])) {
@@ -50,7 +50,7 @@ bool isInputInt(char * inputBuffer, int startIdx, int endIdx) {
 }
 
 
-struct actuationInfo parseAndValidateInput(char * inputBuffer){
+struct actuationInfo parseAndValidateInput(const char * inputBuffer){
 	/*
 	 * Valid commands are:
 			all on - turn all ports on indefinitely
