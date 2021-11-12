@@ -1,3 +1,4 @@
+#include <time32.h>
 #include "HeatCtrl.h"
 
 #define MAX_DURATION ((uint32_t) -1)
@@ -38,18 +39,6 @@ HeatCtrl* heatCtrlAdd(StmGpio *heater, StmGpio * button)
     return ctx;
 }
 
-// Finds the time difference head-tail and assume head >= tail.
-// If head < tail it is assumed that head is overflow.
-static uint32_t tDiff(uint32_t head, uint32_t tail)
-{
-    if (head >= tail)
-        return head - tail;
-
-    // Overflow of head:
-    // (head + 2^32) - tail = (2^32 - tail) + head = (see below)
-    return (((uint32_t) -1) - tail) + 1 + head;
-}
-
 void heaterLoop()
 {
     uint32_t now = HAL_GetTick();
@@ -63,7 +52,7 @@ void heaterLoop()
             continue;
         }
 
-        uint32_t tdiff = tDiff(now, pCtrl->periodBegin);
+        uint32_t tdiff = tdiff_u32(now, pCtrl->periodBegin);
         if (tdiff > pCtrl->pwmDuration)
         {
             // Turn of heater since duration is done.
