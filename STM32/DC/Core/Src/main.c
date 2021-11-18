@@ -146,7 +146,7 @@ void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
     if (isFirstWrite)
         clearLineAndBuffer();
 
-    double temp;
+    float temp;
     if (si7051Temp(&hi2c1, &temp) != HAL_OK)
         temp = 10000;
 
