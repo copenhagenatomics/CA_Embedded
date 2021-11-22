@@ -38,6 +38,6 @@ void readFromFlash(uint32_t indx, uint32_t size, uint8_t *dataToBeRead)
 {
     for(uint32_t i=0; i<size; i++)
     {
-        *((uint8_t *)dataToBeRead + i) = *( (uint8_t *)(FLASH_SECTOR+indx+i) );
+        *(dataToBeRead + i) = *( (uint8_t *)(FLASH_ADDR+indx+i) );
     }
 }
