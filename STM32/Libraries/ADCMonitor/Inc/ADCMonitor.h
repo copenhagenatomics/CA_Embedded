@@ -51,7 +51,7 @@ typedef struct SineWave {
     uint32_t begin;
     uint32_t end;
 } SineWave;
-SineWave sineWave(const int16_t* pData, uint16_t channel);
+SineWave sineWave(const int16_t* pData, uint32_t noOfChannels, uint32_t noOfSamples, uint16_t channel);
 
 #ifdef __cplusplus
 }
