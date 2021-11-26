@@ -97,8 +97,6 @@ static CAProtocolCtx caProto = {
         .calibration = NULL // TODO: change method for calibration?
 };
 
-bool isFirstWrite = true;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -179,7 +177,8 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
             ADCtoTemperature(ADCMean(pData, 0)));
 }
 
-void actuatePins(struct actuationInfo actuationInfo){
+void actuatePins(struct actuationInfo actuationInfo)
+{
 	// all off (pin == -1 means all pins)
 	if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle==0){
 		allOff();
@@ -227,7 +226,6 @@ void clearLineAndBuffer(){
 	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
 	USBnprintf("reconnected");
 	usb_cdc_rx_flush();
-	isFirstWrite=false;
 }
 
 /* USER CODE END 0 */
@@ -265,6 +263,7 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+    bool isFirstWrite = true;
 
     ADCMonitorInit(&hadc1, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
     HAL_TIM_Base_Start_IT(&htim2);
@@ -283,8 +282,10 @@ int main(void)
 		if (isComPortOpen())
 		{
 			// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-			if (isFirstWrite){
+			if (isFirstWrite)
+			{
 				clearLineAndBuffer();
+				isFirstWrite=false;
 			}
 		}
 		else
