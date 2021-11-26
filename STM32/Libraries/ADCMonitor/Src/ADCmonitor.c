@@ -153,15 +153,15 @@ void ADCSetOffset(int16_t* pData, int16_t offset, uint16_t channel)
     }
 }
 
-static uint32_t sinePeakIdx(const int16_t* pData, uint16_t channel, bool reverse)
+static uint32_t sinePeakIdx(const int16_t* pData, uint32_t noOfChannels, uint32_t noOfSamples, uint16_t channel, bool reverse)
 {
     uint32_t begin = channel;
-    uint32_t end = channel + (ADCMonitorData.noOfSamples-1)*ADCMonitorData.noOfChannels;
+    uint32_t end = channel + (noOfSamples-1)* noOfChannels;
 
     // Sets initial search values
-    uint32_t idx   = (!reverse) ? begin : end - ADCMonitorData.noOfChannels;
-    bool direction = (!reverse) ? pData[idx] < pData[ADCMonitorData.noOfChannels + idx]
-                                : pData[idx - ADCMonitorData.noOfChannels] <  pData[idx];
+    uint32_t idx   = (!reverse) ? begin : end - noOfChannels;
+    bool direction = (!reverse) ? pData[idx] < pData[noOfChannels + idx]
+                                : pData[idx - noOfChannels] <  pData[idx];
 
     while (idx >= begin && idx <= end && idx != ((!reverse) ? end : begin))
     {
@@ -169,28 +169,29 @@ static uint32_t sinePeakIdx(const int16_t* pData, uint16_t channel, bool reverse
         int16_t current;
 
         if (!reverse) {
-            next = pData[idx+ADCMonitorData.noOfChannels];
+            next = pData[idx+noOfChannels];
             current = pData[idx];
         } else {
             next = pData[idx];
-            current = pData[idx - ADCMonitorData.noOfChannels];
+            current = pData[idx - noOfChannels];
         }
 
         bool gradient = current < next;
         if (direction != gradient)
-            return (idx-channel)/ADCMonitorData.noOfChannels;
+            return (idx-channel)/noOfChannels;
 
-        idx += (!reverse) ? ADCMonitorData.noOfChannels : -ADCMonitorData.noOfChannels;
+        idx += (!reverse) ? noOfChannels : -noOfChannels;
     }
 
     // Failed, sine curve to small/not found
     uint32_t errIdx = (!reverse) ? begin : end;
-    return (errIdx - channel)/ADCMonitorData.noOfChannels;
+    return (errIdx - channel)/noOfChannels;
 }
 
-SineWave sineWave(const int16_t* pData, uint16_t channel)
+SineWave sineWave(const int16_t* pData, uint32_t noOfChannels, uint32_t noOfSamples, uint16_t channel)
 {
-    SineWave result = { sinePeakIdx(pData, channel, false), sinePeakIdx(pData, channel, true) };
+    SineWave result = { sinePeakIdx(pData, noOfChannels, noOfSamples, channel, false),
+                        sinePeakIdx(pData, noOfChannels, noOfSamples, channel, true ) };
     return result;
 }
 
