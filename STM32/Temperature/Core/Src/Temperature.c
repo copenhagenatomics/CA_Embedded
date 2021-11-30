@@ -5,8 +5,9 @@
 
 #include "Temperature.h"
 #include "systemInfo.h"
-#include "handleGenericMessages.h"
 #include "usb_cdc_fops.h"
+#include <CAProtocol.h>
+#include <CAProtocolStm.h>
 #include "si7051.h"
 #include "USBprint.h"
 #include "max31855.h"
@@ -20,11 +21,20 @@ char pcbVersion[] = "V4.3";
 //Board Specific Defines
 #define TEMP_VALUES 11
 
-//Port number
-#define PORT_NUMBER 11
+// Forward declare static functions.
+static void printHeader(); // Needed for CaProtocol callback.
 
 // Local variables
-static char inputBuffer[CIRCULAR_BUFFER_SIZE];
+static CAProtocolCtx caProto =
+{
+        .undefined = HALundefined,
+        .printHeader = printHeader,
+        .jumpToBootLoader = HALJumpToBootloader,
+        .calibration = NULL,
+        .calibrationRW = NULL,
+        .logging = NULL
+};
+
 static float temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 static float junction_temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 
@@ -39,20 +49,16 @@ static const uint16_t pins_temp[TEMP_VALUES-1] = { SEL0_Pin, SEL1_Pin, SEL2_Pin,
                                                    SEL6_Pin, SEL7_Pin, SEL8_Pin,
                                                    SEL9_Pin};
 
-void printHeader()
+static void printHeader()
 {
     USBnprintf(systemInfo(productType, mcuFamily, pcbVersion));
 }
 
-static void handleInput()
+static void handleUserInputs()
 {
-    usb_cdc_rx((uint8_t *) inputBuffer);
-
-    // Check if there is new input
-    if (inputBuffer[0]=='\0')
-        return;
-
-    handleGenericMessages(inputBuffer); //handles serial, jumpToBootloader (DMA), misreads.
+    char inputBuffer[CIRCULAR_BUFFER_SIZE];
+    usb_cdc_rx((uint8_t*) inputBuffer);
+    inputCAProtocol(&caProto, inputBuffer);
 }
 
 // Set all SPI pins high to be enable for communication
@@ -97,6 +103,8 @@ static SPI_HandleTypeDef* hspi = NULL;
 static I2C_HandleTypeDef* hi2c = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_, I2C_HandleTypeDef* hi2c_)
 {
+    initCAProtocol(&caProto);
+
     hspi = hspi_;
     hi2c = hi2c_;
     GPIO_INIT();
@@ -108,8 +116,9 @@ void LoopTemperature()
     static const uint32_t tsUpload = 100;
     static bool isFirstWrite = true;
 
+    handleUserInputs(); // always allow DFU upload.
     if (hspi == NULL || hi2c == NULL)
-        handleInput(); // always allow DFU upload.
+        return;
 
     // Upload data every "tsUpload" ms.
     if (tdiff_u32(HAL_GetTick(),timeStamp) > tsUpload)
@@ -126,8 +135,6 @@ void LoopTemperature()
             printTemperatures();
         }
     }
-
-    handleInput();
 
     if (!isComPortOpen())
     {

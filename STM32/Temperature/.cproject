@@ -105,8 +105,6 @@
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/Temperature/Libraries/circularBuffer/Inc}&quot;"/>
                                     									
-                                    <listOptionValue builtIn="false" value="&quot;${workspace_loc:/Temperature/Libraries/handleGenericMessages/Inc}&quot;"/>
-                                    									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/Temperature/Libraries/jumpToBootloader/Inc}&quot;"/>
                                     									
                                     <listOptionValue builtIn="false" value="&quot;${workspace_loc:/Temperature/Libraries/USBprint/Inc}&quot;"/>
@@ -179,8 +177,6 @@
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/Util"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/circularBuffer"/>
-                        						
-                        <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/handleGenericMessages"/>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Libraries/jumpToBootloader"/>
                         						
