@@ -12,6 +12,7 @@
 #include "USBprint.h"
 #include "max31855.h"
 #include "time32.h"
+#include "StmGpio.h"
 
 // ***** PRODUCT INFO *****
 char productType[] = "Temperature";
@@ -35,19 +36,8 @@ static CAProtocolCtx caProto =
         .logging = NULL
 };
 
-static float temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
-static float junction_temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
-
 /* Actuation pin outs */
-static GPIO_TypeDef* const gpio_temp[TEMP_VALUES-1] = { SEL0_GPIO_Port, SEL1_GPIO_Port, SEL2_GPIO_Port,
-                                                        SEL3_GPIO_Port, SEL4_GPIO_Port, SEL5_GPIO_Port,
-                                                        SEL6_GPIO_Port, SEL7_GPIO_Port, SEL8_GPIO_Port,
-                                                        SEL9_GPIO_Port};
-
-static const uint16_t pins_temp[TEMP_VALUES-1] = { SEL0_Pin, SEL1_Pin, SEL2_Pin,
-                                                   SEL3_Pin, SEL4_Pin, SEL5_Pin,
-                                                   SEL6_Pin, SEL7_Pin, SEL8_Pin,
-                                                   SEL9_Pin};
+static StmGpio spiGpio[TEMP_VALUES-1];
 
 static void printHeader()
 {
@@ -64,25 +54,36 @@ static void handleUserInputs()
 // Set all SPI pins high to be enable for communication
 static void GPIO_INIT()
 {
-    for (int i = 0; i<TEMP_VALUES-1; i++){
-        HAL_GPIO_WritePin(gpio_temp[i], pins_temp[i], SET);
+    GPIO_TypeDef* const gpioBlk[TEMP_VALUES-1] = { SEL0_GPIO_Port, SEL1_GPIO_Port, SEL2_GPIO_Port,
+                                                   SEL3_GPIO_Port, SEL4_GPIO_Port, SEL5_GPIO_Port,
+                                                   SEL6_GPIO_Port, SEL7_GPIO_Port, SEL8_GPIO_Port,
+                                                   SEL9_GPIO_Port};
+    const uint16_t gpioPin[TEMP_VALUES-1] = { SEL0_Pin, SEL1_Pin, SEL2_Pin,
+                                              SEL3_Pin, SEL4_Pin, SEL5_Pin,
+                                              SEL6_Pin, SEL7_Pin, SEL8_Pin,
+                                              SEL9_Pin};
+
+    for (int i=0; i < (TEMP_VALUES-1); i++)
+    {
+        stmGpioInit(&spiGpio[i], gpioBlk[i], gpioPin[i]);
+        spiGpio[i].set(&spiGpio[i], true); // Default is CS high.
     }
 }
 
+static float temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
 static void readTemperatures(SPI_HandleTypeDef* hspi, I2C_HandleTypeDef* hi2c)
 {
+    float junction_temperatures[TEMP_VALUES] = {0}; // Internal junction temp is not used.
+
     // Read from thermocouple ports
-    for (int i = 0; i < TEMP_VALUES-1; i++){
-        HAL_GPIO_WritePin(gpio_temp[i],pins_temp[i],RESET);       // Low State to enable SPI Communication
-        Max31855_Read_Temp(hspi, &temperatures[i], &junction_temperatures[i]);
-        HAL_GPIO_WritePin(gpio_temp[i],pins_temp[i],SET);         // High State to disable SPI Communication
+    for (int i = 0; i < TEMP_VALUES-1; i++)
+    {
+        Max31855_Read(hspi, &spiGpio[i], &temperatures[i], &junction_temperatures[i]);
     }
 
     // On board temperature
-    HAL_Delay(1);
-    if (si7051Temp(hi2c, &temperatures[TEMP_VALUES-1]) != HAL_OK) {
+    if (si7051Temp(hi2c, &temperatures[TEMP_VALUES-1]) != HAL_OK)
         temperatures[TEMP_VALUES-1] = 10000;
-    }
 }
 
 static void printTemperatures(void)
