@@ -1,21 +1,25 @@
 #include "max31855.h"
 
-void Max31855_Read_Temp(SPI_HandleTypeDef *hspi, float *temp_probe, float *temp_junction)
+void Max31855_Read(SPI_HandleTypeDef *hspi, StmGpio *cs, float *temp_probe, float *temp_junction)
 {
     int  temperature=0;
 
     uint8_t DATARX[4];
     uint32_t rawData_bitString_temp;
     uint16_t rawData_bitString_junc;
-    //read 4 bytes from SPI bus
-    //Note that chip selecting is handled elsewhere
-    HAL_SPI_Receive(hspi,DATARX,4,1000);
+
+    // Chip select, must be hold in 100nSec ~ 10 clocks. There is no need to make
+    // such delay since push/pop of stack pointer + setting up in HAL_SPI_Receive
+    // is at least 10 clocks/operations (more like 100).
+    cs->set(cs, false);
+    HAL_SPI_Receive(hspi, DATARX, 4, 10); // read 4 bytes from SPI bus
+    cs->set(cs, true);
 
     //Merge 4 bytes into 1
     rawData_bitString_temp = DATARX[0]<<24 | DATARX[1]<<16 | DATARX[2] << 8 | DATARX[3];
 
      // Checks for errors in the probe
-    if(DATARX[3] & 0x01){
+    if(DATARX[3] & 0x01) {
         *temp_probe = FAULT_OPEN;
     }
     else if(DATARX[3] & 0x02){
