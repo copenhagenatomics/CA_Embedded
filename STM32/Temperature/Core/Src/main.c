@@ -22,16 +22,10 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_device.h"
-#include "systemInfo.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
-#include "handleGenericMessages.h"
-#include "usb_cdc_fops.h"
-#include "si7051.h"
-#include "USBprint.h"
-
+#include "Temperature.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,26 +36,10 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-// ***** PRODUCT INFO *****
-char productType[] = "Temperature";
-char mcuFamily[] = "STM32F401";
-char pcbVersion[] = "V4.3";
-
-//Board Specific Defines
-#define TEMP_VALUES 11
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
-//error codes
-#define	FAULT_OPEN		10000.0
-#define	FAULT_SHORT_GND	10001.0
-#define	FAULT_SHORT_VCC	10002.0
-
-//Port number
-#define PORT_NUMBER 11
 
 /* USER CODE END PM */
 
@@ -71,25 +49,6 @@ I2C_HandleTypeDef hi2c1;
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
-
-char inputBuffer[CIRCULAR_BUFFER_SIZE];
-float temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
-float junction_temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
-
-/* Actuation pin outs */
-static GPIO_TypeDef* const gpio_temp[TEMP_VALUES-1] = { SEL0_GPIO_Port, SEL1_GPIO_Port, SEL2_GPIO_Port,
-										   	   	   	    SEL3_GPIO_Port, SEL4_GPIO_Port, SEL5_GPIO_Port,
-														SEL6_GPIO_Port, SEL7_GPIO_Port, SEL8_GPIO_Port,
-														SEL9_GPIO_Port};
-
-static const uint16_t pins_temp[TEMP_VALUES-1] = { SEL0_Pin, SEL1_Pin, SEL2_Pin,
-								 	 	 	 	   SEL3_Pin, SEL4_Pin, SEL5_Pin,
-												   SEL6_Pin, SEL7_Pin, SEL8_Pin,
-												   SEL9_Pin};
-
-int tsUpload = 100;
-
-bool isFirstWrite = true;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -103,123 +62,6 @@ static void MX_SPI1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-void printHeader()
-{
-    USBnprintf(systemInfo(productType, mcuFamily, pcbVersion));
-}
-
-void handleInput() { // list all board specific commands.
-
-	usb_cdc_rx((uint8_t *) inputBuffer);
-
-	// Check if there is new input
-	if (inputBuffer[0]=='\0'){
-		return;
-	}
-
-	handleGenericMessages(inputBuffer); //handles serial, jumpToBootloader (DMA), misreads.
-
-}
-
-// Set all SPI pins high to be enable for communication
-void GPIO_INIT(){
-	for (int i = 0; i<TEMP_VALUES-1; i++){
-		HAL_GPIO_WritePin(gpio_temp[i], pins_temp[i], SET);
-	}
-}
-
-
-void Max31855_Read_Temp(float *temp_probe, float *temp_junction){
-
-	int  temperature=0;
-
-	uint8_t DATARX[4];
-	uint32_t rawData_bitString_temp;
-	uint16_t rawData_bitString_junc;
-	//read 4 bytes from SPI bus
-	//Note that chip selecting is handled elsewhere
-	HAL_SPI_Receive(&hspi1,DATARX,4,1000);
-
-	//Merge 4 bytes into 1
-	rawData_bitString_temp = DATARX[0]<<24 | DATARX[1]<<16 | DATARX[2] << 8 | DATARX[3];
-
-	 // Checks for errors in the probe
-	if(DATARX[3] & 0x01){
-		*temp_probe = FAULT_OPEN;
-	}
-	else if(DATARX[3] & 0x02){
-		*temp_probe = FAULT_SHORT_GND;
-	}
-	else if(DATARX[3] & 0x04){
-		*temp_probe = FAULT_SHORT_VCC;
-	}
-	else{ //No errors
-		//reading temperature
-		temperature = rawData_bitString_temp >> 18;
-
-		// Check for negative temperature
-		if ((DATARX[0]&(0x80))>>7)
-		{
-			temperature = (DATARX[0] << 6) | (DATARX[1] >> 2);
-			temperature&=0b01111111111111;
-			temperature^=0b01111111111111;
-		}
-
-		// Convert to Degree Celsius
-		*temp_probe = temperature * 0.25;
-	}
-
-    //calculate juntion temperature
-	rawData_bitString_junc = DATARX[2] << 8 | DATARX[3];
-	rawData_bitString_junc >>= 4;
-	*temp_junction = (rawData_bitString_junc & 0x000007FF);
-
-	if (rawData_bitString_junc & 0x00000800)
-	{
-		// 2's complement operation
-		// Invert
-		rawData_bitString_junc = ~rawData_bitString_junc;
-		// Ensure operation involves lower 11-bit only
-		*temp_junction = rawData_bitString_junc & 0x000007FF;
-		// Add 1 to obtain the positive number
-		*temp_junction += 1;
-		// Make temperature negative
-		*temp_junction *= -1;
-	}
-
-	*temp_junction = *temp_junction * 0.0625;
-}
-
-void readTemperatures(){
-	// Read from thermocouple ports
-	for (int i = 0; i < TEMP_VALUES-1; i++){
-		HAL_GPIO_WritePin(gpio_temp[i],pins_temp[i],RESET);       // Low State to enable SPI Communication
-		Max31855_Read_Temp(&temperatures[i], &junction_temperatures[i]);
-		HAL_GPIO_WritePin(gpio_temp[i],pins_temp[i],SET);         // High State to disable SPI Communication
-	}
-
-	// On board temperature
-	HAL_Delay(1);
-    if (si7051Temp(&hi2c1, &temperatures[TEMP_VALUES-1]) != HAL_OK) {
-        temperatures[TEMP_VALUES-1] = 10000;
-    }
-}
-
-void printTemperatures(void)
-{
-    USBnprintf("%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f",
-            temperatures[0], temperatures[1], temperatures[2], temperatures[3], temperatures[4],
-            temperatures[5], temperatures[6], temperatures[7], temperatures[8], temperatures[9], temperatures[10]);
-}
-
-void clearLineAndBuffer(){
-	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-	USBnprintf("reconnected");
-	usb_cdc_rx_flush();
-	isFirstWrite=false;
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -229,8 +71,6 @@ void clearLineAndBuffer(){
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
-  unsigned long timeStamp = 0;
 
   /* USER CODE END 1 */
 
@@ -256,7 +96,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  GPIO_INIT();
+  InitTemperature(&hspi1, &hi2c1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -266,31 +106,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-	// Upload data every "tsUpload" ms.
-	if (HAL_GetTick() - timeStamp > tsUpload)
-	{
-
-	    timeStamp = HAL_GetTick();
-	    if (isComPortOpen())
-	    {
-	        if (isFirstWrite)
-	        {
-	            clearLineAndBuffer();
-	        }
-
-	        readTemperatures();
-	        printTemperatures();
-	    }
-	}
-
-	handleInput();
-
-	if (!isComPortOpen())
-	{
-		isFirstWrite=true;
-	}
-
+    LoopTemperature();
   }
   /* USER CODE END 3 */
 }
