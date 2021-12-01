@@ -12,6 +12,9 @@
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
 
+#define stmSetGpio(x, activate) { (x).set(&(x), activate); }
+#define stmGetGpio(x)           (x).get(&(x))
+
 typedef struct StmGpio
 {
     GPIO_TypeDef* blk;   // GPIO Block
