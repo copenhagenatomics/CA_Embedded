@@ -79,7 +79,7 @@ double ADCrms(const int16_t *pData, uint16_t channel)
         sum += (mul * mul); // add squared values to sum
     }
 
-    return sqrt(sum / ADCMonitorData.noOfSamples);
+    return sqrt(((double) sum) / ((double)ADCMonitorData.noOfSamples));
 }
 
 double ADCMean(const int16_t *pData, uint16_t channel)
