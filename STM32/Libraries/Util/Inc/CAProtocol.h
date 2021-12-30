@@ -9,6 +9,9 @@
 #define INC_CAPROTOCOL_H_
 
 #include <stdbool.h>
+
+#include "HAL_otp.h"
+
 typedef struct
 {
     int port;
@@ -31,6 +34,10 @@ typedef struct
 
     // Data logger request on port (range [1:N]), Zero means stop.
     void (*logging)(int port);
+
+    // OTP read/write operations.
+    void (*otpRead)();
+    void (*otpWrite)(BoardInfo *boardInfo);
 
     struct CAProtocolData *data; // Private data for CAProtocol.
 } CAProtocolCtx;

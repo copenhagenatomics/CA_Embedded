@@ -17,3 +17,4 @@ void HALJumpToBootloader()
     HAL_Delay(200);
     JumpToBootloader();
 }
+
