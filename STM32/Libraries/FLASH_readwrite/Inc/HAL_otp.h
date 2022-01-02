@@ -5,10 +5,10 @@
 // Only defined formats will be supported. If code/version is bumped, it MUST be possible to read
 // old data in the OTP area since this is fixed (for ever).
 #define OTP_VERSION_1   0x01 // First version of the production data.
-
 #define OTP_VERSION     OTP_VERSION_1 // Current version of the OTP writer format.
 
 // Error codes.
+#define OTP_SUCCESS     0 // read/write operation success.
 #define OTP_EMPTY       1 // if read operation is done
 #define OTP_WRITE_FAIL  2 // content could not be written to OTP area.
 
@@ -34,9 +34,9 @@ typedef union BoardInfo
 // Read the current content of the OTP data.
 // @param boardInfo pointer to struct BoardInfo.
 // Return 0 on success else OTP_EMPTY and boardInfo will be unchanged.
-const int HAL_otpRead(BoardInfo *boardInfo);
+int HAL_otpRead(BoardInfo *boardInfo);
 
 // write the current content of the OTP data.
 // @param boardInfo pointer to struct BoardInfo.
 // Return 0 on success else OTP_WRITE_FAIL.
-const int HAL_otpWrite(const BoardInfo *boardInfo);
+int HAL_otpWrite(const BoardInfo *boardInfo);
