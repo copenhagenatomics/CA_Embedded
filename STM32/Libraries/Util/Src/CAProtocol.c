@@ -80,13 +80,14 @@ static void otp_write(CAProtocolCtx* ctx, const char *input)
     uint32_t  PCBversion[2];
     uint32_t date;
 
-    if (sscanf(input, "OTP w %02lu %02lu %02lu.%02lu %lu", &OTPVersion, &BoardType, &PCBversion[1], &PCBversion[0], &date) == 4)
+    if (sscanf(input, "OTP w %02lu %02lu %02lu.%02lu %lu", &OTPVersion, &BoardType, &PCBversion[1], &PCBversion[0], &date) == 5)
     {
         // Verify all entries is valid exept date since this is uint32_t.
         if (OTPVersion == OTP_VERSION && BoardType < 0xFF && PCBversion[1] <= 0xFF && PCBversion[0] <= 0xFF)
         {
             // During write only the current version is supported.
             BoardInfo info;
+            memset(info.data, 0, sizeof(info.data));
             info.v1.otpVersion = OTP_VERSION;
             info.v1.boardType = BoardType & 0xFF;
             info.v1.pcbVersion.major = PCBversion[1] & 0xFF;
@@ -126,7 +127,7 @@ void inputCAProtocol(CAProtocolCtx* ctx, const char *input)
         if (ctx->logging)
             logging(ctx, input);
     }
-    else if (strncmp(input, "OTP", 3 == 0))
+    else if (strncmp(input, "OTP", 3) == 0)
     {
         if (input[4] == 'r') {
             if (ctx->otpRead)
