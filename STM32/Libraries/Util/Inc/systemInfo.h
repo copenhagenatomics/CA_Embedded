@@ -3,6 +3,6 @@
 
 /* Generic info about PCB and git build system/data.
  * @return info about system in null terminated string. */
-const char* systemInfo(const char* productType, const char* mcuFamily, const char* pcbVersion);
+const char* systemInfo();
 
 #endif // SYSTEM_INFO_H
