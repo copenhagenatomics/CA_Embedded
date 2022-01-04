@@ -65,6 +65,13 @@ static void otpWrite(BoardInfo *boardInfo)
     }
 }
 
+static void clearLineAndBuffer()
+{
+    // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
+    USBnprintf("reconnected");
+    usb_cdc_rx_flush();
+}
+
 static void handleUserInputs()
 {
     char inputBuffer[CIRCULAR_BUFFER_SIZE];
@@ -75,6 +82,21 @@ static void handleUserInputs()
 
 void otpLoop()
 {
+    static bool isFirstWrite = true;
+
     // All functionality is based on user input.
+    if (isComPortOpen())
+    {
+        // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
+        if (isFirstWrite)
+        {
+            clearLineAndBuffer();
+            isFirstWrite = false;
+        }
+    }
+    else {
+        isFirstWrite = true;
+    }
+
     handleUserInputs();
 }
