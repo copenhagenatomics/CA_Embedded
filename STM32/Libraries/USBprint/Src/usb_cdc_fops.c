@@ -47,7 +47,6 @@ static struct
     unsigned long portOpenTime;
 } usb_cdc_if = { {0}, {0}, closed, 0};
 
-#ifdef USE_COMMON_USB_CDC
 bool isComPortOpen() {
 	// The USB CDC needs to be initialised and open for some time before the COM port is opened properly
 	if (usb_cdc_if.isComPortOpen == open ||
@@ -58,7 +57,6 @@ bool isComPortOpen() {
 	}
 	return false;
 }
-#endif
 
 /**
   * @brief  Initializes the CDC media low layer over the FS USB IP

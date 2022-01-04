@@ -14,11 +14,6 @@
 #include "time32.h"
 #include "StmGpio.h"
 
-// ***** PRODUCT INFO *****
-char productType[] = "Temperature";
-char mcuFamily[] = "STM32F401";
-char pcbVersion[] = "V4.3";
-
 //Board Specific Defines
 #define TEMP_VALUES 11
 
@@ -41,7 +36,7 @@ static StmGpio spiGpio[TEMP_VALUES-1];
 
 static void printHeader()
 {
-    USBnprintf(systemInfo(productType, mcuFamily, pcbVersion));
+    USBnprintf(systemInfo());
 }
 
 static void handleUserInputs()

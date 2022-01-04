@@ -46,19 +46,6 @@
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
 
-// ***** PRODUCT INFO *****
-/*
- * Versions:
- * 1.0 Beta.
- * 1.1 Skipped.
- * 1.2 Fix HEX print for serial number.
- * 1.3 Add print heatsink temperature.
- */
-
-#define ProductType "AC Board"
-#define McuFamily   "STM32F401"
-#define PCBVersion  "V5.6"
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -85,7 +72,7 @@ static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for 
 
 static void printHeader()
 {
-    USBnprintf(systemInfo(ProductType, McuFamily, PCBVersion));
+    USBnprintf(systemInfo());
 }
 static void handleUndefined(const char* input);
 
