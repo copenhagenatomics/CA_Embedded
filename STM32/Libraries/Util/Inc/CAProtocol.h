@@ -9,7 +9,6 @@
 #define INC_CAPROTOCOL_H_
 
 #include <stdbool.h>
-
 #include "HAL_otp.h"
 
 typedef struct

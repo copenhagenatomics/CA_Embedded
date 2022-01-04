@@ -64,10 +64,6 @@
 #define TURNONPWM 999
 #define TURNOFFPWM 0
 
-// ***** PRODUCT INFO *****
-char productType[] = "DC Board";
-char mcuFamily[] = "STM32F401";
-char pcbVersion[] = "V2.2";
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -128,7 +124,7 @@ static void clearLineAndBuffer();
 /* USER CODE BEGIN 0 */
 void printHeader()
 {
-    USBnprintf(systemInfo(productType, mcuFamily, pcbVersion));
+    USBnprintf(systemInfo());
 }
 
 static double meanCurrent(const int16_t *pData, uint16_t channel)

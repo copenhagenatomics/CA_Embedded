@@ -32,12 +32,7 @@ static CAProtocolCtx caProto =
 
 static void printHeader()
 {
-    // TODO: fetch product/PCB from OTP.
-    char productType[] = "OTP";
-    char mcuFamily[] = "STM32F401";
-    char pcbVersion[] = "V0.0";
-
-    USBnprintf(systemInfo(productType, mcuFamily, pcbVersion));
+    USBnprintf(systemInfo());
 }
 
 static void otpRead()
