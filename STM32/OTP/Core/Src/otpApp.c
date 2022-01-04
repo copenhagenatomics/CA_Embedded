@@ -49,7 +49,7 @@ static void otpRead()
     }
     else
     {
-        USBnprintf("OTP %u %u %u.%u %u"
+        USBnprintf("OTP %u %u %u.%u %u\r\n"
                 , info.otpVersion
                 , info.v1.boardType
                 , info.v1.pcbVersion.major
