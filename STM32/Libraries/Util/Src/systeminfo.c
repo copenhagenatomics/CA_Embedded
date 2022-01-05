@@ -44,16 +44,16 @@ static char* productType(uint8_t id)
 {
     switch(id)
     {
-    case 1:  return "AC";              break;
-    case 2:  return "DC";              break;
-    case 3:  return "Temperature";     break;
-    case 4:  return "Current";         break;
-    case 5:  return "FlowChip";        break;
-    case 6:  return "humidityChip";    break;
-    case 7:  return "Pressure";        break;
-    case 8:  return "SaltFlow";        break;
-    case 9:  return "SaltLeak";        break;
-    case 10: return "ValveController"; break;
+    case 1:  return "AC Board";          break;
+    case 2:  return "DC Board";          break;
+    case 3:  return "Temperature";       break;
+    case 4:  return "Current";           break;
+    case 5:  return "FlowChip";          break;
+    case 6:  return "humidityChip";      break;
+    case 7:  return "Pressure";          break;
+    case 8:  return "Salt Flow Board";   break;
+    case 9:  return "SaltLeak";          break;
+    case 10: return "HotValvePumpBoard"; break;
     }
     return "NA";
 }
