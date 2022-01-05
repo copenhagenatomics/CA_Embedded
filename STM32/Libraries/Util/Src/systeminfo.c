@@ -30,12 +30,7 @@ static const char* mcuType()
     default:    len += snprintf(&mcu[len], sizeof(mcu) -len, "Unknown 0x%3X", idCode); break;
     }
 
-    switch (revCode)
-    {
-    case 0x1000: len += snprintf(&mcu[len], sizeof(mcu) -len, " Rev A"); break;
-    case 0x1001: len += snprintf(&mcu[len], sizeof(mcu) -len, " Rev Z"); break;
-    default:     len += snprintf(&mcu[len], sizeof(mcu) -len, " Rev %4x", revCode); break;
-    }
+    len += snprintf(&mcu[len], sizeof(mcu) -len, " Rev %x", revCode);
 
     return mcu;
 }
@@ -60,7 +55,7 @@ static char* productType(uint8_t id)
 
 const char* systemInfo()
 {
-    static char buf[400] = { 0 };
+    static char buf[500] = { 0 };
     BoardInfo info = { 0 };
 
     if (HAL_otpRead(&info) != OTP_SUCCESS)
