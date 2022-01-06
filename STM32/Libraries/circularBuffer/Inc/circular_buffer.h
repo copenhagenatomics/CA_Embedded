@@ -1,7 +1,8 @@
 #ifndef CIRCULAR_BUFFER_H_
 #define CIRCULAR_BUFFER_H_
 
-#include <stdbool.h>
+#include <stdio.h>       // Needed for size_t
+#include <stdbool.h>     // Needed for bool
 
 /// Opaque circular buffer structure
 typedef struct circular_buf_t circular_buf_t;
