@@ -16,23 +16,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
-#include <math.h>
-#include "string.h"
-#include <stdio.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <float.h>
-#include "usb_cdc_fops.h"
-#include "inputValidation.h"
-#include "HeatCtrl.h"
-#include "ADCMonitor.h"
-#include "systemInfo.h"
-#include "USBprint.h"
-#include "CAProtocol.h"
-#include "CAProtocolStm.h"
-
+#include "ACBoard.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,9 +26,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
-#define ADC_CHANNELS	5
-#define ADC_CHANNEL_BUF_SIZE	400
 
 /* USER CODE END PD */
 
@@ -61,29 +42,6 @@ TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
 
-/* GPIO settings. */
-static struct {
-    StmGpio heater;
-    StmGpio button;
-} heaterPorts[4];
-
-/* ADC handling */
-static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
-
-static void printHeader()
-{
-    USBnprintf(systemInfo());
-}
-static void handleUndefined(const char* input);
-
-char inputBuffer[CIRCULAR_BUFFER_SIZE];
-static CAProtocolCtx caProto = {
-        .undefined = handleUndefined, // special handling of inputs.
-        .printHeader = printHeader,
-        .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = NULL // TODO: change method for calibration?
-};
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -98,123 +56,6 @@ static void MX_TIM2_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define NO_PORTS 4
-static void GpioInit()
-{
-    static GPIO_TypeDef* const buttonsBlk[] = { GPIOB, GPIOB, GPIOB, btn4_GPIO_Port };
-    static const uint16_t buttonsPin[]      = { 0x0020, 0x0010, 0x0008, 0x8000 };
-
-    static GPIO_TypeDef* const pinsBlk[] = { ctrl1_GPIO_Port, ctrl2_GPIO_Port, ctrl3_GPIO_Port, ctrl4_GPIO_Port };
-    static const uint16_t pins[] = { 0x0002, 0x0008, 0x0020, 0x0080 };
-
-    for (int i=0; i<NO_PORTS; i++)
-    {
-        stmGpioInit(&heaterPorts[i].button, buttonsBlk[i], buttonsPin[i]);
-        stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i]);
-        heatCtrlAdd(&heaterPorts[i].heater, &heaterPorts[i].button);
-    }
-}
-double ADCtoCurrent(double adc_val)
-{
-    // TODO: change method for calibration?
-    static float current_scalar = 0.0125;
-    static float current_bias = -0.1187;//-0.058;
-
-    return current_scalar * adc_val + current_bias;
-}
-
-double ADCtoTemperature(double adc_val) {
-    // TODO: change method for calibration?
-    static float temp_scalar = 0.0806;
-
-    return temp_scalar * adc_val;
-}
-
-static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
-{
-    // Make calibration static since this should be done only once.
-    static bool isCalibrationDone = false;
-    static int16_t current_calibration[ADC_CHANNELS];
-
-    if (!isComPortOpen())
-        return;
-
-    if (!isCalibrationDone)
-    {
-        // Go from channel 1 since 0 is temperature.
-        for (int i = 1; i < noOfChannels; i++)
-        {
-            // finding the average of each channel array to subtract from the readings
-            current_calibration[i] = -ADCMean(pData, i);
-        }
-        isCalibrationDone = true;
-    }
-
-    // Set bias for each channel.
-    for (int i = 1; i < noOfChannels; i++) {
-        // Go from channel 1 since 0 is temperature.
-        ADCSetOffset(pData, current_calibration[i] , i);
-    }
-
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f",
-            ADCtoCurrent(ADCrms(pData, 1)),
-            ADCtoCurrent(ADCrms(pData, 2)),
-            ADCtoCurrent(ADCrms(pData, 3)),
-            ADCtoCurrent(ADCrms(pData, 4)),
-            ADCtoTemperature(ADCMean(pData, 0)));
-}
-
-void actuatePins(struct actuationInfo actuationInfo)
-{
-	// all off (pin == -1 means all pins)
-	if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle==0){
-		allOff();
-	// all on (pin == -1 means all pins)
-	} else if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle==100){
-		allOn();
-	// pX on or pX off (timeOn == -1 means indefinite)
-	} else if (actuationInfo.timeOn == -1 && (actuationInfo.pwmDutyCycle==100 || actuationInfo.pwmDutyCycle==0)){
-		if (actuationInfo.pwmDutyCycle == 0){
-			turnOffPin(actuationInfo.pin);
-		} else {
-			turnOnPin(actuationInfo.pin);
-		}// pX on YY
-	} else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle == 100){
-		turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
-	// pX on ZZZ%
-	} else if (actuationInfo.timeOn == -1 && actuationInfo.pwmDutyCycle != 0 && actuationInfo.pwmDutyCycle != 100){
-		setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
-	// pX on YY ZZZ%
-	} else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle != 100){
-		setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
-	} else {
-	    HALundefined(inputBuffer); // should never reach this, but is implemented for potentially unknown errors.
-	}
-}
-
-
-static void handleUndefined(const char* input)
-{
-    struct actuationInfo actuationInfo = parseAndValidateInput(input);
-
-    if (actuationInfo.isInputValid)
-        actuatePins(actuationInfo);
-    else
-        HALundefined(input);
-}
-
-void handleUserInputs()
-{
-    usb_cdc_rx((uint8_t *)inputBuffer);
-    inputCAProtocol(&caProto, inputBuffer);
-}
-
-void clearLineAndBuffer(){
-	// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-	USBnprintf("reconnected");
-	usb_cdc_rx_flush();
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -250,38 +91,17 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-    bool isFirstWrite = true;
+  ACBoardInit(&hadc1);
+  HAL_TIM_Base_Start_IT(&htim2);
 
-    ADCMonitorInit(&hadc1, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
-    HAL_TIM_Base_Start_IT(&htim2);
-    GpioInit();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1) {
+        ACBoardLoop();
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
-        handleUserInputs();
-        ADCMonitorLoop(printCurrentArray);
-
-		if (isComPortOpen())
-		{
-			// Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-			if (isFirstWrite)
-			{
-				clearLineAndBuffer();
-				isFirstWrite=false;
-			}
-		}
-		else
-		{
-		    isFirstWrite=true;
-		}
-
-		// Toggle pins if needed when in pwm mode
-		heaterLoop();
 	}
   /* USER CODE END 3 */
 }
