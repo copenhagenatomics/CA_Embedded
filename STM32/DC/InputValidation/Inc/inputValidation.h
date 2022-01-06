@@ -16,6 +16,6 @@ struct actuationInfo
     bool isInputValid;
 };
 
-struct actuationInfo parseAndValidateInput(char * inputBuffer);
+struct actuationInfo parseAndValidateInput(const char * inputBuffer);
 
 #endif /* INC_INPUTVALIDATION_H_ */

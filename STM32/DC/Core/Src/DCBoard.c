@@ -12,13 +12,15 @@
 #include "DCBoard.h"
 #include "ADCMonitor.h"
 #include "si7051.h"
-
-#include "handleGenericMessages.h"
 #include "inputValidation.h"
+#include "CAProtocol.h"
+#include "CAProtocolStm.h"
+#include "HAL_otp.h"
+#include "time32.h"
 
 #define ADC_CHANNELS    6
 #define ACTUATIONPORTS 4
-#define ADC_CHANNEL_BUF_SIZE    400 // 400 samples each 100mSec
+#define ADC_CHANNEL_BUF_SIZE    400
 
 // Address offsets for the TIM5 timer
 #define PWMPIN1 0x34
@@ -34,52 +36,79 @@
 #define TURNONPWM 999
 #define TURNOFFPWM 0
 
-/* ADC handling */
-int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
-uint16_t current_calibration[ADC_CHANNELS];
+// Private static function declarations.
+static void clearLineAndBuffer();
+static void printHeader();
+static void userPinCmds(const char* inputString);
+static void otpRead();
 
-/* ADC to current calibration values */
-float current_scalar = -0.011;
-float current_bias = 23.43; // Offset calibrated to USB hubs.
+// Local variables.
+static CAProtocolCtx caProto =
+{
+        .undefined = userPinCmds,
+        .printHeader = printHeader,
+        .jumpToBootLoader = HALJumpToBootloader,
+        .calibration = NULL,
+        .calibrationRW = NULL,
+        .logging = NULL,
+        .otpRead = otpRead,
+        .otpWrite = NULL
+};
 
 /* General */
-unsigned long lastCheckButtonTime = 0;
-int tsButton = 100;
-
-int actuationDuration[ACTUATIONPORTS] = { 0 };
-int actuationStart[ACTUATIONPORTS] = { 0 };
-bool port_state[ACTUATIONPORTS] = { 0 };
-uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
+static int actuationDuration[ACTUATIONPORTS] = { 0 };
+static uint32_t actuationStart[ACTUATIONPORTS] = { 0 };
+static bool port_state[ACTUATIONPORTS] = { 0 };
+static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 
 // Temperature handling
 static I2C_HandleTypeDef *hi2c = NULL;
-float si7051Val = 0;
 
-// TODO: make these local variables.
-bool isFirstWrite = true;
-char inputBuffer[CIRCULAR_BUFFER_SIZE];
+static void otpRead()
+{
+    BoardInfo info;
+    if (HAL_otpRead(&info))
+    {
+        USBnprintf("OTP: No production available");
+    }
+    else
+    {
+        USBnprintf("OTP %u %u %u.%u %u\r\n"
+                , info.otpVersion
+                , info.v1.boardType
+                , info.v1.pcbVersion.major
+                , info.v1.pcbVersion.minor
+                , info.v1.productionDate);
+    }
+}
 
-// Private static declarations.
-static void clearLineAndBuffer();
-
-void printHeader()
+static void printHeader()
 {
     USBnprintf(systemInfo());
 }
 
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
+    // ADC to current calibration values
+    const float current_scalar = -0.011;
+    const float current_bias = 23.43; // Offset calibrated to USB hubs.
+
     return current_scalar * ADCMean(pData, channel) + current_bias;
 }
 
-void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
+static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
+    static bool isFirstWrite = true;
+
     if (!isComPortOpen())
     {
         isFirstWrite = true;
         return;
     }
-    if (isFirstWrite) clearLineAndBuffer();
+    if (isFirstWrite) {
+        clearLineAndBuffer();
+        isFirstWrite = false;
+    }
 
     float temp;
     if (si7051Temp(hi2c, &temp) != HAL_OK) temp = 10000;
@@ -90,7 +119,7 @@ void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
             ADCrms(pBuffer, 5), ADCmax(pBuffer, 5));
 }
 
-void setPWMPin(int pinNumber, int pwmState, int duration)
+static void setPWMPin(int pinNumber, int pwmState, int duration)
 {
 
     if (pinNumber == 0)
@@ -114,10 +143,9 @@ void setPWMPin(int pinNumber, int pwmState, int duration)
     actuationDuration[pinNumber] = duration;
     ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
     port_state[pinNumber] = 1;
-
 }
 
-void pinWrite(int pinNumber, bool turnOn)
+static void pinWrite(int pinNumber, bool turnOn)
 {
     // Normal turn off is done by choosing min PWM value i.e. pin always low.
     if (pinNumber == 0)
@@ -139,7 +167,7 @@ void pinWrite(int pinNumber, bool turnOn)
 }
 
 // Turn on all pins.
-void allOn()
+static void allOn()
 {
     for (int pinNumber = 0; pinNumber < 4; pinNumber++)
     {
@@ -150,7 +178,7 @@ void allOn()
     }
 }
 
-void turnOnPin(int pinNumber)
+static void turnOnPin(int pinNumber)
 {
     pinWrite(pinNumber, SET);
     actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
@@ -158,7 +186,7 @@ void turnOnPin(int pinNumber)
     ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
 }
 
-void turnOnPinDuration(int pinNumber, int duration)
+static void turnOnPinDuration(int pinNumber, int duration)
 {
     pinWrite(pinNumber, SET);
     actuationStart[pinNumber] = HAL_GetTick();
@@ -179,7 +207,7 @@ void allOff()
     }
 }
 
-void turnOffPin(int pinNumber)
+static void turnOffPin(int pinNumber)
 {
     pinWrite(pinNumber, RESET);
     actuationDuration[pinNumber] = 0;
@@ -187,24 +215,27 @@ void turnOffPin(int pinNumber)
     ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
 }
 
-void actuatePins(struct actuationInfo actuationInfo)
+static void userPinCmds(const char* inputBuffer)
 {
+    struct actuationInfo actuationInfo = parseAndValidateInput(inputBuffer);
+    if (!actuationInfo.isInputValid)
+    {
+        return;
+    }
 
-    // all off (pin == -1 means all pins)
     if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 0)
     {
+        // all off (pin == -1 means all pins)
         allOff();
-        // all on (pin == -1 means all pins)
     }
     else if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 100)
     {
+        // all on (pin == -1 means all pins)
         allOn();
-        // pX on or pX off (timeOn == -1 means indefinite)
     }
-    else if (actuationInfo.timeOn == -1
-            && (actuationInfo.pwmDutyCycle == 100
-                    || actuationInfo.pwmDutyCycle == 0))
+    else if (actuationInfo.timeOn == -1 && (actuationInfo.pwmDutyCycle == 100 || actuationInfo.pwmDutyCycle == 0))
     {
+        // pX on or pX off (timeOn == -1 means indefinite)
         if (actuationInfo.pwmDutyCycle == 0)
         {
             turnOffPin(actuationInfo.pin);
@@ -213,66 +244,49 @@ void actuatePins(struct actuationInfo actuationInfo)
         {
             turnOnPin(actuationInfo.pin);
         }
-        // pX on YY
     }
     else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle == 100)
     {
+        // pX on YY
         turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
-        // pX on ZZZ%
     }
-    else if (actuationInfo.timeOn == -1 && actuationInfo.pwmDutyCycle != 0
-            && actuationInfo.pwmDutyCycle != 100)
+    else if (actuationInfo.timeOn == -1 && actuationInfo.pwmDutyCycle != 0 && actuationInfo.pwmDutyCycle != 100)
     {
+        // pX on ZZZ%
         setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, 0);
-        // pX on YY ZZZ%
     }
     else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle != 100)
     {
-        setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle,
-                actuationInfo.timeOn);
+        // pX on YY ZZZ%
+        setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
     }
     else
     {
-        handleGenericMessages(inputBuffer); // should never reach this, but is implemented for potentially unknown errors.
+        USBnprintf("MISREAD: %s", inputBuffer);
     }
 }
 
-void handleUserInputs()
+static void handleUserInputs()
 {
-
-    // Read user input
+    char inputBuffer[CIRCULAR_BUFFER_SIZE];
     usb_cdc_rx((uint8_t*) inputBuffer);
-
-    // Check if there is new input
-    if (inputBuffer[0] == '\0')
-    {
-        return;
-    }
-
-    struct actuationInfo actuationInfo = parseAndValidateInput(inputBuffer);
-
-    if (!actuationInfo.isInputValid)
-    {
-        handleGenericMessages(inputBuffer);
-        return;
-    }
-    actuatePins(actuationInfo);
+    inputCAProtocol(&caProto, inputBuffer);
 }
 
-void autoOff()
+static void autoOff()
 {
-    uint64_t now = HAL_GetTick();
+    uint32_t now = HAL_GetTick();
+
     for (int i = 0; i < 4; i++)
     {
-        if ((now - actuationStart[i]) > actuationDuration[i]
-                && actuationDuration[i] != 0)
+        if (tdiff_u32(now, actuationStart[i]) > actuationDuration[i] && actuationDuration[i] != 0)
         {
             turnOffPin(i);
         }
     }
 }
 
-void handleButtonPress()
+static void handleButtonPress()
 {
     // Button ports
     GPIO_TypeDef *button_ports[] = { Btn_2_GPIO_Port, Btn_1_GPIO_Port,
@@ -290,8 +304,7 @@ void handleButtonPress()
             if (port_state[i] == 1)
             {
                 unsigned long now = HAL_GetTick();
-                int duration = actuationDuration[i]
-                        - (int) (now - actuationStart[i]);
+                int duration = actuationDuration[i] - (int) tdiff_u32(now, actuationStart[i]);
                 setPWMPin(i, ccr_states[i], duration);
             }
             else
@@ -304,11 +317,13 @@ void handleButtonPress()
 
 void checkButtonPress()
 {
-    uint64_t now = HAL_GetTick();
-    if (now - lastCheckButtonTime > tsButton)
+    static uint32_t lastCheckButtonTime = 0;
+    const uint32_t tsButton = 100;
+
+    if (tdiff_u32(HAL_GetTick(), lastCheckButtonTime) > tsButton)
     {
-        handleButtonPress();
         lastCheckButtonTime = HAL_GetTick();
+        handleButtonPress();
     }
 }
 
@@ -317,12 +332,12 @@ static void clearLineAndBuffer()
     // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
     USBnprintf("reconnected");
     usb_cdc_rx_flush();
-    isFirstWrite = false;
 }
 
 // Public member functions.
 void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c)
 {
+    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
     hi2c = _hi2c;
 }

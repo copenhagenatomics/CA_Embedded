@@ -30,7 +30,7 @@ static int getNumberDigits(int inputNumber)
     return numberOfDigits;
 }
 
-static bool isInputInt(char *inputBuffer, int startIdx, int endIdx)
+static bool isInputInt(const char *inputBuffer, int startIdx, int endIdx)
 {
     int idx = startIdx;
     while (idx <= endIdx)
@@ -48,7 +48,7 @@ static bool isInputInt(char *inputBuffer, int startIdx, int endIdx)
     return true;
 }
 
-struct actuationInfo parseAndValidateInput(char *inputBuffer)
+struct actuationInfo parseAndValidateInput(const char *inputBuffer)
 {
     /*
      * Valid commands are:

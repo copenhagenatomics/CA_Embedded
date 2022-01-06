@@ -34,7 +34,8 @@ typedef struct
     // Data logger request on port (range [1:N]), Zero means stop.
     void (*logging)(int port);
 
-    // OTP read/write operations.
+    // OTP read/write. Don't enable write of OTP data in application shipped
+    // to customer. The OTP write is a production operation only!
     void (*otpRead)();
     void (*otpWrite)(BoardInfo *boardInfo);
 
