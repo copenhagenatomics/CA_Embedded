@@ -19,8 +19,10 @@ HAL_StatusTypeDef honeywellZephyrRead(I2C_HandleTypeDef *hi2c, float *flowData)
     if (ret != HAL_OK)
         return ret;
 
-    int32_t placeHolder = ((uint16_t) addata[0] << 8) | addata[1];
-    *flowData = ((placeHolder / 16384.0) - 0.1) / 0.8;
+    uint16_t uFlow = ((uint16_t) addata[0] << 8) | addata[1];
+    if (uFlow <= 1639)          *flowData = 0; // Lower limit 0%
+    else if (uFlow >= 14746)    *flowData = 1; // Full scale output 100%
+    else                        *flowData = ((uFlow / 16384.0) - 0.1) / 0.8;
 
     return HAL_OK;
 }
@@ -33,8 +35,7 @@ HAL_StatusTypeDef honeywellZephyrSerial(I2C_HandleTypeDef *hi2c, uint32_t *seria
     // The sensor prints out 2 bytes on startup with its serial number
     uint8_t addata1[4];
     HAL_StatusTypeDef ret;
-    ret = HAL_I2C_Master_Transmit(hi2c, (uint16_t) (ZephyrADDR << 1),
-            &readSerialNBADDR, 1, 50);
+    ret = HAL_I2C_Master_Transmit(hi2c, (uint16_t) (ZephyrADDR << 1), &readSerialNBADDR, 1, 50);
     if (ret != HAL_OK)
         return ret;
 
