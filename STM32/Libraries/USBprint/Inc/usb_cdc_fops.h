@@ -28,7 +28,8 @@ extern USBD_CDC_ItfTypeDef usb_cdc_fops;
 
 #define CIRCULAR_BUFFER_SIZE 1024
 
-uint8_t usb_cdc_transmit(uint8_t* Buf, uint16_t len);
+ssize_t usb_cdc_transmit(const uint8_t* Buf, uint16_t len);
+size_t usb_cdc_tx_available();
 // Note, it assumed that buf is of size CIRCULAR_BUFFER_SIZE
 void usb_cdc_rx(uint8_t* buf);
 void usb_cdc_rx_flush();

@@ -25,3 +25,13 @@ int USBnprintf(const char * format, ... )
     usb_cdc_transmit((uint8_t*)buffer, len);
     return len;
 }
+
+ssize_t writeUSB(const void *buf, size_t count)
+{
+    return usb_cdc_transmit(buf, count);
+}
+
+size_t txAvailable()
+{
+    return usb_cdc_tx_available();
+}

@@ -225,12 +225,10 @@ void usb_cdc_rx_flush()
   * @param  Len: Number of data to be sent (in bytes)
   * @retval USBD_OK if all operations are OK else USBD_FAIL or USBD_BUSY
   */
-uint8_t usb_cdc_transmit(uint8_t* Buf, uint16_t Len)
+ssize_t usb_cdc_transmit(const uint8_t* Buf, uint16_t Len)
 {
     if (!usb_cdc_if.tx.ctx)
-        return USBD_FAIL; // Assert on this?
-
-    uint8_t result = USBD_OK;
+        return -1; // Error, USB CDC is not initialized
 
     USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData;
 
@@ -240,10 +238,10 @@ uint8_t usb_cdc_transmit(uint8_t* Buf, uint16_t Len)
         for (int len = 0;len < Len; len++)
         {
             if (circular_buf_put2(usb_cdc_if.tx.ctx, *Buf))
-                break; // No more space in buffer.
+                return len; // len < Len since not enough space in buffer. Leave error handling to caller.
             Buf++;
         }
-        return USBD_OK;
+        return Len;
     }
 
     // Fill in the data from buffer directly, no need copy bytes
@@ -256,9 +254,16 @@ uint8_t usb_cdc_transmit(uint8_t* Buf, uint16_t Len)
 
     memcpy(usb_cdc_if.tx.irqBuf, Buf, Len);
     USBD_CDC_SetTxBuffer(&hUsbDeviceFS, usb_cdc_if.tx.irqBuf, Len);
-    result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+    if (USBD_CDC_TransmitPacket(&hUsbDeviceFS) != USBD_OK)
+        return -1; // Something went wrong in IO layer.
 
-    return result;
+    // All good.
+    return Len;
+}
+
+size_t usb_cdc_tx_available()
+{
+    return circular_buf_capacity(usb_cdc_if.tx.ctx) - circular_buf_size(usb_cdc_if.tx.ctx);
 }
 
 /**
