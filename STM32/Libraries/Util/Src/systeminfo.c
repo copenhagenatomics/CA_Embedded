@@ -60,20 +60,40 @@ const char* systemInfo()
 
     if (HAL_otpRead(&info) != OTP_SUCCESS)
     {
-        info.v1.boardType = 0;
-        info.v1.pcbVersion.major = 0;
-        info.v1.pcbVersion.minor = 0;
-        info.v1.otpVersion = 0;
+        info.otpVersion = 0; // Invalid OTP version
     }
 
     int len = 0;
     len  = snprintf(&buf[len], sizeof(buf) - len, "Serial Number: %lX%lX%lX\r\n", ID1, ID2, ID3);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s\r\n", productType(info.v1.boardType));
+    switch(info.otpVersion)
+    {
+    case OTP_VERSION_1:
+        len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s\r\n", productType(info.v1.boardType));
+        break;
+    case OTP_VERSION_2:
+        len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: %s\r\n", productType(info.v2.boardType));
+        len += snprintf(&buf[len], sizeof(buf) - len, "Sub Product Type: %u\r\n", info.v2.subBoardType);
+        break;
+    default:
+        len += snprintf(&buf[len], sizeof(buf) - len, "Product Type: NA\r\n");
+        break;
+    }
     len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s\r\n", mcuType());
     len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s\r\n", GIT_VERSION);
     len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s\r\n", GIT_DATE);
     len += snprintf(&buf[len], sizeof(buf) - len, "Git SHA %s\r\n", GIT_SHA);
-    len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %d.%d", info.v1.pcbVersion.major, info.v1.pcbVersion.minor);
+    switch(info.otpVersion)
+    {
+    case OTP_VERSION_1:
+        len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %d.%d", info.v1.pcbVersion.major, info.v1.pcbVersion.minor);
+        break;
+    case OTP_VERSION_2:
+        len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: %d.%d", info.v2.pcbVersion.major, info.v2.pcbVersion.minor);
+        break;
+    default:
+        len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: NA");
+        break;
+    }
 
     return buf;
 }

@@ -63,8 +63,14 @@ const int HAL_otpWrite(const BoardInfo *boardInfo)
     sector = (sector < 0) ? 0 : sector+1;
 
     // Check if the OTP section is within the OTP area.
-    if (sector >= OTP_SECTIONS)
+    if (sector >= OTP_SECTIONS) {
         return OTP_WRITE_FAIL;
+    }
+
+    // Check the version of the Board info
+    if (boardInfo->otpVersion > OTP_VERSION || boardInfo->otpVersion == 0) {
+        return OTP_WRITE_FAIL;
+    }
 
     if(HAL_FLASH_Unlock() != HAL_OK) {
         return OTP_WRITE_FAIL;
