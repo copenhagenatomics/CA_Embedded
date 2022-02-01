@@ -73,32 +73,54 @@ void logging(CAProtocolCtx* ctx, const char *input)
     }
 }
 
+#if (OTP_VERSION != OTP_VERSION_2)
+#error "Update of CAProtocol function otp_write required"
+#endif
 static void otp_write(CAProtocolCtx* ctx, const char *input)
 {
     uint32_t  OTPVersion;
     uint32_t  BoardType;
+    uint32_t  SubBoardType;
     uint32_t  PCBversion[2];
-    uint32_t date;
+    uint32_t  date;
 
-    if (sscanf(input, "OTP w %02lu %02lu %02lu.%02lu %lu", &OTPVersion, &BoardType, &PCBversion[1], &PCBversion[0], &date) == 5)
+    // Check for supported version.
+    if (sscanf(input, "OTP w %02lu", &OTPVersion) != 1)
+        return; // Parse failure, Invalid format of version field.
+    if (OTPVersion > OTP_VERSION || OTPVersion == 0)
+        return; // Not supported version of the OTP data.
+
+    BoardInfo info;
+    memset(info.data, 0, sizeof(info.data));
+
+    switch(OTPVersion)
     {
-        // Verify all entries is valid exept date since this is uint32_t.
-        if (OTPVersion == OTP_VERSION && BoardType < 0xFF && PCBversion[1] <= 0xFF && PCBversion[0] <= 0xFF)
+    case OTP_VERSION_1:
+        break;
+
+    case OTP_VERSION_2:
+        // During write only the current version is supported.
+        if (sscanf(input, "OTP w %02lu %02lu %02lu %02lu.%02lu %lu", &OTPVersion, &BoardType, &SubBoardType, &PCBversion[1], &PCBversion[0], &date) == 6)
         {
-            // During write only the current version is supported.
-            BoardInfo info;
-            memset(info.data, 0, sizeof(info.data));
-            info.v1.otpVersion = OTP_VERSION;
-            info.v1.boardType = BoardType & 0xFF;
-            info.v1.pcbVersion.major = PCBversion[1] & 0xFF;
-            info.v1.pcbVersion.minor = PCBversion[0] & 0xFF;
-            info.v1.productionDate = date;
-            ctx->otpWrite(&info);
-            return;
+            if (BoardType < 0xFF && PCBversion[1] <= 0xFF && PCBversion[0] <= 0xFF)
+            {
+                info.v2.otpVersion = OTP_VERSION_2;
+                info.v2.boardType = BoardType & 0xFF;
+                info.v2.subBoardType = SubBoardType & 0xFF;
+                info.v2.pcbVersion.major = PCBversion[1] & 0xFF;
+                info.v2.pcbVersion.minor = PCBversion[0] & 0xFF;
+                info.v2.productionDate = date;
+                ctx->otpWrite(&info);
+                return;
+            }
         }
+        break;
+
+    default:
+        break;
     }
 
-    // Invalid format wrong.
+    // Invalid input format.
     ctx->undefined(input);
 }
 

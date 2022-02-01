@@ -44,12 +44,29 @@ static void otpRead()
     }
     else
     {
-        USBnprintf("OTP %u %u %u.%u %u\r\n"
-                , info.otpVersion
-                , info.v1.boardType
-                , info.v1.pcbVersion.major
-                , info.v1.pcbVersion.minor
-                , info.v1.productionDate);
+        switch(info.otpVersion)
+        {
+        case OTP_VERSION_1:
+            USBnprintf("OTP %u %u %u.%u %u\r\n"
+                     , info.otpVersion
+                     , info.v1.boardType
+                     , info.v1.pcbVersion.major
+                     , info.v1.pcbVersion.minor
+                     , info.v1.productionDate);
+            break;
+        case OTP_VERSION_2:
+            USBnprintf("OTP %u %u %u %u.%u %u\r\n"
+                     , info.otpVersion
+                     , info.v2.boardType
+                     , info.v2.subBoardType
+                     , info.v2.pcbVersion.major
+                     , info.v2.pcbVersion.minor
+                     , info.v2.productionDate);
+            break;
+        default:
+            USBnprintf("Not supported version of OTP data. Update firmware in board.");
+            break;
+        }
     }
 }
 
