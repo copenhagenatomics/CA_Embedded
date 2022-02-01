@@ -32,7 +32,6 @@ static struct
 // Forward declare functions.
 static void handlePinInput(const char *input);
 static void printHeader();
-static void otpRead();
 
 static CAProtocolCtx caProto =
 {
@@ -42,30 +41,13 @@ static CAProtocolCtx caProto =
         .calibration = NULL, // TODO: change method for calibration?
         .calibrationRW = NULL,
         .logging = NULL,
-        .otpRead = otpRead,
+        .otpRead = CAotpRead,
         .otpWrite = NULL
 };
 
 static void printHeader()
 {
     USBnprintf(systemInfo());
-}
-static void otpRead()
-{
-    BoardInfo info;
-    if (HAL_otpRead(&info))
-    {
-        USBnprintf("OTP: No production available");
-    }
-    else
-    {
-        USBnprintf("OTP %u %u %u.%u %u\r\n"
-                , info.otpVersion
-                , info.v1.boardType
-                , info.v1.pcbVersion.major
-                , info.v1.pcbVersion.minor
-                , info.v1.productionDate);
-    }
 }
 
 static void GpioInit()

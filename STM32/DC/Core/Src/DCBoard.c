@@ -40,7 +40,6 @@
 static void clearLineAndBuffer();
 static void printHeader();
 static void userPinCmds(const char* inputString);
-static void otpRead();
 
 // Local variables.
 static CAProtocolCtx caProto =
@@ -51,7 +50,7 @@ static CAProtocolCtx caProto =
         .calibration = NULL,
         .calibrationRW = NULL,
         .logging = NULL,
-        .otpRead = otpRead,
+        .otpRead = CAotpRead,
         .otpWrite = NULL
 };
 
@@ -63,24 +62,6 @@ static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 
 // Temperature handling
 static I2C_HandleTypeDef *hi2c = NULL;
-
-static void otpRead()
-{
-    BoardInfo info;
-    if (HAL_otpRead(&info))
-    {
-        USBnprintf("OTP: No production available");
-    }
-    else
-    {
-        USBnprintf("OTP %u %u %u.%u %u\r\n"
-                , info.otpVersion
-                , info.v1.boardType
-                , info.v1.pcbVersion.major
-                , info.v1.pcbVersion.minor
-                , info.v1.productionDate);
-    }
-}
 
 static void printHeader()
 {

@@ -28,7 +28,9 @@ static CAProtocolCtx caProto =
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
-        .logging = NULL
+        .logging = NULL,
+        .otpRead = CAotpRead,
+        .otpWrite = NULL
 };
 
 /* Actuation pin outs */
