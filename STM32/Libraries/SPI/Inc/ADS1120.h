@@ -4,26 +4,42 @@
 #include <StmGpio.h>
 
 // Specific structure for the current setup of the ADS1120.
-// TODO: make this generic.
-typedef struct ADS1120_data {
-    int16_t chA;
-    int16_t chB;
-    int16_t internalTemp;
-} ADS1120_data;
+typedef enum
+{
+    INPUT_TEMP,      // config for temperature reading.
+    INPUT_CHA,       // config for first input
+    INPUT_CHB,       // config for second input
+    INPUT_CALIBREATE // calibration, measure (AVDD-AVSS)/2.
+} ADS1120_input;
+
+typedef struct ADS1120Data {
+    double chA;
+    double chB;
+    double internalTemp;
+    int16_t calibration;
+
+    // Calibration value (AVDD-AVSS)/2
+    ADS1120_input currentInput;  // Input to read.
+    uint32_t      readStart;     // time stamp for last ADC acquire.
+} ADS1120Data;
 
 typedef struct ADS1120Device {
     SPI_HandleTypeDef* hspi; // Pointer to SPI interface.
     StmGpio cs;              // Chip select for the specific device.
-    StmGpio drdy;            // Data ready pin. Used during reading os device.
+    StmGpio drdy;            // Data ready pin. is not effected by CS
+
+    // Data acquired from device and state information.
+    ADS1120Data data;
 } ADS1120Device;
 
 /* Description: Configure a single ADS1120 device. Configuration is fixed
- * @param ads1120 pointer to ADS1120 device.
+ * @param dev pointer to ADS1120 device.
+ * @param cfg setup ADS1120 to read the specific input.
  * @return     0 on success, else negative value (See code for values)
  */
-int ADS1120Configure(ADS1120Device *ads1120);
+int ADS1120Init(ADS1120Device *dev);
 
-/*
- * Read data from device.
- */
-int ADS1120Read(ADS1120Device *ads1120, ADS1120_data* data);
+// Loop to update the next input. Note, ADS1120Init must be called
+// called before this function. It will not break bu result is undefined.
+// Device will run in a loop { calibrate, temperature, CHA, CHB }
+void ADS1120Loop(ADS1120Device *dev);

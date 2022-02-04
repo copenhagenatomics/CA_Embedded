@@ -57,18 +57,20 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
         ads1120[i].hspi = hspi;
     }
 
-    // Write a dummy byte on SPI wire. Yes, this seems VERY strange
+    // Write 2 dummy byte on SPI wire. Yes, this seems VERY strange
     // since no CS is made so no receiver. For some reason it is needed
     // to kick the STM32 SPI interface before the first real transmission.
     // After this initial write everything seems to work just fine.
-    uint8_t dummy = 0xAA;
-    HAL_SPI_Transmit(hspi, &dummy, 1, 1);
+    // This could be related to the note in the documentation section 8.5.6
+    // where two bytes with DIN held low should be sent after each read of data.
+    uint8_t dummy[2] = { 0 };
+    HAL_SPI_Transmit(hspi, dummy, 2, 1);
 
     // Now configure the devices.
     int err = 0;
     for (int i=0; i < NO_SPI_DEVICES; i++)
     {
-        int ret = ADS1120Configure(&ads1120[i]);
+        int ret = ADS1120Init(&ads1120[i]);
         if (ret != 0) {
             err |= ret << (4*i);
         }
@@ -86,18 +88,49 @@ static void clearLineAndBuffer()
 static SPI_HandleTypeDef* hspi = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_)
 {
-    hspi = hspi_;
+    BoardInfo info;
     initCAProtocol(&caProto);
+
+    if (HAL_otpRead(&info) != OTP_SUCCESS)
+        return;
+
+    uint8_t major = 0;
+    uint8_t minor = 0;
+    uint8_t boardType = 0xFF;
+    if (info.otpVersion == OTP_VERSION_1)
+    {
+        boardType = info.v1.boardType;
+        major = info.v1.pcbVersion.major;
+        minor = info.v1.pcbVersion.minor;
+    }
+    else if (info.otpVersion == OTP_VERSION_2)
+    {
+        boardType = info.v2.boardType;
+        major = info.v2.pcbVersion.major;
+        minor = info.v2.pcbVersion.minor;
+    }
+    else
+        return; // something is very wrong
+    if (boardType != 3)  return;
+    if (major < 5)       return;
+    if (major == 5 && minor < 2) return;
+
+    hspi = hspi_;
 }
 
 void LoopTemperature()
 {
-    static int spiErr = 0;
+    static int spiErr = 1;
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
     static bool isFirstWrite = true;
 
     handleUserInputs(); // always allow DFU upload.
+
+    for (int i=0; i < NO_SPI_DEVICES && !spiErr && hspi != NULL; i++)
+    {
+        ADS1120Loop(&ads1120[i]);
+    }
 
     // Upload data every "tsUpload" ms.
     if (tdiff_u32(HAL_GetTick(), timeStamp) > tsUpload)
@@ -108,19 +141,31 @@ void LoopTemperature()
         {
             if (isFirstWrite)
             {
-                spiErr = initSpiDevices(hspi);
+                if (hspi != NULL)
+                    spiErr = initSpiDevices(hspi);
                 clearLineAndBuffer();
                 isFirstWrite = false;
             }
 
-            if (spiErr == 0)
-            {
-                ADS1120_data data = { 0 };
+            if (hspi == NULL) {
+                USBnprintf("This Temperature SW require PCB version >= 1.52 where SPI devices is attached");
+                return;
+            }
 
-                if (ADS1120Read(&ads1120[0], &data) == 0)
-                    USBnprintf("Data %x %x %x", data.chA, data.chB, data.internalTemp);
-                else
-                    USBnprintf("Failed to read data");
+            if (!spiErr)
+            {
+                double internalTemp = (ads1120[0].data.internalTemp +
+                                       ads1120[1].data.internalTemp +
+                                       ads1120[2].data.internalTemp +
+                                       ads1120[3].data.internalTemp +
+                                       ads1120[4].data.internalTemp)/5;
+
+                USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%", internalTemp
+                        , ads1120[0].data.chA, ads1120[0].data.chB
+                        , ads1120[1].data.chA, ads1120[1].data.chB
+                        , ads1120[2].data.chA, ads1120[2].data.chB
+                        , ads1120[3].data.chA, ads1120[3].data.chB
+                        , ads1120[4].data.chA, ads1120[4].data.chB);
             }
             else
             {

@@ -9,8 +9,12 @@
 #include <stdint.h>
 #include <string.h>
 #include "ADS1120.h"
+#include "USBprint.h"
+#include "time32.h"
 
-#define ADS_TIMEOUT 100 // ms, lowest possible value, device is handling operations in uSec.
+#define ADS_TIMEOUT 10 // In mSec.
+
+// Helper union class for setting up registers in a 4 byte array.
 typedef union ADS1120_RegConfig
 {
     struct {
@@ -38,9 +42,9 @@ typedef union ADS1120_RegConfig
             uint8_t i2mux      : 3;
             uint8_t i1mux      : 3;
         };
-    }; // anonymous
-    uint8_t regs[4];
-    uint32_t u32reg;
+    }; // anonymous struct.
+    uint8_t regs[4];   // byte array used for transmission/receive.
+    uint32_t u32reg;   // Nice to have in case of debug.
 } ADS1120_RegConfig;
 
 typedef union ADS1120Cmd {
@@ -48,12 +52,38 @@ typedef union ADS1120Cmd {
         uint8_t count    : 2; // No Of bytes - 1
         uint8_t regBegin : 2; // Register offset
         uint8_t rwcmd    : 4;
-    }; // anonymous
+    }; // anonymous struct
     uint8_t byte;
 } ADS1120Cmd;
 
-//static void powerDown(SPI_HandleTypeDef *hspi);     // Enter power-down mode (not implemented)
+static ADS1120_input nextInput(ADS1120_input current)
+{
+    switch(current)
+    {
+    case INPUT_TEMP:       return INPUT_CHA;
+    case INPUT_CHA:        return INPUT_CHB;
+    case INPUT_CHB:        return INPUT_CALIBREATE;
+    case INPUT_CALIBREATE: return INPUT_TEMP;
+    }
 
+    // Make compiler happy. If no return a warning from compiler is issued.
+    return INPUT_CALIBREATE;
+}
+
+static double adc2Temp(int16_t adcValue)
+{
+    // Values originate from brute force.
+    return (adcValue + 855.0)/(2570+855)*100;
+}
+
+// Helper function to test if device has new data.
+static bool isDataReady(ADS1120Device *dev)
+{
+    // If low , data is ready, else something is wrong.
+    return !stmGetGpio(dev->drdy);
+}
+
+//static void powerDown(SPI_HandleTypeDef *hspi);     // Enter power-down mode (not implemented)
 // Reset the device
 static HAL_StatusTypeDef reset(ADS1120Device *dev)
 {
@@ -62,16 +92,9 @@ static HAL_StatusTypeDef reset(ADS1120Device *dev)
     return HAL_SPI_Transmit(dev->hspi, &cmd.byte, 1, ADS_TIMEOUT);
 }
 
-static bool waitDataReady(ADS1120Device *dev)
-{
-    for (int count=0; !stmGetGpio(dev->drdy) && count < 25000; count++) { };
-
-    // If low , data is ready, else something is wrong.
-    return stmGetGpio(dev->drdy);
-}
-
 // Start or restart conversions.
-static HAL_StatusTypeDef ADCsync(ADS1120Device *dev)
+// Not used since writing registers starts a new conversion.
+static HAL_StatusTypeDef ADCSync(ADS1120Device *dev)
 {
     ADS1120Cmd cmd = { .byte = 0b00001000 };
     return HAL_SPI_Transmit(dev->hspi, &cmd.byte, 1, ADS_TIMEOUT);
@@ -81,10 +104,10 @@ static HAL_StatusTypeDef ADCsync(ADS1120Device *dev)
 static HAL_StatusTypeDef readADC(ADS1120Device *dev, uint16_t* value)
 {
     ADS1120Cmd cmd = { .rwcmd = 1, .regBegin = 0, .count = 0 };
-    if (!waitDataReady(dev))
+    if (!isDataReady(dev))
         return HAL_ERROR; // No data from chip.
 
-    uint8_t rxData[2] = { 0 };
+    uint8_t rxData[4] = { 0 };
     HAL_SPI_Transmit(dev->hspi, &cmd.byte, 1, ADS_TIMEOUT);
     if (HAL_SPI_Receive(dev->hspi, rxData, sizeof(rxData), ADS_TIMEOUT) != HAL_OK)
         return HAL_ERROR;
@@ -102,11 +125,7 @@ static HAL_StatusTypeDef readRegisters(ADS1120Device *dev, ADS1120_RegConfig* re
     HAL_StatusTypeDef ret = HAL_SPI_Transmit(dev->hspi, &cmd.byte, 1, ADS_TIMEOUT);
     if (ret != HAL_OK)
         return ret;
-
-    if (waitDataReady(dev))
-        return HAL_SPI_Receive(dev->hspi, regs->regs, sizeof(regs->regs), ADS_TIMEOUT);
-
-    return HAL_ERROR;
+    return HAL_SPI_Receive(dev->hspi, regs->regs, sizeof(regs->regs), ADS_TIMEOUT);
 }
 
 // Write nn registers starting at address rr
@@ -121,85 +140,164 @@ static HAL_StatusTypeDef writeRegister(ADS1120Device *dev, const ADS1120_RegConf
     return HAL_SPI_Transmit(dev->hspi, spiReq, 1 + count, ADS_TIMEOUT);
 }
 
-// Public functions begin.
-int ADS1120Configure(ADS1120Device *ads1120)
+static int setInput(ADS1120Device *dev, ADS1120_input selectedInput, bool verify)
 {
-    int ret;
-    const ADS1120_RegConfig cfg =
+    // A default configuration
+    ADS1120_RegConfig cfg =
     {
-            .pga_bypass = 0, // Gain should be used.
-            .gain       = 1,
-            .mux        = 0, // 0="AIN P = AIN0, AIN N = AIN1", 5="AIN P = AIN2, AIN N = AIN3"
-            .bcs        = 0, // TBD, enable Burn-out current sensor.
+            .pga_bypass = 0, // large gain should be used so this is invalid
+            .gain       = 6, // Multiply input by 32.
+            .mux        = 0, // This is altered below.
+            .bcs        = 0, // Burn-out current sensor not used
 
-            .ts         = 0, // Temperature mode
+            .ts         = 0, // Set to one if internal temp should be measured.
             .cm         = 0, // Single shot
             .mode       = 0, // Normal Mode
-            .dr         = 4, // 90 SPS
+            .dr         = 0, // 20HZ, see not in filter below.
 
-            .idac       = 0, // Must be zero, else measure is wrong.
+            .idac       = 0, // 0, since external voltage supply is used.
             .psw        = 0, // Our application is not a power bridge.
-            .fir_filter = 0, // No filter, only used for 20 SPS and 5SPS
-            .vref       = 2, // External reference selected using AIN0/REFP1 and AIN3/REFN1 inputs
+            .fir_filter = 1, // Filter on, used for 20 SPS and 5SPS and we are running at 20 HZ
+            .vref       = 0, // use internal Analog supply.
 
             .nop        = 0,
-            .drdym      = 0, // Only the dedicated DRDY pin is used to indicate when data are ready
-            .i1mux      = 0, // not routed
-            .i2mux      = 0, // not routed
+            .drdym      = 0, // The dedicated DRDY pin is used to indicate when data are ready
+            .i1mux      = 0, // not routed, since idac is 0
+            .i2mux      = 0, // not routed, since idac is 0
     };
 
-    // Select device.
-    stmSetGpio(ads1120->cs, false);
+    // Alter config to match the selected type.
+    switch(selectedInput)
+    {
+    case INPUT_TEMP:
+        cfg.ts = 1; // temperature mode.
+        // no need to set mux/gain since ts is set.
+        break;
+    case INPUT_CHA:
+        // all default.
+        break;
+    case INPUT_CHB:
+        cfg.mux = 5;
+        break;
+    case INPUT_CALIBREATE:
+        cfg.mux = 0x0E;
+        break;
+    }
 
-    // Make a do-while to make it possible to break out in case of error
-    // and thus make it possible to make common handling of CS.
-    do {
-        HAL_Delay(1); // Wait td(CSSC) < 1mSec.
-        if (reset(ads1120) != HAL_OK) {
-            ret = 1;
-            break;
-        }
-        HAL_Delay(1); // wait 50µs+32*t(CLK) < 1mSec
-        if (writeRegister(ads1120, &cfg, 4, 0) != HAL_OK) {
-            ret = 2;
-            break;
-        }
+    dev->data.readStart = 0;
+    dev->data.currentInput = selectedInput;
 
-        ADS1120_RegConfig test;
-        bzero(&test, sizeof(test));
-        if (readRegisters(ads1120, &test) != HAL_OK) {
-            ret = 3;
-            break; // Test the settings.
-        }
+    if (writeRegister(dev, &cfg, 4, 0) != HAL_OK) {
+        return -1;
+    }
 
-        if (memcmp(test.regs, cfg.regs, 4) != 0) {
-            ret = 4;
-            break;
-        }
-        ret = 0; // All good.
-    } while(0);
+    if (!verify) {
+        dev->data.readStart = HAL_GetTick();
+        dev->data.currentInput = selectedInput;
+        return 0;
+    }
 
-    // Release device
-    stmSetGpio(ads1120->cs, true);
-    return ret;
+    // Do not set the internal settings since reading registers will stop the reading.
+    // Read back the configuration.
+    ADS1120_RegConfig test;
+    bzero(&test, sizeof(test));
+    if (readRegisters(dev, &test) != HAL_OK) {
+        return -2;
+    }
+
+    if (memcmp(test.regs, cfg.regs, 4) != 0) {
+        return -3;
+    }
+
+    return 0;
 }
 
-int ADS1120Read(ADS1120Device *dev, ADS1120_data* data)
+// Public functions begin.
+int ADS1120Init(ADS1120Device *dev)
 {
     int ret = 0;
-    uint16_t adcValue;
-    stmSetGpio(dev->cs, false);
+    memset(&dev->data, 0, sizeof(dev->data));
 
-    ADCsync(dev);
-    if (readADC(dev, &adcValue) == HAL_OK)
-    {
-        data->chA = adcValue;
-    }
-    else
+    stmSetGpio(dev->cs, false);
+    if (reset(dev) != HAL_OK)
     {
         ret = -1;
     }
+    else
+    {
+        HAL_Delay(1); // wait 50µs+32*t(CLK) < 1mSec after reset
 
+        // Check that the configuration can be set.
+        ret = setInput(dev, INPUT_CALIBREATE, true);
+        if (ret != 0) {
+            ret = -2;
+        }
+    }
+
+    // Release device
     stmSetGpio(dev->cs, true);
     return ret;
+}
+
+void ADS1120Loop(ADS1120Device *dev)
+{
+    const int mAvgTime = 6; // Moving average time, see https://en.wikipedia.org/wiki/Moving_average.
+
+    ADS1120Data* data = &dev->data;
+
+    // current setting is lowest sample rate, 1/20 Sec. Timeout is 70mSec.
+    if (tdiff_u32(HAL_GetTick(), data->readStart) > 70)
+    {
+        // Something is wrong. Restart from calibrate
+        stmSetGpio(dev->cs, false);
+        setInput(dev, INPUT_CALIBREATE, false);
+        ADCSync(dev); // If no change in SPI flags a new ADC acquire is not started.
+        stmSetGpio(dev->cs, true);
+
+        // TODO: How to invalidate?
+        return;
+    }
+
+    if (!isDataReady(dev))
+    {
+        // Data is not ready. This is OK since SPI device needs to acquire the data
+        return;
+    }
+
+    // Get the new value present in the SPI device.
+    stmSetGpio(dev->cs, false);
+
+    uint16_t adcValue;
+    if (readADC(dev, &adcValue) != HAL_OK)
+    {
+        // Something is wrong. Restart from calibrate
+        setInput(dev, INPUT_CALIBREATE, false);
+        ADCSync(dev); // If no change in SPI flags a new ADC acquire is not started.
+    }
+    else
+    {
+        // The smallest possible State machine
+        switch(data->currentInput)
+        {
+        case INPUT_TEMP:
+            data->internalTemp += (((int16_t) adcValue)/4.0 * 0.03125 - data->internalTemp)/mAvgTime;
+            break;
+
+        case INPUT_CHA:
+            data->chA = adc2Temp(((int16_t) adcValue) - data->calibration);
+            break;
+
+        case INPUT_CHB:
+            data->chB = adc2Temp(((int16_t) adcValue) - data->calibration);
+            break;
+
+        case INPUT_CALIBREATE:
+            // The offset value from ADC1120 can be either negative or positive.
+            data->calibration = (((int16_t) adcValue) - data->calibration) / mAvgTime;
+            break;
+        }
+        setInput(dev, nextInput(data->currentInput), false);
+    }
+
+    stmSetGpio(dev->cs, true);
 }
