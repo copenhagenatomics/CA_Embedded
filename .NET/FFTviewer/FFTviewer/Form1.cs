@@ -16,5 +16,10 @@ namespace FFTviewer
         {
             pictureBox1.Image = bmp;
         }
+
+        private void pictureBox1_SizeChanged(object sender, EventArgs e)
+        {
+            _fftDraw.ChangeSize(pictureBox1.Width, pictureBox1.Height);
+        }
     }
 }

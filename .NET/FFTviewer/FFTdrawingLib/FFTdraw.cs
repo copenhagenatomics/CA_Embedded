@@ -38,37 +38,55 @@ namespace FFTdrawingLib
             _serialPort = new SerialPort(serialPort);
             _serialPort.BaudRate = 115200;
             _serialPort.Open();
-            Console.WriteLine(_serialPort.ReadLine());
-            _serialPort.WriteLine("LOG p9");  // to start dumping FFT values
-            Thread readThread = new Thread(ReadLoop);
+            var thread = new Thread(ReadLoop);
+            thread.Start();
+        }
+
+        public void ChangeSize(int width, int height)
+        {
+            lock (this)
+            {
+                _width = width;
+                _height = height;
+            }
         }
 
         public void ReadLoop()
         {
+            Thread.Sleep(1000);
+            _serialPort?.WriteLine("LOG p9");  // to start dumping FFT values
+
             while (_continue && _serialPort != null)
             {
                 try
                 {
-                    List<float> list = _serialPort.ReadLine().Split(", ").Cast<float>().ToList();
+                    var list = _serialPort.ReadLine().Split(", ").ToList();
                     if (list.Count != 1024)
                     {
                         Console.WriteLine("list.Count() = " + list.Count);
                     }
-
-                    var factor = (_height - 40) / list.Max();
-                    var bitmap = new Bitmap(_width, _height);
-                    using (var g = Graphics.FromImage(bitmap))
+                    else
                     {
-                        var blackPen = new Pen(Color.Green, 1);
-                        int x = 20;
-                        foreach (var item in list)
+                        List<float> data = list.Select(x => float.Parse(x)).ToList();
+                        lock (this) // do not update the bitmap if the size is changing. 
                         {
-                            g.DrawLine(blackPen, x, 20, x++, (int)Math.Round(item * factor));
-                            if (x > _width) break;
+                            var factor = (_height - 40) / data.Skip(1).Max();
+                            var bitmap = new Bitmap(_width, _height);
+                            using (var g = Graphics.FromImage(bitmap))
+                            {
+                                var pen = new Pen(Color.Green, 1);
+                                int x = 20;
+                                foreach (var item in data)
+                                {
+                                    var barHeight = (int)Math.Round(item * factor);
+                                    g.DrawLine(pen, x, _height - 20, x++, _height - 20 - barHeight);
+                                    if (x > _width) break;
+                                }
+                            }
+
+                            BitmapUpdateEvent?.Invoke(this, bitmap);
                         }
                     }
-
-                    BitmapUpdateEvent?.Invoke(this, bitmap);
                 }
                 catch (TimeoutException) { }
             }
