@@ -14,6 +14,7 @@ namespace FFTviewer
 
         private void bitmapUpdateEvent(object sender, Bitmap bmp)
         {
+            pictureBox1.Image?.Dispose();
             pictureBox1.Image = bmp;
         }
 
