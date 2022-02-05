@@ -17,12 +17,21 @@ namespace FFTdrawingLib
         private int _height = 10;
         private bool disposedValue;
 
-        public FFTdraw() 
+        public FFTdraw(string serialPort, int width, int height) 
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 throw new Exception("This is only supported on Windows");
             }
+
+            _width = width;
+            _height = height;
+            _serialPort = new SerialPort(serialPort);
+            _serialPort.BaudRate = 115200;
+            _serialPort.ReadTimeout = 1000;
+            _serialPort.Open();
+            var thread = new Thread(ReadLoop);
+            thread.Start();
         }
 
         // Declare the delegate (if using non-generic pattern).
@@ -30,17 +39,6 @@ namespace FFTdrawingLib
 
         // Declare the event.
         public event BitmapUpdateEventHandler? BitmapUpdateEvent;
-
-        public void Initialize(string serialPort, int width, int height)
-        {
-            _width = width;
-            _height = height;
-            _serialPort = new SerialPort(serialPort);
-            _serialPort.BaudRate = 115200;
-            _serialPort.Open();
-            var thread = new Thread(ReadLoop);
-            thread.Start();
-        }
 
         public void ChangeSize(int width, int height)
         {
@@ -102,7 +100,7 @@ namespace FFTdrawingLib
         protected virtual void Dispose(bool disposing)
         {
             _continue = false;
-            Thread.Sleep(1000);
+            Thread.Sleep(1500);
             if (!disposedValue)
             {
                 if (disposing && _serialPort != null)

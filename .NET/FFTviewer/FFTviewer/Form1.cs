@@ -5,7 +5,7 @@ namespace FFTviewer
 {
     public partial class Form1 : Form
     {
-        private FFTdraw _fftDraw = new FFTdraw();
+        private FFTdraw _fftDraw;
         public Form1()
         {
             InitializeComponent();
@@ -25,8 +25,14 @@ namespace FFTviewer
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            _fftDraw.Initialize(comboBox1.Text, pictureBox1.Width, pictureBox1.Height);
+            _fftDraw?.Dispose();
+            _fftDraw = new FFTdraw(comboBox1.Text, pictureBox1.Width, pictureBox1.Height);
             _fftDraw.BitmapUpdateEvent += bitmapUpdateEvent;
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _fftDraw?.Dispose();
         }
     }
 }
