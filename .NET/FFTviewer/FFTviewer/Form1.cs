@@ -1,4 +1,5 @@
 using FFTdrawingLib;
+using System.IO.Ports;
 
 namespace FFTviewer
 {
@@ -8,8 +9,7 @@ namespace FFTviewer
         public Form1()
         {
             InitializeComponent();
-            _fftDraw.Initialize("COM9", pictureBox1.Width, pictureBox1.Height);
-            _fftDraw.BitmapUpdateEvent += bitmapUpdateEvent;
+            comboBox1.Items.AddRange(SerialPort.GetPortNames());
         }
 
         private void bitmapUpdateEvent(object sender, Bitmap bmp)
@@ -21,6 +21,12 @@ namespace FFTviewer
         private void pictureBox1_SizeChanged(object sender, EventArgs e)
         {
             _fftDraw.ChangeSize(pictureBox1.Width, pictureBox1.Height);
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            _fftDraw.Initialize(comboBox1.Text, pictureBox1.Width, pictureBox1.Height);
+            _fftDraw.BitmapUpdateEvent += bitmapUpdateEvent;
         }
     }
 }

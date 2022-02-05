@@ -60,38 +60,43 @@ namespace FFTdrawingLib
             {
                 try
                 {
-                    var list = _serialPort.ReadLine().Split(", ").ToList();
-                    if (list.Count != 1024)
+                    var list = _serialPort.ReadLine().Split(", ");
+                    if (list.Count() < 48)
                     {
-                        Console.WriteLine("list.Count() = " + list.Count);
+                        Console.WriteLine("list.Count() = " + list.Count());
                     }
                     else
                     {
-                        List<float> data = list.Select(x => float.Parse(x)).ToList();
+                        var data = list.Select(x => float.Parse(x));
                         lock (this) // do not update the bitmap if the size is changing. 
                         {
-                            var factor = (_height - 40) / data.Skip(1).Max();  // remove .Skip(1)
-                            var bitmap = new Bitmap(_width, _height);
-                            using (var g = Graphics.FromImage(bitmap))
-                            {
-                                var penWidth = Math.Max(1, _width / data.Count); // integer math. 
-                                var pen = new Pen(Color.Green, penWidth);
-                                int x = 20;
-                                foreach (var item in data)
-                                {
-                                    var barHeight = (int)Math.Round(item * factor);
-                                    g.DrawLine(pen, x, _height - 20, x, _height - 20 - barHeight);
-                                    x += penWidth;
-                                    if (x > _width) break;
-                                }
-                            }
-
-                            BitmapUpdateEvent?.Invoke(this, bitmap);
+                            BitmapUpdateEvent?.Invoke(this, DrawBitmap(data));
                         }
                     }
                 }
                 catch (TimeoutException) { }
             }
+        }
+
+        private Bitmap DrawBitmap(IEnumerable<float> data)
+        {
+            var factor = (_height - 40) / data.Skip(1).Max();  // remove .Skip(1)
+            var bitmap = new Bitmap(_width, _height);
+            using (var g = Graphics.FromImage(bitmap))
+            {
+                var penWidth = Math.Max(1, _width / data.Count()); // integer math. 
+                var pen = new Pen(Color.Green, penWidth);
+                int x = 20;
+                foreach (var item in data)
+                {
+                    var barHeight = (int)Math.Round(item * factor);
+                    g.DrawLine(pen, x, _height - 20, x, _height - 20 - barHeight);
+                    x += penWidth;
+                    if (x > _width) break;
+                }
+            }
+
+            return bitmap;
         }
 
         protected virtual void Dispose(bool disposing)
