@@ -24,7 +24,7 @@ static void printHeader(); // Needed for CaProtocol callback.
 static CAProtocolCtx caProto =
 {
         .undefined = HALundefined,
-        .printHeader = printHeader,
+        .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -35,11 +35,6 @@ static CAProtocolCtx caProto =
 
 /* Actuation pin outs */
 static StmGpio spiGpio[TEMP_VALUES-1];
-
-static void printHeader()
-{
-    USBnprintf(systemInfo());
-}
 
 static void handleUserInputs()
 {

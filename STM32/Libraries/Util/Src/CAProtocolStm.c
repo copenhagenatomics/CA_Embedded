@@ -3,6 +3,7 @@
 #include "USBprint.h"
 #include "jumpToBootloader.h"
 #include "HAL_otp.h"
+#include "systemInfo.h"
 
 void HALundefined(const char *input)
 {
@@ -17,6 +18,11 @@ void HALJumpToBootloader()
     USBnprintf("Entering bootloader mode");
     HAL_Delay(200);
     JumpToBootloader();
+}
+
+void CAPrintHeader()
+{
+    USBnprintf(systemInfo());
 }
 
 void CAotpRead()
