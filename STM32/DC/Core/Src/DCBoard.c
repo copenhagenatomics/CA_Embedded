@@ -38,14 +38,13 @@
 
 // Private static function declarations.
 static void clearLineAndBuffer();
-static void printHeader();
 static void userPinCmds(const char* inputString);
 
 // Local variables.
 static CAProtocolCtx caProto =
 {
         .undefined = userPinCmds,
-        .printHeader = printHeader,
+        .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -62,11 +61,6 @@ static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 
 // Temperature handling
 static I2C_HandleTypeDef *hi2c = NULL;
-
-static void printHeader()
-{
-    USBnprintf(systemInfo());
-}
 
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {

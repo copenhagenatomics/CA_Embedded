@@ -31,12 +31,11 @@ static struct
 
 // Forward declare functions.
 static void handlePinInput(const char *input);
-static void printHeader();
 
 static CAProtocolCtx caProto =
 {
         .undefined = handlePinInput,
-        .printHeader = printHeader,
+        .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, // TODO: change method for calibration?
         .calibrationRW = NULL,
@@ -44,11 +43,6 @@ static CAProtocolCtx caProto =
         .otpRead = CAotpRead,
         .otpWrite = NULL
 };
-
-static void printHeader()
-{
-    USBnprintf(systemInfo());
-}
 
 static void GpioInit()
 {
