@@ -18,6 +18,11 @@ static bool readPin(StmGpio *ctx)
     return (state == GPIO_PIN_SET);
 }
 
+static void togglePin(struct StmGpio* ctx)
+{
+    HAL_GPIO_TogglePin(ctx->blk, ctx->pin);
+}
+
 void stmGpioInit(StmGpio *ctx, GPIO_TypeDef* blk, uint16_t pin)
 {
     ctx->blk = blk;
@@ -25,5 +30,6 @@ void stmGpioInit(StmGpio *ctx, GPIO_TypeDef* blk, uint16_t pin)
 
     ctx->set = writePin;
     ctx->get = readPin;
+    ctx->toggle = togglePin;
 }
 

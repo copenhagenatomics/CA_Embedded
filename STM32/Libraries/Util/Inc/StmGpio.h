@@ -14,6 +14,7 @@
 
 #define stmSetGpio(x, activate) { (x).set(&(x), activate); }
 #define stmGetGpio(x)           (x).get(&(x))
+#define stmToggleGpio(x)        (x).toggle(&(x))
 
 typedef struct StmGpio
 {
@@ -22,6 +23,7 @@ typedef struct StmGpio
 
     void (*set)(struct StmGpio* gpio, bool activate);
     bool (*get)(struct StmGpio* gpio);
+    void (*toggle)(struct StmGpio* gpio);
 } StmGpio;
 
 void stmGpioInit(StmGpio *ctx, GPIO_TypeDef* blk, uint16_t pin);
