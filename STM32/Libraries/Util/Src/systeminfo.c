@@ -55,7 +55,7 @@ static char* productType(uint8_t id)
 
 const char* systemInfo()
 {
-    static char buf[500] = { 0 };
+    static char buf[600] = { 0 };
     BoardInfo info = { 0 };
 
     if (HAL_otpRead(&info) != OTP_SUCCESS)
