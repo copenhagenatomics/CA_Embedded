@@ -45,13 +45,6 @@ void heaterLoop()
 
     for(HeatCtrl *pCtrl = heaters; pCtrl < &heaters[noOfHeaters]; pCtrl++)
     {
-        // Check is user is pressing the button
-        if (!pCtrl->button->get(pCtrl->button))
-        {
-            pCtrl->heater->set(pCtrl->heater, true);
-            continue;
-        }
-
         uint32_t tdiff = tdiff_u32(now, pCtrl->periodBegin);
         if (tdiff > pCtrl->pwmDuration)
         {
