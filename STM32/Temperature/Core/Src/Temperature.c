@@ -160,12 +160,13 @@ void LoopTemperature()
                                        ads1120[3].data.internalTemp +
                                        ads1120[4].data.internalTemp)/5;
 
-                USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%", internalTemp
+                USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%"
                         , ads1120[0].data.chA, ads1120[0].data.chB
                         , ads1120[1].data.chA, ads1120[1].data.chB
                         , ads1120[2].data.chA, ads1120[2].data.chB
                         , ads1120[3].data.chA, ads1120[3].data.chB
-                        , ads1120[4].data.chA, ads1120[4].data.chB);
+                        , ads1120[4].data.chA, ads1120[4].data.chB
+                        , internalTemp);
             }
             else
             {
