@@ -70,10 +70,16 @@ static ADS1120_input nextInput(ADS1120_input current)
     return INPUT_CALIBREATE;
 }
 
-static double adc2Temp(int16_t adcValue)
+#define WATER_100 1615.0
+#define WATER_0   -430.0
+static double adc2Temp(int16_t adcValue, int16_t calibration)
 {
-    // Values originate from brute force.
-    return (adcValue + 855.0)/(2570+855)*100;
+    if (adcValue == 0x7fff)
+        return 10000; // Nothing in port, send 10000 to set an invalid value.
+    // TODO: How to detect a short?
+
+    adcValue -= calibration;
+    return (adcValue - WATER_0)/(WATER_100 - WATER_0) * 100;
 }
 
 // Helper function to test if device has new data.
@@ -146,7 +152,7 @@ static int setInput(ADS1120Device *dev, ADS1120_input selectedInput, bool verify
     ADS1120_RegConfig cfg =
     {
             .pga_bypass = 0, // large gain should be used so this is invalid
-            .gain       = 6, // Multiply input by 32.
+            .gain       = 5, // Multiply input by 16.
             .mux        = 0, // This is altered below.
             .bcs        = 0, // Burn-out current sensor not used
 
@@ -277,6 +283,7 @@ void ADS1120Loop(ADS1120Device *dev)
     else
     {
         // The smallest possible State machine
+        double temp;
         switch(data->currentInput)
         {
         case INPUT_TEMP:
@@ -284,11 +291,19 @@ void ADS1120Loop(ADS1120Device *dev)
             break;
 
         case INPUT_CHA:
-            data->chA = adc2Temp(((int16_t) adcValue) - data->calibration);
+            temp = adc2Temp(((int16_t) adcValue), data->calibration);
+            if (temp == 10000 || data->chA == 10000)
+                data->chA = temp;
+            else
+                data->chA += (temp - data->chA)/mAvgTime;
             break;
 
         case INPUT_CHB:
-            data->chB = adc2Temp(((int16_t) adcValue) - data->calibration);
+            temp = adc2Temp(((int16_t) adcValue), data->calibration);
+            if (temp == 10000 || data->chB == 10000)
+                data->chB = temp;
+            else
+                data->chB += (temp - data->chB)/mAvgTime;
             break;
 
         case INPUT_CALIBREATE:
