@@ -88,32 +88,15 @@ static void clearLineAndBuffer()
 static SPI_HandleTypeDef* hspi = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_)
 {
-    BoardInfo info;
     initCAProtocol(&caProto);
 
-    if (HAL_otpRead(&info) != OTP_SUCCESS)
+    BoardType board;
+    if (getBoardInfo(&board, NULL) || board != Temperature)
         return;
 
-    uint8_t major = 0;
-    uint8_t minor = 0;
-    uint8_t boardType = 0xFF;
-    if (info.otpVersion == OTP_VERSION_1)
-    {
-        boardType = info.v1.boardType;
-        major = info.v1.pcbVersion.major;
-        minor = info.v1.pcbVersion.minor;
-    }
-    else if (info.otpVersion == OTP_VERSION_2)
-    {
-        boardType = info.v2.boardType;
-        major = info.v2.pcbVersion.major;
-        minor = info.v2.pcbVersion.minor;
-    }
-    else
-        return; // something is very wrong
-    if (boardType != 3)  return;
-    if (major < 5)       return;
-    if (major == 5 && minor < 2) return;
+    pcbVersion ver;
+    if (getPcbVersion(&ver) || ver.major != 5 || ver.minor != 2)
+        return;
 
     hspi = hspi_;
 }
@@ -148,7 +131,7 @@ void LoopTemperature()
             }
 
             if (hspi == NULL) {
-                USBnprintf("This Temperature SW require PCB version >= 1.52 where SPI devices is attached");
+                USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices is attached");
                 return;
             }
 
@@ -170,7 +153,7 @@ void LoopTemperature()
             }
             else
             {
-                USBnprintf("Failed to initialise ADS1120 device %X. This SW require PCB version >= 1.52", spiErr);
+                USBnprintf("Failed to initialise ADS1120 device %X. This SW require PCB version >= 5.2", spiErr);
             }
         }
     }

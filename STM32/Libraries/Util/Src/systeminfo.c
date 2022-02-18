@@ -39,16 +39,16 @@ static char* productType(uint8_t id)
 {
     switch(id)
     {
-    case 1:  return "AC Board";          break;
-    case 2:  return "DC Board";          break;
-    case 3:  return "Temperature";       break;
-    case 4:  return "Current";           break;
-    case 5:  return "FlowChip";          break;
-    case 6:  return "humidityChip";      break;
-    case 7:  return "Pressure";          break;
-    case 8:  return "Salt Flow Board";   break;
-    case 9:  return "SaltLeak";          break;
-    case 10: return "HotValvePumpBoard"; break;
+    case AC_Board         :  return "AC Board";          break;
+    case DC_Board         :  return "DC Board";          break;
+    case Temperature      :  return "Temperature";       break;
+    case Current          :  return "Current";           break;
+    case FlowChip         :  return "FlowChip";          break;
+    case humidityChip     :  return "humidityChip";      break;
+    case Pressure         :  return "Pressure";          break;
+    case SaltFlowBoard    :  return "Salt Flow Board";   break;
+    case SaltLeak         :  return "SaltLeak";          break;
+    case HotValvePumpBoard:  return "HotValvePumpBoard"; break;
     }
     return "NA";
 }
@@ -96,4 +96,50 @@ const char* systemInfo()
     }
 
     return buf;
+}
+
+int getBoardInfo(BoardType *bdt, SubBoardType *sbdt)
+{
+    BoardInfo info = { 0 };
+    if (HAL_otpRead(&info) != OTP_SUCCESS)
+        return -1;
+
+    if (info.otpVersion == OTP_VERSION_1)
+    {
+        if (bdt)  { *bdt  = info.v1.boardType; }
+        if (sbdt) { *sbdt = 0; } // Sub board type is not included in version 1
+        return 0;
+    }
+
+    if (info.otpVersion == OTP_VERSION_2)
+    {
+        if (bdt)  { *bdt  = info.v2.boardType; }
+        if (sbdt) { *sbdt = info.v2.subBoardType; }
+        return 0;
+    }
+
+    return -1; // New OTP version. i.e. this SW is to old.
+}
+
+int getPcbVersion(pcbVersion* ver)
+{
+    BoardInfo info = { 0 };
+    if (ver == 0 || HAL_otpRead(&info) != OTP_SUCCESS)
+        return -1;
+
+    if (info.otpVersion == OTP_VERSION_1)
+    {
+        ver->major = info.v1.pcbVersion.major;
+        ver->minor = info.v1.pcbVersion.minor;
+        return 0;
+    }
+
+    if (info.otpVersion == OTP_VERSION_2)
+    {
+        ver->major = info.v2.pcbVersion.major;
+        ver->minor = info.v2.pcbVersion.minor;
+        return 0;
+    }
+
+    return -1; // New OTP version. i.e. this SW is to old.
 }
