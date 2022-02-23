@@ -283,7 +283,6 @@ void ADS1120Loop(ADS1120Device *dev)
     else
     {
         // The smallest possible State machine
-        double temp;
         switch(data->currentInput)
         {
         case INPUT_TEMP:
@@ -291,24 +290,16 @@ void ADS1120Loop(ADS1120Device *dev)
             break;
 
         case INPUT_CHA:
-            temp = adc2Temp(((int16_t) adcValue), data->calibration);
-            if (temp == 10000 || data->chA == 10000)
-                data->chA = temp;
-            else
-                data->chA += (temp - data->chA)/mAvgTime;
+            data->chA = adc2Temp(((int16_t) adcValue), data->calibration);
             break;
 
         case INPUT_CHB:
-            temp = adc2Temp(((int16_t) adcValue), data->calibration);
-            if (temp == 10000 || data->chB == 10000)
-                data->chB = temp;
-            else
-                data->chB += (temp - data->chB)/mAvgTime;
+            data->chB = adc2Temp(((int16_t) adcValue), data->calibration);
             break;
 
         case INPUT_CALIBREATE:
             // The offset value from ADC1120 can be either negative or positive.
-            data->calibration = (((int16_t) adcValue) - data->calibration) / mAvgTime;
+            data->calibration += (((int16_t) adcValue) - data->calibration) / mAvgTime;
             break;
         }
         setInput(dev, nextInput(data->currentInput), false);
