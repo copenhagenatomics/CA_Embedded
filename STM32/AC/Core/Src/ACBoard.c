@@ -47,18 +47,12 @@ static CAProtocolCtx caProto =
 static void GpioInit()
 {
     const int noPorts = 4;
-    static GPIO_TypeDef *const buttonsBlk[] = { GPIOB, GPIOB, GPIOB,
-    btn4_GPIO_Port };
-    static const uint16_t buttonsPin[] = { 0x0020, 0x0010, 0x0008, 0x8000 };
-
-    static GPIO_TypeDef *const pinsBlk[] = { ctrl1_GPIO_Port, ctrl2_GPIO_Port,
-    ctrl3_GPIO_Port, ctrl4_GPIO_Port };
-    static const uint16_t pins[] = { 0x0002, 0x0008, 0x0020, 0x0080 };
+    static GPIO_TypeDef *const pinsBlk[] = { ctrl1_GPIO_Port, ctrl2_GPIO_Port, ctrl3_GPIO_Port, ctrl4_GPIO_Port };
+    static const uint16_t pins[] = { ctrl1_Pin, ctrl2_Pin, ctrl3_Pin, ctrl4_Pin };
 
     for (int i = 0; i < noPorts; i++)
     {
-        stmGpioInit(&heaterPorts[i].button, buttonsBlk[i], buttonsPin[i]);
-        stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i]);
+        stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
         heatCtrlAdd(&heaterPorts[i].heater, &heaterPorts[i].button);
     }
 }

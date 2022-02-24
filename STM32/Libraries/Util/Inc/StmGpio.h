@@ -26,6 +26,13 @@ typedef struct StmGpio
     void (*toggle)(struct StmGpio* gpio);
 } StmGpio;
 
-void stmGpioInit(StmGpio *ctx, GPIO_TypeDef* blk, uint16_t pin);
+
+typedef enum
+{
+    STM_GPIO_OUTPUT,
+    STM_GPIO_INPUT
+    // More to come, speed etc.
+} StmGpioMode_t;
+void stmGpioInit(StmGpio *ctx, GPIO_TypeDef* blk, uint16_t pin, StmGpioMode_t type);
 
 #endif /* INC_STMGPIO_H_ */

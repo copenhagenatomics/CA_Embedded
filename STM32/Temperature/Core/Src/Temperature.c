@@ -39,18 +39,18 @@ static ADS1120Device ads1120[ NO_SPI_DEVICES ];
 static int initSpiDevices(SPI_HandleTypeDef* hspi)
 {
     // Initialise Chip Select pin
-    stmGpioInit(&ads1120[0].cs, CS1_GPIO_Port, CS1_Pin);
-    stmGpioInit(&ads1120[1].cs, CS2_GPIO_Port, CS2_Pin);
-    stmGpioInit(&ads1120[2].cs, CS3_GPIO_Port, CS3_Pin);
-    stmGpioInit(&ads1120[3].cs, CS4_GPIO_Port, CS4_Pin);
-    stmGpioInit(&ads1120[4].cs, CS5_GPIO_Port, CS5_Pin);
+    stmGpioInit(&ads1120[0].cs, CS1_GPIO_Port, CS1_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&ads1120[1].cs, CS2_GPIO_Port, CS2_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&ads1120[2].cs, CS3_GPIO_Port, CS3_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&ads1120[3].cs, CS4_GPIO_Port, CS4_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&ads1120[4].cs, CS5_GPIO_Port, CS5_Pin, STM_GPIO_OUTPUT);
 
     // Initialise Data Ready input pin
-    stmGpioInit(&ads1120[0].drdy, DRDY1_GPIO_Port, DRDY1_Pin);
-    stmGpioInit(&ads1120[1].drdy, DRDY2_GPIO_Port, DRDY2_Pin);
-    stmGpioInit(&ads1120[2].drdy, DRDY3_GPIO_Port, DRDY3_Pin);
-    stmGpioInit(&ads1120[3].drdy, DRDY4_GPIO_Port, DRDY4_Pin);
-    stmGpioInit(&ads1120[4].drdy, DRDY5_GPIO_Port, DRDY5_Pin);
+    stmGpioInit(&ads1120[0].drdy, DRDY1_GPIO_Port, DRDY1_Pin, STM_GPIO_INPUT);
+    stmGpioInit(&ads1120[1].drdy, DRDY2_GPIO_Port, DRDY2_Pin, STM_GPIO_INPUT);
+    stmGpioInit(&ads1120[2].drdy, DRDY3_GPIO_Port, DRDY3_Pin, STM_GPIO_INPUT);
+    stmGpioInit(&ads1120[3].drdy, DRDY4_GPIO_Port, DRDY4_Pin, STM_GPIO_INPUT);
+    stmGpioInit(&ads1120[4].drdy, DRDY5_GPIO_Port, DRDY5_Pin, STM_GPIO_INPUT);
 
     for (int i=0; i < NO_SPI_DEVICES; i++) {
         stmSetGpio(ads1120[i].cs, true); // CS selects chip when low
