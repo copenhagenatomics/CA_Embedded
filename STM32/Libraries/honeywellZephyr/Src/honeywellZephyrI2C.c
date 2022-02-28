@@ -19,8 +19,9 @@ HAL_StatusTypeDef honeywellZephyrRead(I2C_HandleTypeDef *hi2c, float *flowData)
     if (ret != HAL_OK)
         return ret;
 
+    const uint16_t lowLimit = 1638 + 16380/200; // 0 + 0.5% of Full Scale.
     uint16_t uFlow = ((uint16_t) addata[0] << 8) | addata[1];
-    if (uFlow <= 1639)          *flowData = 0; // Lower limit 0%
+    if (uFlow <= lowLimit)      *flowData = 0; // Lower limit 0%
     else if (uFlow >= 14746)    *flowData = 1; // Full scale output 100%
     else                        *flowData = ((uFlow / 16384.0) - 0.1) / 0.8;
 
