@@ -1,6 +1,6 @@
 # git commit version and date
 
-GIT_VERSION := $(shell git --no-pager describe --tags --always --dirty)
+GIT_VERSION := $(shell git --no-pager describe --always --dirty)
 GIT_DATE := $(firstword $(shell git --no-pager show --date=short --format="%ad" --name-only))
 GIT_SHA := $(shell git rev-parse HEAD)
 
