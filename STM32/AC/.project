@@ -35,10 +35,5 @@
 			<type>2</type>
 			<locationURI>PARENT-1-PROJECT_LOC/Libraries</locationURI>
 		</link>
-		<link>
-			<name>Util</name>
-			<type>2</type>
-			<locationURI>PARENT-1-PROJECT_LOC/Libraries/Util</locationURI>
-		</link>
 	</linkedResources>
 </projectDescription>

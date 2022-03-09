@@ -101,6 +101,7 @@ int main(void)
 	while (1) {
         ACBoardLoop();
     /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
 	}
   /* USER CODE END 3 */
@@ -376,4 +377,3 @@ void assert_failed(uint8_t *file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
