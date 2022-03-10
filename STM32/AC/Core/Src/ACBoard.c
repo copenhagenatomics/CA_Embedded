@@ -160,49 +160,19 @@ static void handlePinInput(const char *input)
         HALundefined(input);
 }
 
-void handleUserInputs()
-{
-    char inputBuffer[CIRCULAR_BUFFER_SIZE];
-
-    usb_cdc_rx((uint8_t*) inputBuffer);
-    inputCAProtocol(&caProto, inputBuffer);
-}
-
-void clearLineAndBuffer()
-{
-    // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-    USBnprintf("reconnected");
-    usb_cdc_rx_flush();
-}
-
 void ACBoardInit(ADC_HandleTypeDef* hadc)
 {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
+    initCAProtocol(&caProto);
     GpioInit();
 }
 
-void ACBoardLoop()
+void ACBoardLoop(const char *bootMsg)
 {
-    static bool isFirstWrite = true;
-
-    handleUserInputs();
+    CAhandleUserInputs(&caProto, bootMsg);
     ADCMonitorLoop(printCurrentArray);
-
-    if (isComPortOpen())
-    {
-        // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-        if (isFirstWrite)
-        {
-            clearLineAndBuffer();
-            isFirstWrite = false;
-        }
-    }
-    else
-    {
-        isFirstWrite = true;
-    }
 
     // Toggle pins if needed when in pwm mode
     heaterLoop();

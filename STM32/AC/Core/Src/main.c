@@ -16,6 +16,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "CAProtocolStm.h"
 #include "ACBoard.h"
 /* USER CODE END Includes */
 
@@ -40,6 +41,8 @@ DMA_HandleTypeDef hdma_adc1;
 
 TIM_HandleTypeDef htim2;
 
+WWDG_HandleTypeDef hwwdg;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -50,6 +53,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_WWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -74,14 +78,13 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  const char *bootMsg = CAonBoot(&hwwdg);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -90,6 +93,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_ADC1_Init();
   MX_TIM2_Init();
+  MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
   ACBoardInit(&hadc1);
   HAL_TIM_Base_Start_IT(&htim2);
@@ -98,12 +102,14 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	while (1) {
-        ACBoardLoop();
+    while (1)
+    {
+        HAL_WWDG_Refresh(&hwwdg);
+        ACBoardLoop(bootMsg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	}
+    }
   /* USER CODE END 3 */
 }
 
@@ -276,6 +282,36 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
+  * @brief WWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_WWDG_Init(void)
+{
+
+  /* USER CODE BEGIN WWDG_Init 0 */
+
+  /* USER CODE END WWDG_Init 0 */
+
+  /* USER CODE BEGIN WWDG_Init 1 */
+
+  /* USER CODE END WWDG_Init 1 */
+  hwwdg.Instance = WWDG;
+  hwwdg.Init.Prescaler = WWDG_PRESCALER_8;
+  hwwdg.Init.Window = 127;
+  hwwdg.Init.Counter = 127;
+  hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
+  if (HAL_WWDG_Init(&hwwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN WWDG_Init 2 */
+
+  /* USER CODE END WWDG_Init 2 */
 
 }
 

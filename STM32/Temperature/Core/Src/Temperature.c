@@ -26,13 +26,6 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-static void handleUserInputs()
-{
-    char inputBuffer[CIRCULAR_BUFFER_SIZE];
-    usb_cdc_rx((uint8_t*) inputBuffer);
-    inputCAProtocol(&caProto, inputBuffer);
-}
-
 // Set all SPI pins high to be enable for communication
 #define NO_SPI_DEVICES 5
 static ADS1120Device ads1120[ NO_SPI_DEVICES ];
@@ -78,13 +71,6 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
     return err;
 }
 
-static void clearLineAndBuffer()
-{
-    // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-    USBnprintf("reconnected");
-    usb_cdc_rx_flush();
-}
-
 static SPI_HandleTypeDef* hspi = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_)
 {
@@ -101,14 +87,14 @@ void InitTemperature(SPI_HandleTypeDef* hspi_)
     hspi = hspi_;
 }
 
-void LoopTemperature()
+void LoopTemperature(const char* bootMsg)
 {
     static int spiErr = 1;
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
     static bool isFirstWrite = true;
 
-    handleUserInputs(); // always allow DFU upload.
+    CAhandleUserInputs(&caProto, bootMsg);
 
     for (int i=0; i < NO_SPI_DEVICES && !spiErr && hspi != NULL; i++)
     {
@@ -126,7 +112,6 @@ void LoopTemperature()
             {
                 if (hspi != NULL)
                     spiErr = initSpiDevices(hspi);
-                clearLineAndBuffer();
                 isFirstWrite = false;
             }
 
