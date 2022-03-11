@@ -195,6 +195,7 @@ static void userPinCmds(const char* inputBuffer)
     struct actuationInfo actuationInfo = parseAndValidateInput(inputBuffer);
     if (!actuationInfo.isInputValid)
     {
+        USBnprintf("MISREAD: %s", inputBuffer);
         return;
     }
 
