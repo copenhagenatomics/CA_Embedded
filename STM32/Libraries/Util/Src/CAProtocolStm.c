@@ -19,8 +19,10 @@ void HALundefined(const char *input)
 
 void HALJumpToBootloader()
 {
-    // Do not perform the JumpToBootloader now, leave it to CAonBoot
-    NVIC_SystemReset();
+    USBnprintf("Entering bootloader mode");
+    __HAL_RCC_WWDG_CLK_DISABLE();
+    HAL_Delay(200);
+    JumpToBootloader(); // function never returns.
 }
 
 void CAPrintHeader()
@@ -87,20 +89,7 @@ void CAhandleUserInputs(CAProtocolCtx* ctx, const char* startMsg)
     inputCAProtocol(ctx, inputBuffer);
 }
 
-static void checkyEnter(const char* inputString)
-{
-    // User has pressed enter, Jump to DFU mode.
-    if (strncmp("y", inputString, 1) == 0)
-    {
-        USBnprintf("Entering bootloader mode");
-        HAL_Delay(200);
-        JumpToBootloader(); // function never returns.
-    }
-
-    USBnprintf("Misread %s\r\n", inputString);
-}
-
-const char* CAonBoot(WWDG_HandleTypeDef *hwwg)
+const char* CAonBoot()
 {
     static char msg[100]; // Make static to prevent allocation on stack.
 
@@ -110,37 +99,7 @@ const char* CAonBoot(WWDG_HandleTypeDef *hwwg)
     }
     else if (__HAL_RCC_GET_FLAG(RCC_FLAG_SFTRST))
     {
-        // SW reset. This is set if user has entered DFU and forced a SW reset.
-        // User needs to confirm that this is required.
-        CAProtocolCtx caProto =
-        {
-                .undefined = checkyEnter,
-                .printHeader = CAPrintHeader,
-                .jumpToBootLoader = NULL,
-                .calibration = NULL,
-                .calibrationRW = NULL,
-                .logging = NULL,
-                .otpRead = CAotpRead,
-                .otpWrite = NULL
-        };
-        MX_USB_DEVICE_Init();
-        initCAProtocol(&caProto);
-
-        uint32_t tStamp = HAL_GetTick();
-        while (tdiff_u32(HAL_GetTick(), tStamp) < 30000)
-        {
-            CAhandleUserInputs(&caProto, "DFU mode: press y<enter> to start SW update");
-        }
-
-        // User has done nothing => generate a HW Watch dog reset.
-        hwwg->Instance = WWDG;
-        hwwg->Init.Prescaler = WWDG_PRESCALER_8;
-        hwwg->Init.Window = 127;
-        hwwg->Init.Counter = 127;
-        hwwg->Init.EWIMode = WWDG_EWI_DISABLE;
-        HAL_WWDG_Init(hwwg);
-
-        while(1) {}; // loop until hwwg reset is triggered
+        sprintf(msg, "reconnected Reset Reason: Software Reset");
     }
     else if (__HAL_RCC_GET_FLAG(RCC_FLAG_PORRST))
     {
