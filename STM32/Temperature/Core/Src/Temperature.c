@@ -81,7 +81,7 @@ void InitTemperature(SPI_HandleTypeDef* hspi_)
         return;
 
     pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major != 5 || ver.minor != 2)
+    if (getPcbVersion(&ver) || ver.major != 5 || ver.minor < 2)
         return;
 
     hspi = hspi_;
