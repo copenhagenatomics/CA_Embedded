@@ -20,6 +20,7 @@ extern uint32_t _FlashAddr;   // Variable defined in ld linker script.
 
 void writeToFlash(uint32_t indx, uint32_t size, uint8_t *dataToBeSaved)
 {
+    __HAL_RCC_WWDG_CLK_DISABLE();
     // Erase the sector before write
     HAL_FLASH_Unlock();
     FLASH_Erase_Sector(FLASH_SECTOR, FLASH_VOLTAGE_RANGE_3);
@@ -32,6 +33,7 @@ void writeToFlash(uint32_t indx, uint32_t size, uint8_t *dataToBeSaved)
         HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, FLASH_ADDR+indx+i , dataToBeSaved[i]);
     }
     HAL_FLASH_Lock();
+    __HAL_RCC_WWDG_CLK_ENABLE();
 }
 
 void readFromFlash(uint32_t indx, uint32_t size, uint8_t *dataToBeRead)

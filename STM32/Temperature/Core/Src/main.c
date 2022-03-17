@@ -88,7 +88,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  const char *bootMsg = CAonBoot(&hwwdg);
+  const char *bootMsg = CAonBoot();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */

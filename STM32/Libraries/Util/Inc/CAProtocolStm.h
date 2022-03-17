@@ -7,7 +7,7 @@ void CAPrintHeader();
 void CAotpRead();
 
 // analyse reason for boot and in case of SW reset jump to DFU SW update.
-const char* CAonBoot(WWDG_HandleTypeDef *hwwg);
+const char* CAonBoot();
 
 // Generic handler for a CAProtocolCtx handler.
 void CAhandleUserInputs(CAProtocolCtx* ctx, const char* startMsg);
