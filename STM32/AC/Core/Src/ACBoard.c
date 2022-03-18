@@ -31,12 +31,11 @@ static struct
 
 // Forward declare functions.
 static void handlePinInput(const char *input);
-static void printHeader();
 
 static CAProtocolCtx caProto =
 {
         .undefined = handlePinInput,
-        .printHeader = printHeader,
+        .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, // TODO: change method for calibration?
         .calibrationRW = NULL,
@@ -45,26 +44,15 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-static void printHeader()
-{
-    USBnprintf(systemInfo());
-}
-
 static void GpioInit()
 {
     const int noPorts = 4;
-    static GPIO_TypeDef *const buttonsBlk[] = { GPIOB, GPIOB, GPIOB,
-    btn4_GPIO_Port };
-    static const uint16_t buttonsPin[] = { 0x0020, 0x0010, 0x0008, 0x8000 };
-
-    static GPIO_TypeDef *const pinsBlk[] = { ctrl1_GPIO_Port, ctrl2_GPIO_Port,
-    ctrl3_GPIO_Port, ctrl4_GPIO_Port };
-    static const uint16_t pins[] = { 0x0002, 0x0008, 0x0020, 0x0080 };
+    static GPIO_TypeDef *const pinsBlk[] = { ctrl1_GPIO_Port, ctrl2_GPIO_Port, ctrl3_GPIO_Port, ctrl4_GPIO_Port };
+    static const uint16_t pins[] = { ctrl1_Pin, ctrl2_Pin, ctrl3_Pin, ctrl4_Pin };
 
     for (int i = 0; i < noPorts; i++)
     {
-        stmGpioInit(&heaterPorts[i].button, buttonsBlk[i], buttonsPin[i]);
-        stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i]);
+        stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
         heatCtrlAdd(&heaterPorts[i].heater, &heaterPorts[i].button);
     }
 }
@@ -172,49 +160,19 @@ static void handlePinInput(const char *input)
         HALundefined(input);
 }
 
-void handleUserInputs()
-{
-    char inputBuffer[CIRCULAR_BUFFER_SIZE];
-
-    usb_cdc_rx((uint8_t*) inputBuffer);
-    inputCAProtocol(&caProto, inputBuffer);
-}
-
-void clearLineAndBuffer()
-{
-    // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-    USBnprintf("reconnected");
-    usb_cdc_rx_flush();
-}
-
 void ACBoardInit(ADC_HandleTypeDef* hadc)
 {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
+    initCAProtocol(&caProto);
     GpioInit();
 }
 
-void ACBoardLoop()
+void ACBoardLoop(const char *bootMsg)
 {
-    static bool isFirstWrite = true;
-
-    handleUserInputs();
+    CAhandleUserInputs(&caProto, bootMsg);
     ADCMonitorLoop(printCurrentArray);
-
-    if (isComPortOpen())
-    {
-        // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-        if (isFirstWrite)
-        {
-            clearLineAndBuffer();
-            isFirstWrite = false;
-        }
-    }
-    else
-    {
-        isFirstWrite = true;
-    }
 
     // Toggle pins if needed when in pwm mode
     heaterLoop();

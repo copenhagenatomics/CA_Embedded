@@ -11,6 +11,6 @@
 #include "stm32f4xx_hal.h"
 
 void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c);
-void DCBoardLoop();
+void DCBoardLoop(const char* bootMsg);
 
 #endif /* SRC_DCBOARD_H_ */

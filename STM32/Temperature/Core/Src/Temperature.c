@@ -8,23 +8,16 @@
 #include "usb_cdc_fops.h"
 #include <CAProtocol.h>
 #include <CAProtocolStm.h>
-#include "si7051.h"
 #include "USBprint.h"
-#include "max31855.h"
 #include "time32.h"
 #include "StmGpio.h"
-
-//Board Specific Defines
-#define TEMP_VALUES 11
-
-// Forward declare static functions.
-static void printHeader(); // Needed for CaProtocol callback.
+#include "ADS1120.h"
 
 // Local variables
 static CAProtocolCtx caProto =
 {
         .undefined = HALundefined,
-        .printHeader = printHeader,
+        .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -33,104 +26,120 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-/* Actuation pin outs */
-static StmGpio spiGpio[TEMP_VALUES-1];
-
-static void printHeader()
-{
-    USBnprintf(systemInfo());
-}
-
-static void handleUserInputs()
-{
-    char inputBuffer[CIRCULAR_BUFFER_SIZE];
-    usb_cdc_rx((uint8_t*) inputBuffer);
-    inputCAProtocol(&caProto, inputBuffer);
-}
-
 // Set all SPI pins high to be enable for communication
-static void GPIO_INIT()
+#define NO_SPI_DEVICES 5
+static ADS1120Device ads1120[ NO_SPI_DEVICES ];
+static int initSpiDevices(SPI_HandleTypeDef* hspi)
 {
-    GPIO_TypeDef* const gpioBlk[TEMP_VALUES-1] = { SEL0_GPIO_Port, SEL1_GPIO_Port, SEL2_GPIO_Port,
-                                                   SEL3_GPIO_Port, SEL4_GPIO_Port, SEL5_GPIO_Port,
-                                                   SEL6_GPIO_Port, SEL7_GPIO_Port, SEL8_GPIO_Port,
-                                                   SEL9_GPIO_Port};
-    const uint16_t gpioPin[TEMP_VALUES-1] = { SEL0_Pin, SEL1_Pin, SEL2_Pin,
-                                              SEL3_Pin, SEL4_Pin, SEL5_Pin,
-                                              SEL6_Pin, SEL7_Pin, SEL8_Pin,
-                                              SEL9_Pin};
+    // Initialise Chip Select pin
+    stmGpioInit(&ads1120[0].cs, CS1_GPIO_Port, CS1_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&ads1120[1].cs, CS2_GPIO_Port, CS2_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&ads1120[2].cs, CS3_GPIO_Port, CS3_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&ads1120[3].cs, CS4_GPIO_Port, CS4_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&ads1120[4].cs, CS5_GPIO_Port, CS5_Pin, STM_GPIO_OUTPUT);
 
-    for (int i=0; i < (TEMP_VALUES-1); i++)
-    {
-        stmGpioInit(&spiGpio[i], gpioBlk[i], gpioPin[i]);
-        spiGpio[i].set(&spiGpio[i], true); // Default is CS high.
-    }
-}
+    // Initialise Data Ready input pin
+    stmGpioInit(&ads1120[0].drdy, DRDY1_GPIO_Port, DRDY1_Pin, STM_GPIO_INPUT);
+    stmGpioInit(&ads1120[1].drdy, DRDY2_GPIO_Port, DRDY2_Pin, STM_GPIO_INPUT);
+    stmGpioInit(&ads1120[2].drdy, DRDY3_GPIO_Port, DRDY3_Pin, STM_GPIO_INPUT);
+    stmGpioInit(&ads1120[3].drdy, DRDY4_GPIO_Port, DRDY4_Pin, STM_GPIO_INPUT);
+    stmGpioInit(&ads1120[4].drdy, DRDY5_GPIO_Port, DRDY5_Pin, STM_GPIO_INPUT);
 
-static float temperatures[TEMP_VALUES] = {0}; // array where all temperatures are stored.
-static void readTemperatures(SPI_HandleTypeDef* hspi, I2C_HandleTypeDef* hi2c)
-{
-    float junction_temperatures[TEMP_VALUES] = {0}; // Internal junction temp is not used.
-
-    // Read from thermocouple ports
-    for (int i = 0; i < TEMP_VALUES-1; i++)
-    {
-        Max31855_Read(hspi, &spiGpio[i], &temperatures[i], &junction_temperatures[i]);
+    for (int i=0; i < NO_SPI_DEVICES; i++) {
+        stmSetGpio(ads1120[i].cs, true); // CS selects chip when low
+        ads1120[i].hspi = hspi;
     }
 
-    // On board temperature
-    if (si7051Temp(hi2c, &temperatures[TEMP_VALUES-1]) != HAL_OK)
-        temperatures[TEMP_VALUES-1] = 10000;
-}
+    // Write 2 dummy byte on SPI wire. Yes, this seems VERY strange
+    // since no CS is made so no receiver. For some reason it is needed
+    // to kick the STM32 SPI interface before the first real transmission.
+    // After this initial write everything seems to work just fine.
+    // This could be related to the note in the documentation section 8.5.6
+    // where two bytes with DIN held low should be sent after each read of data.
+    uint8_t dummy[2] = { 0 };
+    HAL_SPI_Transmit(hspi, dummy, 2, 1);
 
-static void printTemperatures(void)
-{
-    USBnprintf("%0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f, %0.2f",
-            temperatures[0], temperatures[1], temperatures[2], temperatures[3], temperatures[4],
-            temperatures[5], temperatures[6], temperatures[7], temperatures[8], temperatures[9], temperatures[10]);
-}
-
-static void clearLineAndBuffer()
-{
-    // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-    USBnprintf("reconnected");
-    usb_cdc_rx_flush();
+    // Now configure the devices.
+    int err = 0;
+    for (int i=0; i < NO_SPI_DEVICES; i++)
+    {
+        int ret = ADS1120Init(&ads1120[i]);
+        if (ret != 0) {
+            err |= ret << (4*i);
+        }
+    }
+    return err;
 }
 
 static SPI_HandleTypeDef* hspi = NULL;
-static I2C_HandleTypeDef* hi2c = NULL;
-void InitTemperature(SPI_HandleTypeDef* hspi_, I2C_HandleTypeDef* hi2c_)
+void InitTemperature(SPI_HandleTypeDef* hspi_)
 {
     initCAProtocol(&caProto);
 
+    BoardType board;
+    if (getBoardInfo(&board, NULL) || board != Temperature)
+        return;
+
+    pcbVersion ver;
+    if (getPcbVersion(&ver) || ver.major != 5 || ver.minor < 2)
+        return;
+
     hspi = hspi_;
-    hi2c = hi2c_;
-    GPIO_INIT();
 }
 
-void LoopTemperature()
+void LoopTemperature(const char* bootMsg)
 {
+    static int spiErr = 1;
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
     static bool isFirstWrite = true;
 
-    handleUserInputs(); // always allow DFU upload.
-    if (hspi == NULL || hi2c == NULL)
-        return;
+    CAhandleUserInputs(&caProto, bootMsg);
+
+    for (int i=0; i < NO_SPI_DEVICES && !spiErr && hspi != NULL; i++)
+    {
+        ADS1120Loop(&ads1120[i]);
+    }
 
     // Upload data every "tsUpload" ms.
-    if (tdiff_u32(HAL_GetTick(),timeStamp) > tsUpload)
+    if (tdiff_u32(HAL_GetTick(), timeStamp) > tsUpload)
     {
         timeStamp = HAL_GetTick();
+
         if (isComPortOpen())
         {
             if (isFirstWrite)
             {
-                clearLineAndBuffer();
+                if (hspi != NULL)
+                    spiErr = initSpiDevices(hspi);
                 isFirstWrite = false;
             }
-            readTemperatures(hspi, hi2c);
-            printTemperatures();
+
+            if (hspi == NULL) {
+                USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices is attached");
+                return;
+            }
+
+            if (!spiErr)
+            {
+                double internalTemp = (ads1120[0].data.internalTemp +
+                                       ads1120[1].data.internalTemp +
+                                       ads1120[2].data.internalTemp +
+                                       ads1120[3].data.internalTemp +
+                                       ads1120[4].data.internalTemp)/5;
+
+                USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%"
+                        , ads1120[0].data.chA, ads1120[0].data.chB
+                        , ads1120[1].data.chA, ads1120[1].data.chB
+                        , ads1120[2].data.chA, ads1120[2].data.chB
+                        , ads1120[3].data.chA, ads1120[3].data.chB
+                        , ads1120[4].data.chA, ads1120[4].data.chB
+                        , internalTemp);
+            }
+            else
+            {
+                USBnprintf("Failed to initialise ADS1120 device %X. This SW require PCB version >= 5.2", spiErr);
+            }
         }
     }
 

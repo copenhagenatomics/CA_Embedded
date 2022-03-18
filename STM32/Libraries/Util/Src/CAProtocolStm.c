@@ -1,8 +1,13 @@
 #include <string.h>
+#include "stm32f4xx_hal.h"
 #include "CAProtocolStm.h"
+#include "usb_device.h"
 #include "USBprint.h"
+#include "usb_cdc_fops.h"
 #include "jumpToBootloader.h"
 #include "HAL_otp.h"
+#include "systemInfo.h"
+#include "time32.h"
 
 void HALundefined(const char *input)
 {
@@ -15,8 +20,14 @@ void HALundefined(const char *input)
 void HALJumpToBootloader()
 {
     USBnprintf("Entering bootloader mode");
+    __HAL_RCC_WWDG_CLK_DISABLE();
     HAL_Delay(200);
-    JumpToBootloader();
+    JumpToBootloader(); // function never returns.
+}
+
+void CAPrintHeader()
+{
+    USBnprintf(systemInfo());
 }
 
 void CAotpRead()
@@ -52,4 +63,57 @@ void CAotpRead()
             break;
         }
     }
+}
+
+void CAhandleUserInputs(CAProtocolCtx* ctx, const char* startMsg)
+{
+    static bool isFirstWrite = true;
+    char inputBuffer[CIRCULAR_BUFFER_SIZE];
+
+    if (isComPortOpen())
+    {
+        // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
+        if (isFirstWrite)
+        {
+            USBnprintf(startMsg);
+            usb_cdc_rx_flush();
+            isFirstWrite = false;
+        }
+    }
+    else
+    {
+        isFirstWrite = true;
+    }
+
+    usb_cdc_rx((uint8_t*) inputBuffer);
+    inputCAProtocol(ctx, inputBuffer);
+}
+
+const char* CAonBoot()
+{
+    static char msg[100]; // Make static to prevent allocation on stack.
+
+    if (__HAL_RCC_GET_FLAG(RCC_FLAG_WWDGRST))
+    {
+        sprintf(msg, "reconnected Reset Reason: Hardware Watch dog");
+    }
+    else if (__HAL_RCC_GET_FLAG(RCC_FLAG_SFTRST))
+    {
+        sprintf(msg, "reconnected Reset Reason: Software Reset");
+    }
+    else if (__HAL_RCC_GET_FLAG(RCC_FLAG_PORRST))
+    {
+        sprintf(msg, "reconnected Reset Reason: Power On");
+    }
+    else
+    {
+        // System has none of watchdog, SW reset or porrst bit set. At least
+        // one reason should be set => this should never happen, inspect!!
+        sprintf(msg, "reconnected Reset Reason: Unknown(%lX)", RCC->CSR);
+    }
+
+    // Reset the boot flags.
+    __HAL_RCC_CLEAR_RESET_FLAGS();
+
+    return msg;
 }

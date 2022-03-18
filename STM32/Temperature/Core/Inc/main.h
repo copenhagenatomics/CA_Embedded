@@ -58,28 +58,32 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Test1_Pin GPIO_PIN_0
+#define Test1_GPIO_Port GPIOB
+#define Test2_Pin GPIO_PIN_1
+#define Test2_GPIO_Port GPIOB
 #define LED_Pin GPIO_PIN_2
 #define LED_GPIO_Port GPIOB
-#define SEL0_Pin GPIO_PIN_12
-#define SEL0_GPIO_Port GPIOB
-#define SEL1_Pin GPIO_PIN_13
-#define SEL1_GPIO_Port GPIOB
-#define SEL2_Pin GPIO_PIN_14
-#define SEL2_GPIO_Port GPIOB
-#define SEL3_Pin GPIO_PIN_15
-#define SEL3_GPIO_Port GPIOB
-#define SEL4_Pin GPIO_PIN_8
-#define SEL4_GPIO_Port GPIOA
-#define SEL5_Pin GPIO_PIN_9
-#define SEL5_GPIO_Port GPIOA
-#define SEL6_Pin GPIO_PIN_10
-#define SEL6_GPIO_Port GPIOA
-#define SEL7_Pin GPIO_PIN_15
-#define SEL7_GPIO_Port GPIOA
-#define SEL8_Pin GPIO_PIN_3
-#define SEL8_GPIO_Port GPIOB
-#define SEL9_Pin GPIO_PIN_4
-#define SEL9_GPIO_Port GPIOB
+#define CS1_Pin GPIO_PIN_13
+#define CS1_GPIO_Port GPIOB
+#define DRDY1_Pin GPIO_PIN_14
+#define DRDY1_GPIO_Port GPIOB
+#define CS2_Pin GPIO_PIN_15
+#define CS2_GPIO_Port GPIOB
+#define DRDY2_Pin GPIO_PIN_8
+#define DRDY2_GPIO_Port GPIOA
+#define CS3_Pin GPIO_PIN_15
+#define CS3_GPIO_Port GPIOA
+#define DRDY3_Pin GPIO_PIN_3
+#define DRDY3_GPIO_Port GPIOB
+#define CS4_Pin GPIO_PIN_4
+#define CS4_GPIO_Port GPIOB
+#define DRDY4_Pin GPIO_PIN_5
+#define DRDY4_GPIO_Port GPIOB
+#define CS5_Pin GPIO_PIN_8
+#define CS5_GPIO_Port GPIOB
+#define DRDY5_Pin GPIO_PIN_9
+#define DRDY5_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
@@ -89,5 +93,3 @@ void Error_Handler(void);
 #endif
 
 #endif /* __MAIN_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

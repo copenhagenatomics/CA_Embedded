@@ -37,15 +37,13 @@
 #define TURNOFFPWM 0
 
 // Private static function declarations.
-static void clearLineAndBuffer();
-static void printHeader();
 static void userPinCmds(const char* inputString);
 
 // Local variables.
 static CAProtocolCtx caProto =
 {
         .undefined = userPinCmds,
-        .printHeader = printHeader,
+        .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -63,11 +61,6 @@ static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 // Temperature handling
 static I2C_HandleTypeDef *hi2c = NULL;
 
-static void printHeader()
-{
-    USBnprintf(systemInfo());
-}
-
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
     // ADC to current calibration values
@@ -79,18 +72,6 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
 
 static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
-    static bool isFirstWrite = true;
-
-    if (!isComPortOpen())
-    {
-        isFirstWrite = true;
-        return;
-    }
-    if (isFirstWrite) {
-        clearLineAndBuffer();
-        isFirstWrite = false;
-    }
-
     float temp;
     if (si7051Temp(hi2c, &temp) != HAL_OK) temp = 10000;
 
@@ -201,6 +182,7 @@ static void userPinCmds(const char* inputBuffer)
     struct actuationInfo actuationInfo = parseAndValidateInput(inputBuffer);
     if (!actuationInfo.isInputValid)
     {
+        USBnprintf("MISREAD: %s", inputBuffer);
         return;
     }
 
@@ -245,13 +227,6 @@ static void userPinCmds(const char* inputBuffer)
     {
         USBnprintf("MISREAD: %s", inputBuffer);
     }
-}
-
-static void handleUserInputs()
-{
-    char inputBuffer[CIRCULAR_BUFFER_SIZE];
-    usb_cdc_rx((uint8_t*) inputBuffer);
-    inputCAProtocol(&caProto, inputBuffer);
 }
 
 static void autoOff()
@@ -308,24 +283,18 @@ void checkButtonPress()
     }
 }
 
-static void clearLineAndBuffer()
-{
-    // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-    USBnprintf("reconnected");
-    usb_cdc_rx_flush();
-}
-
 // Public member functions.
 void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c)
 {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
+    initCAProtocol(&caProto);
     hi2c = _hi2c;
 }
 
-void DCBoardLoop()
+void DCBoardLoop(const char* bootMsg)
 {
-    handleUserInputs();
+    CAhandleUserInputs(&caProto, bootMsg);
     ADCMonitorLoop(printResult);
 
     // Turn off pins if they have run for requested time

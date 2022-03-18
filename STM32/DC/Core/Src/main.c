@@ -23,6 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "CAProtocolStm.h"
 #include "DCBoard.h"
 /* USER CODE END Includes */
 
@@ -49,6 +50,8 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
+WWDG_HandleTypeDef hwwdg;
+
 /* USER CODE BEGIN PV */
 /* USER CODE END PV */
 
@@ -60,6 +63,7 @@ static void MX_ADC1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
+static void MX_WWDG_Init(void);
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
@@ -90,7 +94,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  const char *bootMsg = CAonBoot();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -101,6 +105,7 @@ int main(void)
   MX_I2C1_Init();
   MX_TIM2_Init();
   MX_TIM5_Init();
+  MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
   DCBoardInit(&hadc1, &hi2c1);
   HAL_TIM_Base_Start_IT(&htim2);
@@ -118,10 +123,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+      HAL_WWDG_Refresh(&hwwdg);
+      DCBoardLoop(bootMsg);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-      DCBoardLoop();
   }
   /* USER CODE END 3 */
 }
@@ -400,6 +407,36 @@ static void MX_TIM5_Init(void)
 }
 
 /**
+  * @brief WWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_WWDG_Init(void)
+{
+
+  /* USER CODE BEGIN WWDG_Init 0 */
+
+  /* USER CODE END WWDG_Init 0 */
+
+  /* USER CODE BEGIN WWDG_Init 1 */
+
+  /* USER CODE END WWDG_Init 1 */
+  hwwdg.Instance = WWDG;
+  hwwdg.Init.Prescaler = WWDG_PRESCALER_8;
+  hwwdg.Init.Window = 127;
+  hwwdg.Init.Counter = 127;
+  hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
+  if (HAL_WWDG_Init(&hwwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN WWDG_Init 2 */
+
+  /* USER CODE END WWDG_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -502,4 +539,3 @@ void assert_failed(uint8_t *file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
