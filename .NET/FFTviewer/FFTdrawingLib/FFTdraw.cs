@@ -19,6 +19,9 @@ namespace FFTdrawingLib
         private int _height = 10;
         private bool disposedValue;
         private string _cmd;
+        private int _penWidth = 1;
+        private int _mouseIndex = 0;
+        private float _factor=-1;
 
         public FFTdraw(string serialPort, int width, int height, string cmd) 
         {
@@ -30,12 +33,23 @@ namespace FFTdrawingLib
             _width = width;
             _height = height;
             _cmd = cmd;
-            _serialPort = new SerialPort(serialPort, 115200);
-            _serialPort.ReadTimeout = 2000;
-            _serialPort.ReadBufferSize = 10000000;
+            _serialPort = new SerialPort(serialPort);
+            _serialPort.BaudRate = 1;
+            _serialPort.DtrEnable = true;
+            _serialPort.RtsEnable = true;
+            _serialPort.BaudRate = 115200;
+            _serialPort.ReadTimeout = 1000;
+            _serialPort.ReadBufferSize = 1000000;
+            
             _serialPort.Open();
             var thread = new Thread(ReadLoop);
             thread.Start();
+        }
+
+        public string MouseMove(int x, int y)
+        {
+            _mouseIndex = (x - 20) / _penWidth;
+            return "freq: " + _mouseIndex + "Hz, height: " + ((_height-y-20) / _factor).ToString("#.##");
         }
 
         // Declare the delegate (if using non-generic pattern).
@@ -63,7 +77,6 @@ namespace FFTdrawingLib
             {
                 try
                 {
-                    // _serialPort.WriteLine("hallo");
                     var text = _serialPort.ReadLine();
                     Debug.Print(text);
                     var list = text.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim());
@@ -75,7 +88,8 @@ namespace FFTdrawingLib
                     {
                         Debug.Print(String.Join(", ", list));
                         Debug.Print(list.Count().ToString());
-                        var data = list.Select(x => (float)Int32.Parse(x, NumberStyles.HexNumber));
+                        var data = list.Select(x => (float)Int32.Parse(x, NumberStyles.HexNumber)).ToList();
+                        
                         lock (this) // do not update the bitmap if the size is changing. 
                         {
                             BitmapUpdateEvent?.Invoke(this, DrawBitmap(data));
@@ -89,20 +103,26 @@ namespace FFTdrawingLib
             }
         }
 
-        private Bitmap DrawBitmap(IEnumerable<float> data)
+        private Bitmap DrawBitmap(List<float> data)
         {
-            var factor = (_height - 40) / data.Skip(1).Max();  // remove .Skip(1)
+            var factor = (_height - 100) / data.Skip(1).Max();  // remove .Skip(1)
+            float lowpass = 0.1f;
+            if (_factor == -1)
+                _factor = factor;
+            else
+                _factor = (float)(_factor * (1-lowpass) + factor * lowpass);
+
             var bitmap = new Bitmap(_width, _height);
             using (var g = Graphics.FromImage(bitmap))
             {
-                var penWidth = Math.Max(1, _width / data.Count()); // integer math. 
-                var pen = new Pen(Color.Green, penWidth);
+                _penWidth = Math.Max(1, _width / data.Count()); // integer math. 
+                var pen = new Pen(Color.Green, _penWidth);
                 int x = 20;
                 foreach (var item in data)
                 {
-                    var barHeight = (int)Math.Round(item * factor);
+                    var barHeight = (int)Math.Round(item * _factor);
                     g.DrawLine(pen, x, _height - 20, x, _height - 20 - barHeight);
-                    x += penWidth;
+                    x += _penWidth;
                     if (x > _width) break;
                 }
             }

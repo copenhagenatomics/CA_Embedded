@@ -1,4 +1,5 @@
 using FFTdrawingLib;
+using System.Diagnostics;
 using System.IO.Ports;
 
 namespace FFTviewer
@@ -16,6 +17,9 @@ namespace FFTviewer
         {
             pictureBox1.Image?.Dispose();
             pictureBox1.Image = bmp;
+            //label1.Invoke((MethodInvoker)delegate {
+            //    label1.Text = text;
+            //});
         }
 
         private void pictureBox1_SizeChanged(object sender, EventArgs e)
@@ -33,6 +37,11 @@ namespace FFTviewer
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             _fftDraw?.Dispose();
+        }
+
+        private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
+        {
+            label1.Text = _fftDraw?.MouseMove(e.X, e.Y);
         }
     }
 }
