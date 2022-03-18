@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO.Ports;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -16,8 +18,9 @@ namespace FFTdrawingLib
         private int _width = 10;
         private int _height = 10;
         private bool disposedValue;
+        private string _cmd;
 
-        public FFTdraw(string serialPort, int width, int height) 
+        public FFTdraw(string serialPort, int width, int height, string cmd) 
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -26,9 +29,10 @@ namespace FFTdrawingLib
 
             _width = width;
             _height = height;
-            _serialPort = new SerialPort(serialPort);
-            _serialPort.BaudRate = 115200;
-            _serialPort.ReadTimeout = 1000;
+            _cmd = cmd;
+            _serialPort = new SerialPort(serialPort, 115200);
+            _serialPort.ReadTimeout = 2000;
+            _serialPort.ReadBufferSize = 10000000;
             _serialPort.Open();
             var thread = new Thread(ReadLoop);
             thread.Start();
@@ -40,39 +44,48 @@ namespace FFTdrawingLib
         // Declare the event.
         public event BitmapUpdateEventHandler? BitmapUpdateEvent;
 
-        public void ChangeSize(int width, int height)
+        public void ChangeSize(int width, int height, string cmd)
         {
             lock (this)
             {
                 _width = width;
                 _height = height;
+                _cmd = cmd;
             }
         }
 
         public void ReadLoop()
         {
             Thread.Sleep(1000);
-            _serialPort?.WriteLine("LOG p9");  // to start dumping FFT values
+            _serialPort?.WriteLine(_cmd);  // to start dumping FFT values
 
             while (_continue && _serialPort != null)
             {
                 try
                 {
-                    var list = _serialPort.ReadLine().Split(", ");
+                    // _serialPort.WriteLine("hallo");
+                    var text = _serialPort.ReadLine();
+                    Debug.Print(text);
+                    var list = text.Split(",", StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim());
                     if (list.Count() < 48)
                     {
-                        Console.WriteLine("list.Count() = " + list.Count());
+                        Debug.Print("list.Count() = " + list.Count());
                     }
                     else
                     {
-                        var data = list.Select(x => float.Parse(x));
+                        Debug.Print(String.Join(", ", list));
+                        Debug.Print(list.Count().ToString());
+                        var data = list.Select(x => (float)Int32.Parse(x, NumberStyles.HexNumber));
                         lock (this) // do not update the bitmap if the size is changing. 
                         {
                             BitmapUpdateEvent?.Invoke(this, DrawBitmap(data));
                         }
                     }
                 }
-                catch (TimeoutException) { }
+                catch (Exception e) 
+                { 
+                    Debug.Print(e.Message); 
+                }
             }
         }
 

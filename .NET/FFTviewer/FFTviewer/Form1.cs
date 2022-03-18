@@ -20,13 +20,13 @@ namespace FFTviewer
 
         private void pictureBox1_SizeChanged(object sender, EventArgs e)
         {
-            _fftDraw.ChangeSize(pictureBox1.Width, pictureBox1.Height);
+            _fftDraw.ChangeSize(pictureBox1.Width, pictureBox1.Height, textBox1.Text);
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             _fftDraw?.Dispose();
-            _fftDraw = new FFTdraw(comboBox1.Text, pictureBox1.Width, pictureBox1.Height);
+            _fftDraw = new FFTdraw(comboBox1.Text, pictureBox1.Width, pictureBox1.Height, textBox1.Text);
             _fftDraw.BitmapUpdateEvent += bitmapUpdateEvent;
         }
 
