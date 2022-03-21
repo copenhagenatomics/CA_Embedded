@@ -165,7 +165,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc)
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
-    initCAProtocol(&caProto);
+    initCAProtocol(&caProto, usb_cdc_rx);
     GpioInit();
 }
 

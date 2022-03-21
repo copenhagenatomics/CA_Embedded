@@ -11,7 +11,9 @@
 #include "CAProtocol.h"
 
 typedef struct CAProtocolData {
-    // Nothing for now.
+    size_t len;         // Length of current data.
+    uint8_t buf[256];   // Buffer for the string fetched from the circular buffer.
+    ReaderFn rxReader;  // Reader for the buffer
 } CAProtocolData;
 
 #define MAX_NO_CALIBRATION 12
@@ -54,7 +56,7 @@ static void calibration(CAProtocolCtx* ctx, const char* input)
         ctx->undefined(input);
 }
 
-void logging(CAProtocolCtx* ctx, const char *input)
+static void logging(CAProtocolCtx* ctx, const char *input)
 {
     char* idx = index(input, ' ');
     int port;
@@ -74,7 +76,7 @@ void logging(CAProtocolCtx* ctx, const char *input)
 }
 
 #if (OTP_VERSION != OTP_VERSION_2)
-#error "Update of CAProtocol function otp_write required"
+#error "Update of CAProtocol required"
 #endif
 static void otp_write(CAProtocolCtx* ctx, const char *input)
 {
@@ -124,17 +126,68 @@ static void otp_write(CAProtocolCtx* ctx, const char *input)
     ctx->undefined(input);
 }
 
-void inputCAProtocol(CAProtocolCtx* ctx, const char *input)
+static int CAgetMsg(CAProtocolCtx* ctx)
 {
-    if (input[0] == '\0') {
-        return; // Null terminated string.
+    CAProtocolData* protocolData = ctx->data;
+    int msgLen = 0;
+
+    while (msgLen == 0)
+    {
+        uint8_t rxByte;
+
+        if (protocolData->rxReader(&rxByte))
+            return 0; // No more data in buffer => no message.
+
+        protocolData->buf[protocolData->len] = rxByte;
+        if (rxByte == '\r' || rxByte == '\n')
+        {
+            if (protocolData->len == 0) {
+                continue; // Ignore this zero length message.
+            }
+
+            // A valid string is received.
+            msgLen = protocolData->len;
+            break;
+        }
+
+        protocolData->len++; // Continue receive from buffer.
+        if (protocolData->len == (sizeof(protocolData->buf) - 1))
+        {
+            // Buffer overflow!! This is a protocol error or garbage from peer.
+            // No string should be bigger then protocolData buffer size.
+            // Simulate a string since there might be something of value.
+            msgLen = protocolData->len;
+            break;
+        }
     }
-    else if(strcmp(input, "Serial") == 0)
+
+    if (msgLen != 0)
+    {
+        // enforce zero terminate of string.
+        protocolData->buf[protocolData->len] = 0;
+        // Reset for receive of a new message. Caller must handle message or save it locally.
+        protocolData->len = 0;
+    }
+
+    return msgLen;
+}
+
+void inputCAProtocol(CAProtocolCtx* ctx)
+{
+    int msgLen = CAgetMsg(ctx);
+    if (msgLen == 0) {
+        return; // No message received
+    }
+
+    // A message is received i.e. a zero terminated string
+    char* input = (char *)ctx->data->buf;
+
+    if(strncmp(input, "Serial", 6) == 0)
     {
         if (ctx->printHeader)
             ctx->printHeader();
     }
-    else if(strcmp(input, "DFU") == 0)
+    else if(strncmp(input, "DFU", 3) == 0)
     {
         if (ctx->jumpToBootLoader)
             ctx->jumpToBootLoader();
@@ -166,7 +219,16 @@ void inputCAProtocol(CAProtocolCtx* ctx, const char *input)
     }
 }
 
-void initCAProtocol(CAProtocolCtx* ctx)
+void initCAProtocol(CAProtocolCtx* ctx, ReaderFn fn)
 {
-    ctx->data = NULL; // no data for now, when needed => malloc(sizeof(CAProtocolData));
+    ctx->data = malloc(sizeof(CAProtocolData));
+    memset(ctx->data->buf, 0, sizeof(ctx->data->buf));
+    ctx->data->len = 0;
+    ctx->data->rxReader = fn;
+}
+
+void flushCAProtocol(CAProtocolCtx* ctx)
+{
+    ctx->data->len = 0;
+    memset(ctx->data->buf, 0, sizeof(ctx->data->buf));
 }

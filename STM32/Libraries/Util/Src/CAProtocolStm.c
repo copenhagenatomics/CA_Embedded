@@ -68,14 +68,13 @@ void CAotpRead()
 void CAhandleUserInputs(CAProtocolCtx* ctx, const char* startMsg)
 {
     static bool isFirstWrite = true;
-    char inputBuffer[CIRCULAR_BUFFER_SIZE];
-
     if (isComPortOpen())
     {
         // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
         if (isFirstWrite)
         {
             USBnprintf(startMsg);
+            flushCAProtocol(ctx);
             usb_cdc_rx_flush();
             isFirstWrite = false;
         }
@@ -85,8 +84,7 @@ void CAhandleUserInputs(CAProtocolCtx* ctx, const char* startMsg)
         isFirstWrite = true;
     }
 
-    usb_cdc_rx((uint8_t*) inputBuffer);
-    inputCAProtocol(ctx, inputBuffer);
+    inputCAProtocol(ctx);
 }
 
 const char* CAonBoot()
