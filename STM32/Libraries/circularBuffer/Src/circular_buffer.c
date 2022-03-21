@@ -20,8 +20,7 @@ struct circular_buf_t {
 	uint8_t * buffer;
 	size_t head;
 	size_t tail;
-	size_t max; //of the buffer
-	size_t noInputs;
+	size_t max;
 	bool full;
 };
 
@@ -50,78 +49,30 @@ static void retreat_pointer(cbuf_handle_t cbuf)
 	cbuf->tail = (cbuf->tail + 1) % cbuf->max;
 }
 
-void circular_buf_add_input(cbuf_handle_t cbuf){
-	assert(cbuf);
-	cbuf->noInputs += 1;
-}
-
-void circular_buf_remove_input(cbuf_handle_t cbuf){
-	assert(cbuf);
-	cbuf->noInputs -= 1;
-}
-
-size_t circular_get_number_input(cbuf_handle_t cbuf){
-	assert(cbuf);
-	return cbuf->noInputs;
-}
-
-size_t circular_readline(cbuf_handle_t cbuf, uint8_t *tmpBuf, size_t maxLength)
+cbuf_handle_t circular_buf_init(size_t size)
 {
-    // If no inputs are available
-    if (circular_get_number_input(cbuf)==0){
-        tmpBuf[0]='\0';
-        return 0;
-    }
+    assert(size);
 
-    // Read command
-    size_t count = 0;
-    while( count<maxLength && !circular_buf_empty(cbuf) )
-    {
-        uint8_t data;
-        circular_buf_get(cbuf, &data);
-        // Checking for '\r' is there for debugging purposes which is sent by putty and minicom.
-        // In production only '\n' is sent. Therefore, there is no check for '\r\n' case.
-        if (data=='\n'||data=='\r')
-        {
-            tmpBuf[count] = '\0';
-            circular_buf_remove_input(cbuf);
-            if (count == 0)
-                continue; // Empty or invalid line, possible trailing \n after \r
-            else
-                break; // End of Line detected.
-        }
-        tmpBuf[count] = data;
-        count++;
-    }
-    return count;
-}
+    cbuf_handle_t cbuf = malloc(sizeof(circular_buf_t));
+    assert(cbuf);
+    cbuf->buffer = malloc(size);
+    assert(cbuf->buffer);
 
-#include "usb_cdc_fops.h" // TODO: remove this include, user should use
-void circular_read_command(cbuf_handle_t cbuf, uint8_t *tmpBuf)
-{
-    circular_readline(cbuf, tmpBuf, CIRCULAR_BUFFER_SIZE);
-}
+    cbuf->max = size;
+    circular_buf_reset(cbuf);
 
-cbuf_handle_t circular_buf_init(uint8_t* buffer, size_t size)
-{
-	assert(buffer && size);
-
-	cbuf_handle_t cbuf = malloc(sizeof(circular_buf_t) + sizeof(buffer));
-	assert(cbuf);
-
-	cbuf->buffer = buffer;
-	cbuf->max = size;
-	circular_buf_reset(cbuf);
-
-	assert(circular_buf_empty(cbuf));
-
-	return cbuf;
+    assert(circular_buf_empty(cbuf));
+    return cbuf;
 }
 
 void circular_buf_free(cbuf_handle_t cbuf)
 {
-	assert(cbuf);
-	free(cbuf);
+    if (cbuf)
+    {
+        if (cbuf->buffer)
+            free(cbuf->buffer);
+        free(cbuf);
+    }
 }
 
 void circular_buf_reset(cbuf_handle_t cbuf)
@@ -130,7 +81,6 @@ void circular_buf_reset(cbuf_handle_t cbuf)
 
     cbuf->head = 0;
     cbuf->tail = 0;
-	cbuf->noInputs = 0;
     cbuf->full = false;
 }
 
@@ -163,16 +113,7 @@ size_t circular_buf_capacity(cbuf_handle_t cbuf)
 	return cbuf->max;
 }
 
-void circular_buf_put(cbuf_handle_t cbuf, uint8_t data)
-{
-	assert(cbuf && cbuf->buffer);
-
-    cbuf->buffer[cbuf->head] = data;
-
-    advance_pointer(cbuf);
-}
-
-int circular_buf_put2(cbuf_handle_t cbuf, uint8_t data)
+int circular_buf_put(cbuf_handle_t cbuf, uint8_t data)
 {
     int r = -1;
 

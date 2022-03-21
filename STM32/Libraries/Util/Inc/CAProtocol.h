@@ -18,6 +18,7 @@ typedef struct
     double beta;
 } CACalibration;
 
+typedef int (*ReaderFn)(uint8_t* rxBuf);
 typedef struct
 {
     // Called if message is not found. Overwrite to get info about invalid input
@@ -42,7 +43,8 @@ typedef struct
     struct CAProtocolData *data; // Private data for CAProtocol.
 } CAProtocolCtx;
 
-void inputCAProtocol(CAProtocolCtx* ctx, const char *input);
-void initCAProtocol(CAProtocolCtx* ctx);
+void inputCAProtocol(CAProtocolCtx* ctx);
+void initCAProtocol(CAProtocolCtx* ctx, ReaderFn fn);
+void flushCAProtocol(CAProtocolCtx* ctx);
 
 #endif /* INC_CAPROTOCOL_H_ */

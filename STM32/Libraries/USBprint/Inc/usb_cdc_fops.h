@@ -30,8 +30,7 @@ extern USBD_CDC_ItfTypeDef usb_cdc_fops;
 
 ssize_t usb_cdc_transmit(const uint8_t* Buf, uint16_t len);
 size_t usb_cdc_tx_available();
-// Note, it assumed that buf is of size CIRCULAR_BUFFER_SIZE
-void usb_cdc_rx(uint8_t* buf);
+int usb_cdc_rx(uint8_t* buf);
 void usb_cdc_rx_flush();
 bool isComPortOpen();
 

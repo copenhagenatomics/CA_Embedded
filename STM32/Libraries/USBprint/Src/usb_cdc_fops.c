@@ -36,7 +36,6 @@ static struct
 {
     struct {
         cbuf_handle_t ctx;
-        uint8_t buf[CIRCULAR_BUFFER_SIZE];      // Upper layer buffer for user application
         uint8_t irqBuf[CIRCULAR_BUFFER_SIZE];   // lower layer buffer for IRQ USB_CDC driver callback
     } tx, rx;
     enum {
@@ -66,11 +65,11 @@ static int8_t CDC_Init_FS(void)
 {
     // Setup TX Buffer
     USBD_CDC_SetTxBuffer(&hUsbDeviceFS, usb_cdc_if.tx.irqBuf, 0);
-    usb_cdc_if.tx.ctx = circular_buf_init(usb_cdc_if.tx.buf, sizeof(usb_cdc_if.tx.buf));
+    usb_cdc_if.tx.ctx = circular_buf_init(CIRCULAR_BUFFER_SIZE);
 
     // Setup RX Buffer
     USBD_CDC_SetRxBuffer(&hUsbDeviceFS, usb_cdc_if.rx.irqBuf);
-    usb_cdc_if.rx.ctx = circular_buf_init(usb_cdc_if.rx.buf, sizeof(usb_cdc_if.rx.buf));
+    usb_cdc_if.rx.ctx = circular_buf_init(CIRCULAR_BUFFER_SIZE);
 
     // Default is no host attached.
     usb_cdc_if.isComPortOpen = false;
@@ -180,40 +179,30 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
     USBD_CDC_ReceivePacket(&hUsbDeviceFS);
 
     uint16_t len = (uint16_t)*Len;
+
     // Update circular buffer with incoming values
     for(uint8_t i = 0; i < len; i++)
-    {
         circular_buf_put(usb_cdc_if.rx.ctx, Buf[i]);
 
-        // Checking for '\r' is there for debugging purposes which is sent by putty and minicom.
-        // In production only '\n' is sent. Therefore, there is no check for '\r\n' case.
-        if (Buf[i]=='\n'||Buf[i]=='\r')
-            circular_buf_add_input(usb_cdc_if.rx.ctx);
-    }
-    memset(Buf, '\0', len); // clear the buf
-
+    memset(Buf, '\0', len); // clear the buffer
     return (USBD_OK);
 }
 
 
-/**
-  * @brief  usb_cdc_rx
-  *         Check/receive data from the USB cdc device.
-  * @param  buf: pointer to receiver buffer
-  * @param  Len: length of buffer
-  * @retval no of bytes received.
-  */
-void usb_cdc_rx(uint8_t* buf)
-{
-    *buf = 0;
-    if (usb_cdc_if.rx.ctx)
-        circular_read_command(usb_cdc_if.rx.ctx, buf);
-}
-
 void usb_cdc_rx_flush()
 {
-    if (usb_cdc_if.rx.ctx)
-        circular_buf_reset(usb_cdc_if.rx.ctx);
+    if (!usb_cdc_if.tx.ctx)
+        return; // Error, USB CDC is not initialized
+
+    circular_buf_reset(usb_cdc_if.rx.ctx);
+}
+
+int usb_cdc_rx(uint8_t* rxByte)
+{
+    if (!usb_cdc_if.tx.ctx)
+        return -1; // Error, USB CDC is not initialized
+
+    return circular_buf_get(usb_cdc_if.rx.ctx, rxByte);
 }
 
 /**
@@ -237,7 +226,7 @@ ssize_t usb_cdc_transmit(const uint8_t* Buf, uint16_t Len)
         // USB CDC is transmitting data to the network. Leave transmit handling to CDC_TransmitCplt_FS
         for (int len = 0;len < Len; len++)
         {
-            if (circular_buf_put2(usb_cdc_if.tx.ctx, *Buf))
+            if (circular_buf_put(usb_cdc_if.tx.ctx, *Buf))
                 return len; // len < Len since not enough space in buffer. Leave error handling to caller.
             Buf++;
         }
@@ -263,6 +252,9 @@ ssize_t usb_cdc_transmit(const uint8_t* Buf, uint16_t Len)
 
 size_t usb_cdc_tx_available()
 {
+    if (!usb_cdc_if.tx.ctx)
+        return 0; // Error, USB CDC is not initialised, for now return 0.
+
     return circular_buf_capacity(usb_cdc_if.tx.ctx) - circular_buf_size(usb_cdc_if.tx.ctx);
 }
 

@@ -13,7 +13,7 @@ typedef circular_buf_t* cbuf_handle_t;
 /// Pass in a storage buffer and size, returns a circular buffer handle
 /// Requires: buffer is not NULL, size > 0
 /// Ensures: cbuf has been created and is returned in an empty state
-cbuf_handle_t circular_buf_init(uint8_t* buffer, size_t size);
+cbuf_handle_t circular_buf_init(size_t size);
 
 /// Free a circular buffer structure
 /// Requires: cbuf is valid and created by circular_buf_init
@@ -24,25 +24,10 @@ void circular_buf_free(cbuf_handle_t cbuf);
 /// Requires: cbuf is valid and created by circular_buf_init
 void circular_buf_reset(cbuf_handle_t cbuf);
 
-/// Put version 1 continues to add data if the buffer is full
-/// Old data is overwritten
-/// Requires: cbuf is valid and created by circular_buf_init
-void circular_buf_put(cbuf_handle_t cbuf, uint8_t data);
-
-
-void circular_buf_add_input(cbuf_handle_t cbuf);
-
-void circular_buf_remove_input(cbuf_handle_t cbuf);
-
-size_t circular_buf_get_noinput(cbuf_handle_t cbuf);
-
-size_t circular_readline(cbuf_handle_t cbuf, uint8_t *tmpBuf, size_t maxLength);
-void circular_read_command(cbuf_handle_t cbuf, uint8_t *tmpBuf);
-
-/// Put Version 2 rejects new data if the buffer is full
+/// Put new data if the buffer is full.
 /// Requires: cbuf is valid and created by circular_buf_init
 /// Returns 0 on success, -1 if buffer is full
-int circular_buf_put2(cbuf_handle_t cbuf, uint8_t data);
+int circular_buf_put(cbuf_handle_t cbuf, uint8_t data);
 
 /// Retrieve a value from the buffer
 /// Requires: cbuf is valid and created by circular_buf_init
@@ -68,8 +53,5 @@ size_t circular_buf_capacity(cbuf_handle_t cbuf);
 /// Requires: cbuf is valid and created by circular_buf_init
 /// Returns the current number of elements in the buffer
 size_t circular_buf_size(cbuf_handle_t cbuf);
-
-//TODO: int circular_buf_get_range(circular_buf_t cbuf, uint8_t *data, size_t len);
-//TODO: int circular_buf_put_range(circular_buf_t cbuf, uint8_t * data, size_t len);
 
 #endif //CIRCULAR_BUFFER_H_
