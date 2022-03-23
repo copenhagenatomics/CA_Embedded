@@ -17,14 +17,15 @@ namespace FFTviewer
         {
             pictureBox1.Image?.Dispose();
             pictureBox1.Image = bmp;
-            //label1.Invoke((MethodInvoker)delegate {
-            //    label1.Text = text;
-            //});
+            label1.Invoke((MethodInvoker)delegate
+            {
+                label1.Text = _fftDraw.Label;
+            });
         }
 
         private void pictureBox1_SizeChanged(object sender, EventArgs e)
         {
-            _fftDraw.ChangeSize(pictureBox1.Width, pictureBox1.Height, textBox1.Text);
+            _fftDraw?.ChangeSize(pictureBox1.Width, pictureBox1.Height, textBox1.Text);
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -42,6 +43,11 @@ namespace FFTviewer
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
             label1.Text = _fftDraw?.MouseMove(e.X, e.Y);
+        }
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            _fftDraw?.ChangeFilter((int)numericUpDown1.Value);
         }
     }
 }

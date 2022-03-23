@@ -22,6 +22,12 @@ namespace FFTdrawingLib
         private int _penWidth = 1;
         private int _mouseIndex = 0;
         private float _factor=-1;
+        private int _filter = 0;
+        private Queue<List<float>> _avg = new Queue<List<float>>();
+        private float _hzFactor = 1;
+        private float _flowFactor = 0.03f;
+
+        public string Label = string.Empty;
 
         public FFTdraw(string serialPort, int width, int height, string cmd) 
         {
@@ -49,7 +55,8 @@ namespace FFTdrawingLib
         public string MouseMove(int x, int y)
         {
             _mouseIndex = (x - 20) / _penWidth;
-            return "freq: " + _mouseIndex + "Hz, height: " + ((_height-y-20) / _factor).ToString("#.##");
+            Label = "freq: " + _mouseIndex*_hzFactor + "Hz, height: " + ((_height-y-20) / _factor).ToString("#.##");
+            return Label;
         }
 
         // Declare the delegate (if using non-generic pattern).
@@ -66,6 +73,11 @@ namespace FFTdrawingLib
                 _height = height;
                 _cmd = cmd;
             }
+        }
+
+        public void ChangeFilter(int filter)
+        {
+            _filter = filter;    
         }
 
         public void ReadLoop()
@@ -89,7 +101,13 @@ namespace FFTdrawingLib
                         Debug.Print(String.Join(", ", list));
                         Debug.Print(list.Count().ToString());
                         var data = list.Select(x => (float)Int32.Parse(x, NumberStyles.HexNumber)).ToList();
-                        
+                        switch(_filter)
+                        {
+                            case 1: Filter1(data, 5); break;
+                            case 2: FilterSquared(data, 5); break;
+                            case 3: FilterInTime(data, 3); break;
+                        }
+
                         lock (this) // do not update the bitmap if the size is changing. 
                         {
                             BitmapUpdateEvent?.Invoke(this, DrawBitmap(data));
@@ -103,6 +121,62 @@ namespace FFTdrawingLib
             }
         }
 
+        
+        private void Filter1(List<float> data, int width)
+        {
+            int offset = width / 2;
+            var clone = data.ToArray();
+            for (int k = 0; k < data.Count; k++)
+                data[k] = 0;
+
+            for (int i = 0; i <= data.Count - width; i++)
+            {
+                data[i] = 0;
+                for (int j = 0; j < width; j++)
+                {
+                    data[i + offset] += clone[i + j] / width;
+                }
+            }
+        }
+        
+        private void FilterSquared(List<float> data, int width)
+        {
+            int offset = width / 2;
+            var clone = data.ToArray();
+            for (int k = 0; k < data.Count; k++)
+                data[k] = 0; 
+
+            for (int i = 0; i <= data.Count - width; i++)
+            {
+                data[i] = 0;
+                for (int j = 0; j < width; j++)
+                {
+                    data[i+offset] += clone[i+j]* clone[i + j] / width;
+                }
+            }
+
+            for (int k = 0; k < data.Count; k++)
+                data[k] = (float)Math.Sqrt(data[k]);   
+        }
+
+        private void FilterInTime(List<float> data, int depth)
+        {
+            Filter1(data, 5);
+            _avg.Enqueue(data);
+            if (_avg.Count > depth)
+                _avg.Dequeue();
+
+            var list = _avg.ToList();
+            for (int i = 0; i <= data.Count; i++)
+            {
+                data[i] = 0;
+                for (int j = 0; j < list.Count; j++)
+                {
+                    data[i] += list[j][i] / list.Count;
+                }
+            }
+        }
+
         private Bitmap DrawBitmap(List<float> data)
         {
             var factor = (_height - 100) / data.Skip(1).Max();  // remove .Skip(1)
@@ -111,6 +185,9 @@ namespace FFTdrawingLib
                 _factor = factor;
             else
                 _factor = (float)(_factor * (1-lowpass) + factor * lowpass);
+
+            var max = data.Max();
+            Label += ", Max = " + max.ToString("#.##") + ", Flow = " + (data.IndexOf(max) * _flowFactor).ToString("#.##") + " liter/min"; 
 
             var bitmap = new Bitmap(_width, _height);
             using (var g = Graphics.FromImage(bitmap))
