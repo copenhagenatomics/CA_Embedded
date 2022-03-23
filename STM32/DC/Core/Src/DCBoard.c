@@ -288,7 +288,7 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c)
 {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
-    initCAProtocol(&caProto);
+    initCAProtocol(&caProto, usb_cdc_rx);
     hi2c = _hi2c;
 }
 

@@ -74,7 +74,7 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
 static SPI_HandleTypeDef* hspi = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_)
 {
-    initCAProtocol(&caProto);
+    initCAProtocol(&caProto, usb_cdc_rx);
 
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != Temperature)

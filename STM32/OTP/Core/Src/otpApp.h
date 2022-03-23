@@ -2,12 +2,8 @@
  * otpApp.h
  * Description: Read/write various information from OTP memory.
  */
+#pragma once
 
-#ifndef SRC_OTPAPP_H_
-#define SRC_OTPAPP_H_
-
-// Call to kick OTP application to run.
+void otpInit();
 void otpLoop();
 
-
-#endif /* SRC_OTPAPP_H_ */

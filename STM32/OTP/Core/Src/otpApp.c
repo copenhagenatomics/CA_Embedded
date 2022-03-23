@@ -13,14 +13,13 @@
 #include "CAProtocolStm.h"
 #include "USBprint.h"
 
-static void printHeader();
 static void otpWrite(BoardInfo *boardInfo);
 
 // Local variables
 static CAProtocolCtx caProto =
 {
         .undefined = HALundefined,
-        .printHeader = printHeader,
+        .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -29,11 +28,6 @@ static CAProtocolCtx caProto =
         .otpWrite = otpWrite
 };
 
-static void printHeader()
-{
-    USBnprintf(systemInfo());
-}
-
 static void otpWrite(BoardInfo *boardInfo)
 {
     if (HAL_otpWrite(boardInfo)) {
@@ -41,38 +35,12 @@ static void otpWrite(BoardInfo *boardInfo)
     }
 }
 
-static void clearLineAndBuffer()
+void otpInit()
 {
-    // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-    USBnprintf("reconnected");
-    usb_cdc_rx_flush();
+    initCAProtocol(&caProto, usb_cdc_rx);
 }
 
-static void handleUserInputs()
+void otpLoop(const char* bootMsg)
 {
-    char inputBuffer[CIRCULAR_BUFFER_SIZE];
-
-    usb_cdc_rx((uint8_t*) inputBuffer);
-    inputCAProtocol(&caProto, inputBuffer);
-}
-
-void otpLoop()
-{
-    static bool isFirstWrite = true;
-
-    // All functionality is based on user input.
-    if (isComPortOpen())
-    {
-        // Upon first write print line and reset circular buffer to ensure no faulty misreads occurs.
-        if (isFirstWrite)
-        {
-            clearLineAndBuffer();
-            isFirstWrite = false;
-        }
-    }
-    else {
-        isFirstWrite = true;
-    }
-
-    handleUserInputs();
+    CAhandleUserInputs(&caProto, bootMsg);
 }

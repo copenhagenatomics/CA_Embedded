@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "otpApp.h"
+#include "CAProtocolStm.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -80,12 +81,13 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  const char* bootMsg = CAonBoot();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USB_DEVICE_Init();
+  otpInit();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -94,7 +96,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  otpLoop();
+	  otpLoop(bootMsg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
