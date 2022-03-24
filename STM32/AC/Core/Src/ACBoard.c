@@ -18,6 +18,7 @@
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "HAL_otp.h"
+#include "StmGpio.h"
 
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
@@ -28,10 +29,11 @@ static struct
     StmGpio heater;
     StmGpio button;
 } heaterPorts[4];
+static StmGpio fanCtrl;
+static double heatSinkTemperature = 0; // Heat Sink temperature
 
 // Forward declare functions.
 static void handlePinInput(const char *input);
-
 static CAProtocolCtx caProto =
 {
         .undefined = handlePinInput,
@@ -55,6 +57,8 @@ static void GpioInit()
         stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
         heatCtrlAdd(&heaterPorts[i].heater, &heaterPorts[i].button);
     }
+
+    stmGpioInit(&fanCtrl, powerCut_GPIO_Port, powerCut_Pin, STM_GPIO_OUTPUT);
 }
 
 static double ADCtoCurrent(double adc_val)
@@ -100,10 +104,11 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
+    heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 0));
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f", ADCtoCurrent(ADCrms(pData, 1)),
             ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
             ADCtoCurrent(ADCrms(pData, 4)),
-            ADCtoTemperature(ADCMean(pData, 0)));
+            heatSinkTemperature);
 }
 
 void actuatePins(struct actuationInfo actuationInfo, const char *inputBuffer)
@@ -160,6 +165,18 @@ static void handlePinInput(const char *input)
         HALundefined(input);
 }
 
+static void heatSinkLoop()
+{
+    // Turn on fan if temp > 55 and turn of when temp < 50.
+    if (stmGetGpio(fanCtrl))
+    {
+        if (heatSinkTemperature < 50)
+            stmSetGpio(fanCtrl, false);
+    }
+    else if (heatSinkTemperature > 55)
+        stmSetGpio(fanCtrl, true);
+}
+
 void ACBoardInit(ADC_HandleTypeDef* hadc)
 {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
@@ -173,6 +190,7 @@ void ACBoardLoop(const char *bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
     ADCMonitorLoop(printCurrentArray);
+    heatSinkLoop();
 
     // Toggle pins if needed when in pwm mode
     heaterLoop();
