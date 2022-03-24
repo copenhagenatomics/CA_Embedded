@@ -94,6 +94,7 @@ const char* systemInfo()
         len += snprintf(&buf[len], sizeof(buf) - len, "PCB Version: NA");
         break;
     }
+    len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
 
     return buf;
 }
