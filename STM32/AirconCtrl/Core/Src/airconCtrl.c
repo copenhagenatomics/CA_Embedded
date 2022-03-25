@@ -23,9 +23,49 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
+uint32_t tempCode;
+uint8_t bitIndex;
+uint8_t cmd;
+uint8_t cmdli;
+
 void airconCtrlInit()
 {
 	initCAProtocol(&caProto, usb_cdc_rx);
+	HAL_TIM_Base_Start(&htim1);
+        __HAL_TIM_SET_COUNTER(&htim1, 0);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  if(GPIO_Pin == GPIO_PIN_11)
+  {
+    if (__HAL_TIM_GET_COUNTER(&htim1) > 8000)
+    {
+      tempCode = 0;
+      bitIndex = 0;
+    }
+    else if (__HAL_TIM_GET_COUNTER(&htim1) > 1700)
+    {
+      tempCode |= (1UL << (31-bitIndex));   // write 1
+      bitIndex++;
+    }
+    else if (__HAL_TIM_GET_COUNTER(&htim1) > 1000)
+    {
+      tempCode &= ~(1UL << (31-bitIndex));  // write 0
+      bitIndex++;
+    }
+    if(bitIndex == 32)
+    {
+      cmdli = ~tempCode; // Logical inverted last 8 bits
+      cmd = tempCode >> 8; // Second last 8 bits
+      if(cmdli == cmd) // Check for errors
+      {
+	USBnprintf(tempCode);
+      }
+      bitIndex = 0;
+    }
+    __HAL_TIM_SET_COUNTER(&htim1, 0);
+  }
 }
 
 void airconCtrlLoop()
