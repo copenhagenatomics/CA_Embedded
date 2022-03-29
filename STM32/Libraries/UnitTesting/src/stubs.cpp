@@ -1,15 +1,20 @@
 #include <stdio.h>
 #include <string.h>
-#include "stm32f4xx_hal.h"
-#include <ADCMonitor.h>
-#include <CAProtocol.h>
+#include <queue>
+extern "C" {
+    #include "stm32f4xx_hal.h"
+    #include <ADCMonitor.h>
+    #include <CAProtocol.h>
+}
 #include <math.h>
 #include <assert.h>
 
 // HW depended functions, stub these.
 void HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length) {}
 void HAL_Delay(uint32_t var) {}
-int USBnprintf(const char * format, ... ) {}
+int USBnprintf(const char * format, ... ) {
+    return 0;
+}
 void JumpToBootloader() {};
 
 static void generate4Sine(int16_t* pData, int length, int offset, int freq)
@@ -48,14 +53,14 @@ int testSine()
     ADC_HandleTypeDef dommy = { { 4 } };
     ADCMonitorInit(&dommy, pData, noOfSamples*4*2);
 
-    SineWave s = sineWave(pData, 0);
+    SineWave s = sineWave(pData, 4, noOfSamples, 0);
 
     if (s.begin != 9 || s.end != 117)
         return __LINE__;
-    s = sineWave(pData, 1);
+    s = sineWave(pData, 4, noOfSamples, 1);
     if (s.begin != 15 || s.end != 105)
         return __LINE__;
-    s = sineWave(pData, 2);
+    s = sineWave(pData, 4, noOfSamples, 2);
     if (s.begin != 3 || s.end != 111)
         return __LINE__;
     return 0;
@@ -102,34 +107,63 @@ int calCompare(int noOfPorts, const CACalibration* catAr)
     return 0; // All good
 }
 
-int testCAProtocol()
+class TestCAProtocol
 {
-    CAProtocolCtx caProto = { 0 };
-    caProto.calibration = CAClibrationCb;
-    initCAProtocol(&caProto);
+public:
+    TestCAProtocol()
+    {
+        caProto.calibration = CAClibrationCb;
+        initCAProtocol(&caProto, testReader);
+        reset();
+    }
+    void reset() {
+        while(!testString.empty())
+            testString.pop();
+    }
 
-    inputCAProtocol(&caProto, "CAL 3,0.05,1.56\n");
-    if (calCompare(1, (CACalibration[]) {{3, 0.05, 1.56}} )) return __LINE__;
+    int testCalibration(const char* input, int noOfPorts, const CACalibration calAray[])
+    {
+        while(*input != 0) {
+            testString.push(*input);
+            input++;
+        }
+        inputCAProtocol(&caProto);
+        return calCompare(noOfPorts, calAray);
+    }
 
-    inputCAProtocol(&caProto, "CAL 3,0.05,1.56 2,0.04,.36\n");
-    if (calCompare(2, (CACalibration[]) {{3, 0.05, 1.56},{2, 0.04, 0.36}} )) return __LINE__;
+private:
+    CAProtocolCtx caProto;;
+    static std::queue<uint8_t> testString;
+    static int testReader(uint8_t* rxBuf)
+    {
+        *rxBuf = testString.front();
+        testString.pop();
+        return 0;
+    }
+};
+std::queue<uint8_t> TestCAProtocol::testString;
 
-    inputCAProtocol(&caProto, "CAL 3,0.05,1.56 2,344,36\n");
-    if (calCompare(2, (CACalibration[]) {{3, 0.05, 1.56},{2, 344, 36}} )) return __LINE__;
+int testCalibration()
+{
+    TestCAProtocol caProtocol;
+    caProtocol.reset();
+
+    if (caProtocol.testCalibration("CAL 3,0.05,1.56\r", 1, (const CACalibration[]) {{3, 0.05, 1.56}}))
+        return __LINE__;
+    if (caProtocol.testCalibration("CAL 3,0.05,1.56 2,344,36\n\r", 2, (const CACalibration[]) {{3, 0.05, 1.56},{2, 344, 36}}))
+        return __LINE__;
+    if (caProtocol.testCalibration("CAL 3,0.05,1.56 2,0.04,.36\n", 2, (const CACalibration[]) {{3, 0.05, 1.56},{2, 0.04, 0.36}}))
+        return __LINE__;
     return 0; // All good.
 }
 
 int main(int argc, char *argv[])
 {
     int line = 0;
-    if (line = testSine()) {
-        printf("TestSine failed at line %d\n", line);
-    }
-    if (line = testCMAverage()) {
-        printf("TestSine failed at line %d\n", line);
-    }
-    if (line = testCAProtocol()) {
-        printf("testCAProtocol failed at line %d\n", line);
-    }
+    if (line = testSine()) { printf("TestSine failed at line %d\n", line); }
+    if (line = testCMAverage()) { printf("TestSine failed at line %d\n", line); }
+    if (line = testCalibration()) { printf("testCAProtocol failed at line %d\n", line); }
     printf("All test performed\n");
+
+    return 0;
 }
