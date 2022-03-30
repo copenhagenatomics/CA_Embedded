@@ -213,6 +213,71 @@ void inputCAProtocol(CAProtocolCtx* ctx)
                 otp_write(ctx, input);
         }
     }
+    else if (strncmp(input, "all on", 6) == 0)
+    {
+        if (ctx->allOn) ctx->allOn(true);
+    }
+    else if (strncmp(input, "all off", 7) == 0)
+    {
+        if (ctx->allOn) ctx->allOn(false);
+    }
+    else if (input[0] == 'p' && strnlen(input, 13) <= 13) // 13 since that is length of pX on YY ZZZ%
+    {
+        char cmd[13];
+        int port;
+        /* Valid commands are:
+           all on - turn all ports on indefinitely
+           all off - turn all ports off
+           pX on - turn off port number X
+           pX off - turn on port number X indefinitely 'always on'
+           pX on YY - turn on port number X for YY seconds
+           pX on ZZZ% - turn on port number X on ZZ percent of the time using PWM 'always on'
+           pX on YY ZZZ% - turn on port number X for YY seconds ZZ percent of the time using PWM */
+        if (sscanf(input, "p%d %[onf]", &port, cmd) != 2)
+            ctx->undefined(input);
+        if (!ctx->portState)
+            return;
+        if (strncmp(cmd, "off", 3) == 0) {
+            ctx->portState(port, false, 0, -1);
+        }
+        else if (strncmp(cmd, "on", 2) == 0)
+        {
+            char *argv[4] = { 0 }; // There should not be more then 4 args.
+            const char delim = ' ';
+            char *tok = strtok(input, &delim), percent = 0;
+            int count=0, tmp;
+            for (; count < 4 && tok; count++)
+            {
+                argv[count] = tok;
+                tok = strtok(NULL, &delim);
+                if (tok)
+                    *(tok-1) = 0; // Zero terminate previous string.
+            }
+            switch(count)
+            {
+            case 2: // pX on
+                ctx->portState(port, true, 100, -1);
+                break;
+            case 3: // pX on ZZZ% or YY
+                {
+                int argc = sscanf(argv[2], "%d%[%]", &count, &percent);
+                if (argc == 2)
+                    ctx->portState(port, true, count, -1);
+                else if (argc == 1)
+                    ctx->portState(port, true, 100, count);
+                else
+                    ctx->undefined(input);
+                break;
+                }
+            case 4: // pX on YY ZZZ%
+                if (sscanf(argv[2], "%d", &tmp) == 1 && sscanf(argv[3], "%d%[%]", &count, &percent) == 2)
+                    ctx->portState(port, true, count, tmp);
+                else
+                    ctx->undefined(input);
+                break;
+            }
+        }
+    }
     else if (ctx->undefined)
     {
         ctx->undefined(input);

@@ -107,18 +107,38 @@ int calCompare(int noOfPorts, const CACalibration* catAr)
     return 0; // All good
 }
 
+class PortCfg
+{
+public:
+    PortCfg(bool _state, int _duration, int _percent) : state(_state), duration(_duration), percent(_percent) {};
+    PortCfg() : state(false), duration(-1), percent(-1) {};
+    inline bool operator==(const PortCfg& rhs)
+    {
+        return (state == rhs.state && duration == rhs.duration && percent == rhs.percent);
+    }
+
+    bool state;
+    int duration;
+    int percent;
+};
+
 class TestCAProtocol
 {
 public:
     TestCAProtocol()
     {
         caProto.calibration = CAClibrationCb;
+        caProto.allOn = TestCAProtocol::allOn;
+        caProto.portState = TestCAProtocol::portState;
+        caProto.undefined = TestCAProtocol::undefined;
         initCAProtocol(&caProto, testReader);
         reset();
     }
     void reset() {
         while(!testString.empty())
             testString.pop();
+        portCtrl.allOn = 0;
+        portCtrl.undefCall = 0;
     }
 
     int testCalibration(const char* input, int noOfPorts, const CACalibration calAray[])
@@ -131,6 +151,21 @@ public:
         return calCompare(noOfPorts, calAray);
     }
 
+    int testPortCtrl(const char* input, int port, const PortCfg& cfg)
+    {
+        while(*input != 0) {
+            testString.push(*input);
+            input++;
+        }
+        inputCAProtocol(&caProto);
+        return portCtrl.port[port] == cfg;
+    }
+
+    static struct PortCtrl{
+        int allOn;
+        PortCfg port[12 + 1];
+        int undefCall;
+    } portCtrl;
 private:
     CAProtocolCtx caProto;;
     static std::queue<uint8_t> testString;
@@ -140,8 +175,22 @@ private:
         testString.pop();
         return 0;
     }
+    static void allOn(bool state) {
+        portCtrl.allOn++;
+    }
+    static void portState(int port, bool state, int percent, int duration)
+    {
+        if (port > 0 && port <= 12) {
+            portCtrl.port[port] = { state, percent, duration };
+        }
+    }
+    static void undefined(const char* input)
+    {
+        portCtrl.undefCall++;
+    }
 };
 std::queue<uint8_t> TestCAProtocol::testString;
+TestCAProtocol::PortCtrl TestCAProtocol::portCtrl;
 
 int testCalibration()
 {
@@ -157,12 +206,45 @@ int testCalibration()
     return 0; // All good.
 }
 
+int testPortCtrl()
+{
+    TestCAProtocol caProtocol;
+    caProtocol.reset();
+
+    caProtocol.testPortCtrl("all on\r\n", -1, PortCfg());
+    if (caProtocol.portCtrl.allOn != 1) return __LINE__;
+    caProtocol.testPortCtrl("all off\r\n", -1, PortCfg());
+    if (caProtocol.portCtrl.allOn != 2) return __LINE__;
+
+    caProtocol.reset();
+    if (!caProtocol.testPortCtrl("p10 off\r\n", 10, PortCfg(false, 0, -1))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p10 on\r\n", 10, PortCfg(true, 100, -1))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p9 off\r\n", 9, PortCfg(false, 0, -1))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p9 on\r\n", 9, PortCfg(true, 100, -1))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p8 on 50\r\n", 8, PortCfg(true, 100, 50))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p8 on 50%\r\n", 8, PortCfg(true, 50, -1))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p8 off 50%\r\n", 8, PortCfg(false, 0, -1))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p8 on 22 60%\r\n", 8, PortCfg(true, 60, 22))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p11 on 50%\r\n", 11, PortCfg(true, 50, -1))) return __LINE__;
+    if (!caProtocol.testPortCtrl("p11 off 50%\r\n", 11, PortCfg(false, 0, -1))) return __LINE__;
+
+    // Test some error cases
+    if (!caProtocol.testPortCtrl("p7 60\r\n", 7, PortCfg())) return __LINE__;
+    if (!caProtocol.testPortCtrl("p7 60%\r\n", 7, PortCfg())) return __LINE__;
+    if (!caProtocol.testPortCtrl("p7 52 60%\r\n", 7, PortCfg())) return __LINE__;
+    if (!caProtocol.testPortCtrl("p7 on 52 60\r\n", 7, PortCfg())) return __LINE__;
+    if (!caProtocol.testPortCtrl("p7 sdfs 52 60%\r\n", 7, PortCfg())) return __LINE__;
+    if (caProtocol.portCtrl.undefCall != 5)  return __LINE__;
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     int line = 0;
     if (line = testSine()) { printf("TestSine failed at line %d\n", line); }
     if (line = testCMAverage()) { printf("TestSine failed at line %d\n", line); }
     if (line = testCalibration()) { printf("testCAProtocol failed at line %d\n", line); }
+    if (line = testPortCtrl()) { printf("testPortCtrl failed at line %d\n", line); }
     printf("All test performed\n");
 
     return 0;
