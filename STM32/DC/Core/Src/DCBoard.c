@@ -12,7 +12,6 @@
 #include "DCBoard.h"
 #include "ADCMonitor.h"
 #include "si7051.h"
-#include "inputValidation.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "HAL_otp.h"
@@ -22,34 +21,28 @@
 #define ACTUATIONPORTS 4
 #define ADC_CHANNEL_BUF_SIZE    400
 
-// Address offsets for the TIM5 timer
-#define PWMPIN1 0x34
-#define PWMPIN2 0x38
-#define PWMPIN3 0x3C
-#define PWMPIN4 0x40
-
-#define BUTTONPIN2 0x8000
-#define BUTTONPIN1 0x0008
-#define BUTTONPIN4 0x0010
-#define BUTTONPIN3 0x0020
-
+// PWM control
 #define TURNONPWM 999
 #define TURNOFFPWM 0
+#define MAX_PWM TURNONPWM
 
 // Private static function declarations.
-static void userPinCmds(const char* inputString);
+static void CAallOn(bool isOn);
+static void CAportState(int port, bool state, int percent, int duration);
 
 // Local variables.
 static CAProtocolCtx caProto =
 {
-        .undefined = userPinCmds,
+        .undefined = HALundefined,
         .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
-        .otpWrite = NULL
+        .otpWrite = NULL,
+        .allOn = CAallOn,
+        .portState = CAportState
 };
 
 /* General */
@@ -158,7 +151,7 @@ static void turnOnPinDuration(int pinNumber, int duration)
 }
 
 // Shuts off all pins.
-void allOff()
+static void allOff()
 {
     for (int pinNumber = 0; pinNumber < 4; pinNumber++)
     {
@@ -177,29 +170,24 @@ static void turnOffPin(int pinNumber)
     ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
 }
 
-static void userPinCmds(const char* inputBuffer)
+typedef struct ActuationInfo
 {
-    struct actuationInfo actuationInfo = parseAndValidateInput(inputBuffer);
+    int pin; // pins 0-3 are interpreted as single ports - pin '-1' is interpreted as all
+    int percent;
+    int timeOn; // time on is in seconds - timeOn '-1' is interpreted as indefinitely
+    bool isInputValid;
+} ActuationInfo;
+static void actuatePins(ActuationInfo actuationInfo)
+{
     if (!actuationInfo.isInputValid)
     {
-        USBnprintf("MISREAD: %s", inputBuffer);
         return;
     }
 
-    if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 0)
-    {
-        // all off (pin == -1 means all pins)
-        allOff();
-    }
-    else if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 100)
-    {
-        // all on (pin == -1 means all pins)
-        allOn();
-    }
-    else if (actuationInfo.timeOn == -1 && (actuationInfo.pwmDutyCycle == 100 || actuationInfo.pwmDutyCycle == 0))
+    if (actuationInfo.timeOn == -1 && (actuationInfo.percent == 100 || actuationInfo.percent == 0))
     {
         // pX on or pX off (timeOn == -1 means indefinite)
-        if (actuationInfo.pwmDutyCycle == 0)
+        if (actuationInfo.percent == 0)
         {
             turnOffPin(actuationInfo.pin);
         }
@@ -208,25 +196,32 @@ static void userPinCmds(const char* inputBuffer)
             turnOnPin(actuationInfo.pin);
         }
     }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle == 100)
+    else if (actuationInfo.timeOn != -1 && actuationInfo.percent == 100)
     {
         // pX on YY
         turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
     }
-    else if (actuationInfo.timeOn == -1 && actuationInfo.pwmDutyCycle != 0 && actuationInfo.pwmDutyCycle != 100)
+    else if (actuationInfo.timeOn == -1 && actuationInfo.percent != 0 && actuationInfo.percent != 100)
     {
         // pX on ZZZ%
-        setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, 0);
+        int pwmState = (actuationInfo.percent * MAX_PWM) / 100;
+        setPWMPin(actuationInfo.pin, pwmState, 0);
     }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle != 100)
+    else if (actuationInfo.timeOn != -1 && actuationInfo.percent != 100)
     {
         // pX on YY ZZZ%
-        setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
+        int pwmState = (actuationInfo.percent * MAX_PWM) / 100;
+        setPWMPin(actuationInfo.pin, pwmState, actuationInfo.timeOn);
     }
-    else
-    {
-        USBnprintf("MISREAD: %s", inputBuffer);
-    }
+}
+
+static void CAallOn(bool isOn)
+{
+    (isOn) ? allOn() : allOff();
+}
+static void CAportState(int port, bool state, int percent, int duration)
+{
+    actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
 }
 
 static void autoOff()
@@ -271,7 +266,7 @@ static void handleButtonPress()
     }
 }
 
-void checkButtonPress()
+static void checkButtonPress()
 {
     static uint32_t lastCheckButtonTime = 0;
     const uint32_t tsButton = 100;
