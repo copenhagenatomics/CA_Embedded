@@ -8,7 +8,9 @@
 #ifndef INC_AIRCONCTRL_H_
 #define INC_AIRCONCTRL_H_
 
-void airconCtrlInit();
+#include "stm32f4xx_hal.h"
+
+void airconCtrlInit(TIM_HandleTypeDef *ctx);
 void airconCtrlLoop();
 
 #endif /* INC_AIRCONCTRL_H_ */
