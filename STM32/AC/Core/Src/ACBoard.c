@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include <float.h>
 #include "usb_cdc_fops.h"
-#include "inputValidation.h"
 #include "HeatCtrl.h"
 #include "ADCMonitor.h"
 #include "systemInfo.h"
@@ -33,17 +32,20 @@ static StmGpio fanCtrl;
 static double heatSinkTemperature = 0; // Heat Sink temperature
 
 // Forward declare functions.
-static void handlePinInput(const char *input);
+static void CAallOn(bool isOn);
+static void CAportState(int port, bool state, int percent, int duration);
 static CAProtocolCtx caProto =
 {
-        .undefined = handlePinInput,
+        .undefined = HALundefined,
         .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, // TODO: change method for calibration?
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
-        .otpWrite = NULL
+        .otpWrite = NULL,
+        .allOn = CAallOn,
+        .portState = CAportState,
 };
 
 static void GpioInit()
@@ -111,7 +113,13 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
             heatSinkTemperature);
 }
 
-void actuatePins(struct actuationInfo actuationInfo, const char *inputBuffer)
+typedef struct ActuationInfo {
+    int pin; // pins 0-3 are interpreted as single ports - pin '-1' is interpreted as all
+    int pwmDutyCycle;
+    int timeOn; // time on is in seconds - timeOn '-1' is interpreted as indefinitely
+    bool isInputValid;
+} ActuationInfo;
+static void actuatePins(ActuationInfo actuationInfo)
 {
     if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 0)
     {
@@ -150,19 +158,15 @@ void actuatePins(struct actuationInfo actuationInfo, const char *inputBuffer)
         // pX on YY ZZZ%
         setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
     }
-    else
-    {
-        HALundefined(inputBuffer); // should never reach this, but is implemented for potentially unknown errors.
-    }
 }
 
-static void handlePinInput(const char *input)
+static void CAallOn(bool isOn)
 {
-    struct actuationInfo actuationInfo = parseAndValidateInput(input);
-
-    if (actuationInfo.isInputValid) actuatePins(actuationInfo, input);
-    else
-        HALundefined(input);
+    (isOn) ? allOn() : allOff();
+}
+static void CAportState(int port, bool state, int percent, int duration)
+{
+    actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
 }
 
 static void heatSinkLoop()
