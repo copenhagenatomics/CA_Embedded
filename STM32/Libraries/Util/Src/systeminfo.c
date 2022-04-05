@@ -43,12 +43,16 @@ static char* productType(uint8_t id)
     case DC_Board         :  return "DC Board";          break;
     case Temperature      :  return "Temperature";       break;
     case Current          :  return "Current";           break;
-    case FlowChip         :  return "FlowChip";          break;
-    case humidityChip     :  return "humidityChip";      break;
+    case GasFlow          :  return "GasFlow";           break;
+    case HumidityChip     :  return "HumidityChip";      break;
     case Pressure         :  return "Pressure";          break;
     case SaltFlowBoard    :  return "Salt Flow Board";   break;
     case SaltLeak         :  return "SaltLeak";          break;
-    case HotValvePumpBoard:  return "HotValvePumpBoard"; break;
+    case HotValveController: return "HotValveController"; break;
+    case ZrO2Oxygen		  :  return "ZrO2Oxygen"; 		 break;
+    case AMBcurrent		  :  return "AMBcurrent"; 		 break;
+    case Geiger           :  return "Geiger"; 			 break;
+    case AirCondition     :  return "AirCondition"; 	 break;
     }
     return "NA";
 }

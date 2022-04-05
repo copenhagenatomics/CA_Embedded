@@ -7,12 +7,16 @@ typedef enum {
     DC_Board          = 2,
     Temperature       = 3,
     Current           = 4,
-    FlowChip          = 5,
-    humidityChip      = 6,
+    GasFlow           = 5,
+    HumidityChip      = 6,
     Pressure          = 7,
     SaltFlowBoard     = 8,
     SaltLeak          = 9,
-    HotValvePumpBoard = 10
+    HotValveController = 10,
+	ZrO2Oxygen 		= 11,
+	AMBcurrent 		= 12,
+	Geiger 			= 13,
+	AirCondition 	= 14
 } BoardType;
 typedef uint8_t SubBoardType; // SubBoardType needed for some boards.
 
