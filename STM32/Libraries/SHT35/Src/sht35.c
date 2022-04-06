@@ -6,10 +6,8 @@
  */
 
 #include "sht35.h"
-
 #include <assert.h>
 
-I2C_HandleTypeDef hi2c1;
 HAL_StatusTypeDef ret;
 
 

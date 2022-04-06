@@ -36,9 +36,7 @@ typedef enum
 	SHT3X_COMMAND_MEASURE_LOWREP_10HZ = 0x272a
 } sht3x_command_t;
 
-static uint8_t calculate_crc(const uint8_t *data, size_t length);
 HAL_StatusTypeDef sht3x_send_command(sht3x_handle_t *handle, sht3x_command_t command);
-static uint16_t uint8Merge(uint8_t msb, uint8_t lsb);
 HAL_StatusTypeDef sht3x_init(sht3x_handle_t *handle);
 HAL_StatusTypeDef sht3x_read_temperature_and_humidity(sht3x_handle_t *handle, float *temperature, float *humidity);
 
