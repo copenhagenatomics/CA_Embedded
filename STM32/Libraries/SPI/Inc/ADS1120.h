@@ -42,4 +42,4 @@ int ADS1120Init(ADS1120Device *dev);
 // Loop to update the next input. Note, ADS1120Init must be called
 // called before this function. It will not break bu result is undefined.
 // Device will run in a loop { calibrate, temperature, CHA, CHB }
-void ADS1120Loop(ADS1120Device *dev, float type_calibration[2]);
+void ADS1120Loop(ADS1120Device *dev, float *type_calibration);
