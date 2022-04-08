@@ -12,7 +12,14 @@
 
 #include "HAL_otp.h"
 #include "stm32f4xx_hal.h"
+
+// Support for both FLASH reading and writing in both stm32f401 and stm32f411 MCUs.
+#if defined(STM32F401xx)
 #include "stm32f401xc.h"
+#elif defined(STM32F411xx)
+#include "stm32f411xe.h"
+#endif
+
 
 // Number of OTP lock bytes. Each lock byte points to a section of 32 bytes, 16*32=512 bytes.
 #define OTP_SECTION_SIZE 32
