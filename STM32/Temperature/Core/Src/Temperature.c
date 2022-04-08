@@ -13,10 +13,13 @@
 #include "StmGpio.h"
 #include "ADS1120.h"
 
+// Local functions
+static void temperatureUsrHandling(const char *input);
+
 // Local variables
 static CAProtocolCtx caProto =
 {
-        .undefined = HALundefined,
+        .undefined = temperatureUsrHandling,
         .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
@@ -28,7 +31,12 @@ static CAProtocolCtx caProto =
 
 // Set all SPI pins high to be enable for communication
 #define NO_SPI_DEVICES 5
+#define CALIMEMSIZE NO_SPI_DEVICES*2
+static uint8_t calibrationValues[CALIMEMSIZE];
 static ADS1120Device ads1120[ NO_SPI_DEVICES ];
+
+float portCalVal[NO_SPI_DEVICES*2][2];
+
 static int initSpiDevices(SPI_HandleTypeDef* hspi)
 {
     // Initialise Chip Select pin
@@ -84,6 +92,7 @@ void InitTemperature(SPI_HandleTypeDef* hspi_)
     if (getPcbVersion(&ver) || ver.major != 5 || ver.minor < 2)
         return;
 
+    initSensorCalibration();
     hspi = hspi_;
 }
 
@@ -98,7 +107,8 @@ void LoopTemperature(const char* bootMsg)
 
     for (int i=0; i < NO_SPI_DEVICES && !spiErr && hspi != NULL; i++)
     {
-        ADS1120Loop(&ads1120[i]);
+        float *calPtr = &portCalVal[i*2][0];
+        ADS1120Loop(&ads1120[i], calPtr);
     }
 
     // Upload data every "tsUpload" ms.
@@ -148,3 +158,68 @@ void LoopTemperature(const char* bootMsg)
         isFirstWrite=true;
     }
 }
+
+bool isCalibrationInputValid(const char *inputBuffer)
+{
+    // Ensure all calibration values are set
+    if (strlen(inputBuffer) != NO_SPI_DEVICES*2)
+    {
+        return false;
+    }
+
+    // Check all characters are valid calibration inputs
+    for (int j = 0; j < strlen(inputBuffer); j++)
+    {
+    	// Support Type J and Type K only
+        if (inputBuffer[j] != 'J' && inputBuffer[j] != 'K')
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void setSensorCalibration(int pinNumber, char type)
+{
+	if (type == 'J')
+	{
+	    portCalVal[pinNumber][0] = TYPE_J_DELTA;
+	    portCalVal[pinNumber][1] = TYPE_J_CJ_DELTA;
+	}
+	else if (type == 'K')
+	{
+	    portCalVal[pinNumber][0] = TYPE_K_DELTA;
+	    portCalVal[pinNumber][1] = TYPE_K_CJ_DELTA;
+	}
+}
+
+void initSensorCalibration()
+{
+    /*loadSensorCalibrationFlash();
+    if (calibrationValues[0] == 0xFF)
+    {*/
+    for (int pinNumber = 0; pinNumber < NO_SPI_DEVICES*2; pinNumber++)
+    {
+    	// Default to type K thermocouple
+    	setSensorCalibration(pinNumber, 'K');
+    }
+}
+
+static void temperatureUsrHandling(const char *inputBuffer)
+{
+	if (isCalibrationInputValid(inputBuffer))
+	{
+		// NO_SPI_DEVICES
+		for (int pinNumber = 0; pinNumber < NO_SPI_DEVICES*2; pinNumber++)
+		{
+			setSensorCalibration(pinNumber, inputBuffer[pinNumber]);
+		}
+        strcpy((char*) calibrationValues, inputBuffer);
+        USBnprintf("Calibration updated to: %s", inputBuffer);
+	}
+	else
+	{
+		HALundefined(inputBuffer);
+	}
+}
+

@@ -13,6 +13,9 @@
 #include "time32.h"
 
 #define ADS_TIMEOUT 10 // In mSec.
+#define INTERVAL_VOLTAGE_REF 2.048 // Volts
+#define GAIN 16.0 // Defined from ADS1120_RegConfig.gain
+#define QUANTIZATION 65536.0 // Quantization steps
 
 // Helper union class for setting up registers in a 4 byte array.
 typedef union ADS1120_RegConfig
@@ -70,19 +73,15 @@ static ADS1120_input nextInput(ADS1120_input current)
     return INPUT_CALIBREATE;
 }
 
-//In the linear relation Temp = ADC * calibrationScalar + calibrationConstant
-//the following constants have been measured:
-double calibrationScalar = 0.0473;
-double calibrationConstant = 21.0;
 
-static double adc2Temp(int16_t adcValue, int16_t calibration)
+static double adc2Temp(int16_t adcValue, int16_t calibration, int16_t internalTemp, float delta, float cj_delta)
 {
     if (adcValue == 0x7fff)
         return 10000; // Nothing in port, send 10000 to set an invalid value.
     // TODO: How to detect a short?
 
     adcValue -= calibration;
-    return (adcValue * calibrationScalar + calibrationConstant);
+    return (((float) adcValue/QUANTIZATION*INTERVAL_VOLTAGE_REF)/GAIN + internalTemp*cj_delta)/delta;
 }
 
 // Helper function to test if device has new data.
@@ -248,7 +247,7 @@ int ADS1120Init(ADS1120Device *dev)
     return ret;
 }
 
-void ADS1120Loop(ADS1120Device *dev)
+void ADS1120Loop(ADS1120Device *dev, float *type_calibration)
 {
     const int mAvgTime = 6; // Moving average time, see https://en.wikipedia.org/wiki/Moving_average.
 
@@ -293,11 +292,11 @@ void ADS1120Loop(ADS1120Device *dev)
             break;
 
         case INPUT_CHA:
-            data->chA = adc2Temp(((int16_t) adcValue), data->calibration);
+            data->chA = adc2Temp(((int16_t) adcValue), data->calibration, data->internalTemp, *type_calibration, *(type_calibration + 1));
             break;
 
         case INPUT_CHB:
-            data->chB = adc2Temp(((int16_t) adcValue), data->calibration);
+            data->chB = adc2Temp(((int16_t) adcValue), data->calibration, data->internalTemp, *(type_calibration+2), *(type_calibration + 3));
             break;
 
         case INPUT_CALIBREATE:
