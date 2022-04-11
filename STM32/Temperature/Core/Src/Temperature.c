@@ -89,7 +89,11 @@ void InitTemperature(SPI_HandleTypeDef* hspi_)
         return;
 
     pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major != 5 || ver.minor < 2)
+    if (getPcbVersion(&ver) || ver.major < 5)
+        return;
+
+    // SW versions lower than 5.2 are not supported
+    if (ver.major == 5 && ver.minor < 2)
         return;
 
     initSensorCalibration();
