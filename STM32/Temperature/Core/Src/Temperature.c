@@ -195,9 +195,6 @@ void setSensorCalibration(int pinNumber, char type)
 
 void initSensorCalibration()
 {
-    /*loadSensorCalibrationFlash();
-    if (calibrationValues[0] == 0xFF)
-    {*/
     for (int pinNumber = 0; pinNumber < NO_SPI_DEVICES*2; pinNumber++)
     {
     	// Default to type K thermocouple
@@ -209,7 +206,7 @@ static void temperatureUsrHandling(const char *inputBuffer)
 {
 	if (isCalibrationInputValid(inputBuffer))
 	{
-		// NO_SPI_DEVICES
+		// Set the calibration type to the type specified by user.
 		for (int pinNumber = 0; pinNumber < NO_SPI_DEVICES*2; pinNumber++)
 		{
 			setSensorCalibration(pinNumber, inputBuffer[pinNumber]);

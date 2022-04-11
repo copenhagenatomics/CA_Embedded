@@ -81,7 +81,12 @@ static double adc2Temp(int16_t adcValue, int16_t calibration, int16_t internalTe
     // TODO: How to detect a short?
 
     adcValue -= calibration;
-    return (((float) adcValue/QUANTIZATION*INTERVAL_VOLTAGE_REF)/GAIN + internalTemp*cj_delta)/delta;
+    // Voltage across thermocouple
+    float vTC = (float) adcValue/QUANTIZATION*INTERVAL_VOLTAGE_REF/GAIN;
+    // Voltage across cold-junction
+    float vCJ = internalTemp*cj_delta;
+    // return temperature
+    return (vTC + vCJ)/delta;
 }
 
 // Helper function to test if device has new data.
