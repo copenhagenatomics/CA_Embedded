@@ -153,6 +153,8 @@ void LoopTemperature(const char* bootMsg)
             else
             {
                 USBnprintf("Failed to initialise ADS1120 device %X. This SW require PCB version >= 5.2", spiErr);
+                USBnprintf("Re-initialising ADS1120 device");
+                spiErr = initSpiDevices(hspi);
             }
         }
     }
