@@ -39,10 +39,14 @@ static void calibration(CAProtocolCtx* ctx, const char* input)
     {
         int port;
         double alpha, beta;
+        int threshold;
         idx++;
-        if (sscanf(idx, "%d,%lf,%lf", &port, &alpha, &beta) == 3)
+        // Threshold is optional and therefore only 3 values need to be set.
+        // For any board that uses the threshold value an additional check should
+        // be made before using for any calibration.
+        if (sscanf(idx, "%d,%lf,%lf,%d", &port, &alpha, &beta, &threshold) >= 3)
         {
-            cal[noOfCalibrations] = (CACalibration) { port, alpha, beta };
+            cal[noOfCalibrations] = (CACalibration) { port, alpha, beta, threshold };
             noOfCalibrations++;
         }
         idx = index(idx, ' '); // get the next space.
