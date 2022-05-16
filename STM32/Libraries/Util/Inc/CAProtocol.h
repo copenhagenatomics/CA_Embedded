@@ -16,6 +16,7 @@ typedef struct
     int port;
     double alpha;
     double beta;
+    int threshold;
 } CACalibration;
 
 typedef int (*ReaderFn)(uint8_t* rxBuf);
