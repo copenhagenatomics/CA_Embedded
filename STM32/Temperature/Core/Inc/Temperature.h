@@ -13,4 +13,4 @@ void initSensorCalibration();
 void setSensorCalibration(int pinNumber, char type);
 bool isCalibrationInputValid(const char *inputBuffer);
 void InitTemperature(SPI_HandleTypeDef* hspi_);
-void LoopTemperature();
+int LoopTemperature();

@@ -98,14 +98,16 @@ int main(void)
   MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
   InitTemperature(&hspi1);
+  int spiErr = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      HAL_WWDG_Refresh(&hwwdg);
-      LoopTemperature(bootMsg);
+      if (!spiErr)
+    	  HAL_WWDG_Refresh(&hwwdg);
+      spiErr = LoopTemperature(bootMsg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

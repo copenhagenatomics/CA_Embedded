@@ -100,7 +100,7 @@ void InitTemperature(SPI_HandleTypeDef* hspi_)
     hspi = hspi_;
 }
 
-void LoopTemperature(const char* bootMsg)
+int LoopTemperature(const char* bootMsg)
 {
     static int spiErr = 1;
     static uint32_t timeStamp = 0;
@@ -122,7 +122,7 @@ void LoopTemperature(const char* bootMsg)
 
         if (isComPortOpen())
         {
-            if (isFirstWrite)
+            if (isFirstWrite || spiErr)
             {
                 if (hspi != NULL)
                     spiErr = initSpiDevices(hspi);
@@ -130,8 +130,8 @@ void LoopTemperature(const char* bootMsg)
             }
 
             if (hspi == NULL) {
-                USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices is attached");
-                return;
+                USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices are attached");
+                return spiErr;
             }
 
             if (!spiErr)
@@ -153,8 +153,6 @@ void LoopTemperature(const char* bootMsg)
             else
             {
                 USBnprintf("Failed to initialise ADS1120 device %X. This SW require PCB version >= 5.2", spiErr);
-                USBnprintf("Re-initialising ADS1120 device");
-                spiErr = initSpiDevices(hspi);
             }
         }
     }
@@ -163,6 +161,7 @@ void LoopTemperature(const char* bootMsg)
     {
         isFirstWrite=true;
     }
+    return spiErr;
 }
 
 bool isCalibrationInputValid(const char *inputBuffer)
