@@ -155,6 +155,12 @@ int LoopTemperature(const char* bootMsg)
                 USBnprintf("Failed to initialise ADS1120 device %X. This SW require PCB version >= 5.2", spiErr);
             }
         }
+        else
+        {
+        	// Return non-fault state as long as COM port has not been opened
+        	// to ensure WatchDog does not trigger.
+        	return 0;
+        }
     }
 
     if (!isComPortOpen())

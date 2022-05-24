@@ -108,7 +108,9 @@ int main(void)
 	  // Update the watchdog if the SPI communication to the
 	  // ADS1120 chips work as expected.
       if (!spiErr)
+      {
     	  HAL_WWDG_Refresh(&hwwdg);
+      }
       spiErr = LoopTemperature(bootMsg);
     /* USER CODE END WHILE */
 
