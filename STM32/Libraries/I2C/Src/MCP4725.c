@@ -6,7 +6,6 @@
  */
 
 #include "MCP4725.h"
-#include "main.h"
 #include <assert.h>
 #include <stdbool.h>
 
