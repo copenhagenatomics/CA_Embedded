@@ -40,18 +40,21 @@
 #define START_BIT_PSC 1
 #define OTHER_BIT_PSC 0
 
-#define START_BIT_ARR	37601	// Period of 4700us (~213Hz)
-#define START_BIT_CCR	52801	// On time (31%)
+#define START_BIT_ARR	37601	// Period of 4700us (~213Hz) --- NOTE prescaler for this setting
+#define START_BIT_CCR	26400	// On time (70%)
 
-#define HIGH_BIT_ARR	27840	// Period of 1740us (~575Hz)
-#define HIGH_BIT_CCR	8630	// On time (31%)
+#define HIGH_BIT_ARR	27840/2	// Period of 1740us (~575Hz)
+#define HIGH_BIT_CCR	8630/2	// On time (31%)
 
-#define LOW_BIT_ARR		14084	// Period of 880us (~1136Hz)
-#define LOW_BIT_CCR		8591	// On time (61%)
+#define LOW_BIT_ARR		14084/2	// Period of 880us (~1136Hz)
+#define LOW_BIT_CCR		4296 //8591	// On time (61%)
 
 
 void updateTemperatureIR(int temp);
 void updateFanIR(int fanSpeed);
+void turnOnLED();
+void turnOffLED();
+void pwmGPIO();
 void initTransmitterIR(TIM_HandleTypeDef *timFreqCarrier_, TIM_HandleTypeDef *timSignal_);
 
 #endif /* INC_TRANSMITTERIR_H_ */

@@ -38,6 +38,14 @@ static void handleUserCommands(const char * input)
 	{
 		updateFanIR(fanSpeed);
 	}
+	else if (strncmp(input, "on", 2)==0)
+	{
+		turnOnLED();
+	}
+	else if (strncmp(input, "off", 3)==0)
+	{
+		turnOffLED();
+	}
 	else
 		HALundefined(input);
 }
@@ -151,7 +159,8 @@ void airconCtrlInit(TIM_HandleTypeDef *ctx)
     __HAL_TIM_SET_COUNTER(timerCtx, 0);
 }
 
-void airconCtrlLoop()
+void airconCtrlLoop(const char* bootMsg)
 {
-    inputCAProtocol(&caProto);
+    CAhandleUserInputs(&caProto, bootMsg);
+    pwmGPIO();
 }
