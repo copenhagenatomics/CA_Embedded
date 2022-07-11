@@ -84,7 +84,7 @@ HAL_StatusTypeDef sht3x_read_temperature_and_humidity(sht3x_handle_t *handle, fl
 	}
 
 	//merges data into a uint16
-	int16_t temperature_raw = (int16_t)uint8Merge(buffer[0], buffer[1]);
+	uint16_t temperature_raw = uint8Merge(buffer[0], buffer[1]);
 	uint16_t humidity_raw = uint8Merge(buffer[3], buffer[4]);
 
 	//processes data
