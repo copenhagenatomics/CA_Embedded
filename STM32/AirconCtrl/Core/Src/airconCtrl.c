@@ -29,14 +29,9 @@ static CAProtocolCtx caProto = {
 static void handleUserCommands(const char * input)
 {
 	int temp;
-	int fanSpeed;
 	if (sscanf(input, "temp %d", &temp) == 1)
 	{
 		updateTemperatureIR(temp);
-	}
-	else if (sscanf(input, "fan %d", &fanSpeed) == 1)
-	{
-		updateFanIR(fanSpeed);
 	}
 	else if (strncmp(input, "on", 2)==0)
 	{
@@ -118,6 +113,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         irqCnt++;
         if (__HAL_TIM_GET_COUNTER(timerCtx) > 400)
         {
+            irqCnt=1;
             tempCode = 0;
             bitIndex = 0;
         }

@@ -11,11 +11,12 @@
 #include "main.h"
 #include "USBprint.h"
 
-StmGpio IRsender;
+static TIM_HandleTypeDef* timFreqCarrier = NULL;
+static TIM_HandleTypeDef* timSignal = NULL;
 
 static struct {
 	bool isCommandIssued;
-	bool isStartCommandSent;
+	bool isAddressSent;
 	bool isCommReady;
 } commandState = {false, false, false};
 
@@ -34,9 +35,9 @@ static void sendCommand()
 	static int sendBitIdx = 0;
 	static int wordIdx = 0;
 
-	if (!commandState.isStartCommandSent)
+	if (!commandState.isAddressSent)
 	{
-		commandState.isStartCommandSent = true;
+		commandState.isAddressSent = true;
 		TIM3->ARR = START_BIT_ARR;
 		TIM3->CCR2 = START_BIT_CCR;
 		return;
@@ -45,8 +46,10 @@ static void sendCommand()
 	// End of message
 	if (wordIdx == 3 && sendBitIdx == 17)
 	{
+		turnOffLED();
+
 		commandState.isCommandIssued = false;
-		commandState.isStartCommandSent = false;
+		commandState.isAddressSent = false;
 		commandState.isCommReady = false;
 
 		wordIdx = 0;
@@ -54,8 +57,6 @@ static void sendCommand()
 
 		TIM3->ARR = START_BIT_ARR;
 		TIM3->CCR2 = 0;
-
-		stmSetGpio(IRsender, true);
 		return;
 	}
 
@@ -71,12 +72,12 @@ static void sendCommand()
 		TIM3->ARR = LOW_BIT_ARR;
 		TIM3->CCR2 = LOW_BIT_CCR;
 	}
-	sendBitIdx++;
 
+	sendBitIdx++;
 	if (sendBitIdx % 32 == 0)
 	{
 		sendBitIdx = 0;
-		wordIdx += 1;
+		wordIdx++;
 	}
 }
 
@@ -85,46 +86,45 @@ void pwmGPIO()
 	if (!commandState.isCommReady)
 		return;
 
-	if (TIM3->CNT < TIM3->CCR2 && TIM2->CNT < TIM2->CCR1)
+	if (TIM3->CNT < TIM3->CCR2)
 	{
-		stmSetGpio(IRsender, false);
+		turnOnLED();
 	}
 	else
 	{
-		stmSetGpio(IRsender, true);
+		turnOffLED();
 	}
 }
 
+static uint32_t tempCodes[8] = {TEMP_18, TEMP_19, TEMP_20, TEMP_21, TEMP_22, TEMP_23, TEMP_24, TEMP_25};
+static uint32_t crcCodes[8] = {CRC18, CRC19, CRC20, CRC21, CRC22, CRC23, CRC24, CRC25};
 void updateTemperatureIR(int temp)
 {
-	//IRCommand.tempData = temp;
-	commandState.isCommandIssued = true;
-}
+	if (temp < 18 || temp > 25)
+		return;
 
-void updateFanIR(int fanSpeed)
-{
-	//IRCommand.miscStates = fanSpeed;
+	IRCommand.tempData = tempCodes[temp-18];
+	IRCommand.unknown = crcCodes[temp-18];
+
 	commandState.isCommandIssued = true;
 }
 
 void turnOnLED()
 {
-	stmSetGpio(IRsender, true);
+	HAL_TIM_PWM_Start(timFreqCarrier, TIM_CHANNEL_1);
 }
 
 void turnOffLED()
 {
-	stmSetGpio(IRsender, false);
+	HAL_TIM_PWM_Stop(timFreqCarrier, TIM_CHANNEL_1);
 }
 // Callback: timer has rolled over
-static TIM_HandleTypeDef* timSignal = NULL;
-static TIM_HandleTypeDef* timFreqCarrier = NULL;
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
 	if (!commandState.isCommandIssued)
 		return;
 
-	if (commandState.isStartCommandSent && !commandState.isCommReady)
+	if (commandState.isAddressSent && !commandState.isCommReady)
 	{
 		commandState.isCommReady = true;
 		return;
@@ -136,19 +136,11 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
     }
 }
 
-void initGPIO()
-{
-    stmGpioInit(&IRsender, IRsender_GPIO_Port, IRsender_Pin, STM_GPIO_OUTPUT);
-    stmSetGpio(IRsender, true);
-}
 
 void initTransmitterIR(TIM_HandleTypeDef *timFreqCarrier_, TIM_HandleTypeDef *timSignal_)
 {
-	HAL_TIM_PWM_Start_IT(timFreqCarrier, TIM_CHANNEL_1);
 	HAL_TIM_PWM_Start_IT(timSignal_, TIM_CHANNEL_2);
 	timSignal = timSignal_;
 	timFreqCarrier = timFreqCarrier_;
-
-	initGPIO();
 }
 
