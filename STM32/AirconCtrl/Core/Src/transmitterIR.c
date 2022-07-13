@@ -25,10 +25,10 @@ static union IRCommand {
         uint32_t address;
         uint32_t tempData;
         uint32_t miscStates;
-        uint32_t unknown;
+        uint32_t checksum;
     }; // struct used for altering data
     uint32_t command[4]; // command used for sending
-} IRCommand= {.address = IR_ADDRESS, .tempData = TEMP_18, .miscStates = FAN_HIGH, .unknown = 0x20000};
+} IRCommand= {.address = IR_ADDRESS, .tempData = TEMP_18, .miscStates = FAN_HIGH, .checksum = CRC18};
 
 static void sendCommand()
 {
@@ -100,12 +100,35 @@ static uint32_t tempCodes[8] = {TEMP_18, TEMP_19, TEMP_20, TEMP_21, TEMP_22, TEM
 static uint32_t crcCodes[8] = {CRC18, CRC19, CRC20, CRC21, CRC22, CRC23, CRC24, CRC25};
 void updateTemperatureIR(int temp)
 {
-	if (temp < 18 || temp > 25)
+	if ((temp < 18 || temp > 25) && temp != 5 && temp != 30)
 		return;
 
-	IRCommand.tempData = tempCodes[temp-18];
-	IRCommand.unknown = crcCodes[temp-18];
+	if (temp == 5)
+	{
+		IRCommand.tempData = TEMP_5;
+		IRCommand.checksum = CRC5;
+		IRCommand.miscStates = FAN_HIGH_5;
+	}
+	else if (temp == 30)
+	{
+		IRCommand.tempData = TEMP_30;
+		IRCommand.checksum = CRC30;
+		IRCommand.miscStates = FAN_HIGH;
+	}
+	else
+	{
+		IRCommand.tempData = tempCodes[temp-18];
+		IRCommand.checksum = crcCodes[temp-18];
+		IRCommand.miscStates = FAN_HIGH;
+	}
+	commandState.isCommandIssued = true;
+}
 
+void turnOffAC()
+{
+	IRCommand.tempData = AC_OFF;
+	IRCommand.miscStates = FAN_HIGH;
+	IRCommand.checksum = CRC_OFF;
 	commandState.isCommandIssued = true;
 }
 
@@ -118,6 +141,7 @@ void turnOffLED()
 {
 	HAL_TIM_PWM_Stop(timFreqCarrier, TIM_CHANNEL_1);
 }
+
 // Callback: timer has rolled over
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {

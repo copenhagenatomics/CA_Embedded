@@ -10,13 +10,10 @@
 
 #include "stm32f4xx_hal.h"
 
+// IR Codes
 #define IR_ADDRESS 0xc4d36480
 
 #define TEMP_30		0x00240070
-#define TEMP_29		0x002400b0
-#define TEMP_28		0x00240030
-#define TEMP_27		0x002400d0
-#define TEMP_26		0x00240050
 #define TEMP_25		0x00240090
 #define TEMP_24		0x00240010
 #define TEMP_23		0x002400e0
@@ -25,9 +22,10 @@
 #define TEMP_20		0x00240020
 #define TEMP_19		0x002400c0
 #define TEMP_18		0x00240040
-#define TEMP_17		0x00240080
-#define TEMP_16		0x00240000
+#define TEMP_5		0x00240200
+#define AC_OFF 		0x40090
 
+#define CRC30 	0x320000
 #define CRC25	0xe20000
 #define CRC24	0x620000
 #define CRC23	0xa20000
@@ -36,17 +34,13 @@
 #define CRC20	0x420000
 #define CRC19	0x820000
 #define CRC18	0x20000
+#define CRC5	0xc90000
+#define CRC_OFF 0xc20000
 
-#define FAN_LOW		0x40000000
-#define FAN_MID		0xc0000000
 #define FAN_HIGH	0xa0000000
-#define FAN_MASK 	0xf0000000
+#define FAN_HIGH_5	0xa000a800
 
-#define FAN_C		0x00000010
-#define OUT_C		0x00000020
-#define BLOWER		0x00000040
-#define BLOWER_MASK 0x000000f0
-
+// Sending PWMs
 #define START_BIT_ARR	37601	// Period of 4700us (~213Hz) --- NOTE prescaler for this setting
 #define START_BIT_CCR	26400	// On time (70%)
 
@@ -60,6 +54,7 @@
 void updateTemperatureIR(int temp);
 void turnOnLED();
 void turnOffLED();
+void turnOffAC();
 void pwmGPIO();
 void initTransmitterIR(TIM_HandleTypeDef *timFreqCarrier_, TIM_HandleTypeDef *timSignal_);
 
