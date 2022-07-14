@@ -51,6 +51,7 @@
 #define LOW_BIT_CCR		4296    // On time (61%)
 
 
+void getACStates(int * tempState);
 void updateTemperatureIR(int temp);
 void turnOnLED();
 void turnOffLED();

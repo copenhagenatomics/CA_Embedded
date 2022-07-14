@@ -14,6 +14,8 @@
 static TIM_HandleTypeDef* timFreqCarrier = NULL;
 static TIM_HandleTypeDef* timSignal = NULL;
 
+static int currenTemp = 0;
+
 static struct {
 	bool isCommandIssued;
 	bool isAddressSent;
@@ -96,13 +98,16 @@ void pwmGPIO()
 	}
 }
 
+void getACStates(int * tempState)
+{
+	*tempState = currenTemp;
+}
+
 static uint32_t tempCodes[8] = {TEMP_18, TEMP_19, TEMP_20, TEMP_21, TEMP_22, TEMP_23, TEMP_24, TEMP_25};
 static uint32_t crcCodes[8] = {CRC18, CRC19, CRC20, CRC21, CRC22, CRC23, CRC24, CRC25};
 void updateTemperatureIR(int temp)
 {
-	if ((temp < 18 || temp > 25) && temp != 5 && temp != 30)
-		return;
-
+	currenTemp = temp;
 	if (temp == 5)
 	{
 		IRCommand.tempData = TEMP_5;
@@ -126,6 +131,8 @@ void updateTemperatureIR(int temp)
 
 void turnOffAC()
 {
+	currenTemp = 0;
+
 	IRCommand.tempData = AC_OFF;
 	IRCommand.miscStates = FAN_HIGH;
 	IRCommand.checksum = CRC_OFF;

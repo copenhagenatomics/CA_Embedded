@@ -31,6 +31,11 @@ static void handleUserCommands(const char * input)
 	int temp;
 	if (sscanf(input, "temp %d", &temp) == 1)
 	{
+		if ((temp < 18 || temp > 25) && temp != 5 && temp != 30)
+		{
+			HALundefined(input);
+			return;
+		}
 		updateTemperatureIR(temp);
 	}
 	else if (strncmp(input, "off", 3)==0)
@@ -41,6 +46,13 @@ static void handleUserCommands(const char * input)
 		HALundefined(input);
 }
 
+static void printACTemperature()
+{
+	int temp;
+	getACStates(&temp);
+
+	USBnprintf("%d", temp);
+}
 
 
 // ---- DECODING SIGNAL -----
@@ -89,13 +101,24 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     }
 }
 
+TIM_HandleTypeDef *loopTimer = NULL;
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim == loopTimer)
+	{
+		printACTemperature();
+	}
+}
 
-void airconCtrlInit(TIM_HandleTypeDef *ctx)
+
+void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_)
 {
     initCAProtocol(&caProto, usb_cdc_rx);
 
     timerCtx = ctx;
+    loopTimer = loopTimer_;
     HAL_TIM_Base_Start(timerCtx);
+    HAL_TIM_Base_Start_IT(loopTimer_);
     __HAL_TIM_SET_COUNTER(timerCtx, 0);
 }
 
