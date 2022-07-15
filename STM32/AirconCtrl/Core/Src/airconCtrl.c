@@ -48,9 +48,11 @@ static void handleUserCommands(const char * input)
 
 static void printACTemperature()
 {
-	int temp;
-	getACStates(&temp);
+	static int temp;
 
+	if (!isComPortOpen()) return;
+
+	getACStates(&temp);
 	USBnprintf("%d", temp);
 }
 
