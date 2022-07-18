@@ -166,8 +166,8 @@ void LoopTemperature(const char* bootMsg)
         }
     }
 
-    //if (!isComPortOpen())
-    //    isFirstWrite=true;
+    if (!isComPortOpen())
+        isFirstWrite=true;
 }
 
 bool isCalibrationInputValid(const char *inputBuffer)
