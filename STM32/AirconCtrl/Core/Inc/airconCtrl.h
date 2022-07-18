@@ -10,7 +10,7 @@
 
 #include "stm32f4xx_hal.h"
 
-void airconCtrlInit(TIM_HandleTypeDef *ctx);
+void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_);
 void airconCtrlLoop();
 
 #endif /* INC_AIRCONCTRL_H_ */
