@@ -66,7 +66,7 @@ static ADS1120_input nextInput(ADS1120_input current)
     case INPUT_TEMP:       return INPUT_CHA;
     case INPUT_CHA:        return INPUT_CHB;
     case INPUT_CHB:        return INPUT_CALIBRATE;
-    case INPUT_CALIBRATE: return INPUT_TEMP;
+    case INPUT_CALIBRATE:  return INPUT_TEMP;
     }
 
     // Make compiler happy. If no return a warning from compiler is issued.

@@ -129,8 +129,8 @@ void LoopTemperature(const char* bootMsg)
     {
         timeStamp = HAL_GetTick();
 
-        if (isComPortOpen())
-        {
+       // if (isComPortOpen())
+        //{
             if (isFirstWrite)
             {
                 if (hspi != NULL)
@@ -163,11 +163,11 @@ void LoopTemperature(const char* bootMsg)
 					, ads1120[3].data.chA, ads1120[3].data.chB
 					, ads1120[4].data.chA, ads1120[4].data.chB
 					, internalTemp);
-        }
+        //}
     }
 
-    if (!isComPortOpen())
-        isFirstWrite=true;
+    //if (!isComPortOpen())
+    //    isFirstWrite=true;
 }
 
 bool isCalibrationInputValid(const char *inputBuffer)
