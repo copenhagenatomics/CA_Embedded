@@ -74,6 +74,12 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
         int ret = ADS1120Init(&ads1120[i]);
         if (ret != 0) {
             err |= ret << (4*i);
+
+            // If connection could not be established to chip
+            // set temperatures to 10010 to indicate miscommunication
+        	ads1120[i].data.internalTemp = 10010;
+            ads1120[i].data.chA = 10010;
+            ads1120[i].data.chB = 10010;
         }
     }
     return err;
@@ -100,17 +106,20 @@ void InitTemperature(SPI_HandleTypeDef* hspi_)
     hspi = hspi_;
 }
 
-int LoopTemperature(const char* bootMsg)
+void LoopTemperature(const char* bootMsg)
 {
-    static int spiErr = 1;
+    static int spiErr = 0;
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
     static bool isFirstWrite = true;
 
     CAhandleUserInputs(&caProto, bootMsg);
 
-    for (int i=0; i < NO_SPI_DEVICES && !spiErr && hspi != NULL; i++)
+    for (int i=0; i < NO_SPI_DEVICES && hspi != NULL && !isFirstWrite; i++)
     {
+    	// Continue if connection could not be established to ADS1120 chip.
+    	if (((spiErr >> 4*i) & 0x0F) != 0) continue;
+
         float *calPtr = &portCalVal[i*2][0];
         ADS1120Loop(&ads1120[i], calPtr);
     }
@@ -122,52 +131,43 @@ int LoopTemperature(const char* bootMsg)
 
         if (isComPortOpen())
         {
-            if (isFirstWrite || spiErr)
+            if (isFirstWrite)
             {
                 if (hspi != NULL)
                     spiErr = initSpiDevices(hspi);
                 isFirstWrite = false;
+                return;
             }
 
             if (hspi == NULL) {
                 USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices are attached");
-                return spiErr;
             }
 
-            if (!spiErr)
+            int count = 0;
+            double internalTemp = 0;
+            for (int i = 0; i < NO_SPI_DEVICES; i++)
             {
-                double internalTemp = (ads1120[0].data.internalTemp +
-                                       ads1120[1].data.internalTemp +
-                                       ads1120[2].data.internalTemp +
-                                       ads1120[3].data.internalTemp +
-                                       ads1120[4].data.internalTemp)/5;
+            	// Do not include internal temperature of chip if
+            	// connection could not be established to ADS1120 chip.
+            	if (((spiErr >> 4*i) & 0x0F) != 0) continue;
 
-                USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%"
-                        , ads1120[0].data.chA, ads1120[0].data.chB
-                        , ads1120[1].data.chA, ads1120[1].data.chB
-                        , ads1120[2].data.chA, ads1120[2].data.chB
-                        , ads1120[3].data.chA, ads1120[3].data.chB
-                        , ads1120[4].data.chA, ads1120[4].data.chB
-                        , internalTemp);
+            	internalTemp += ads1120[i].data.internalTemp;
+            	count++;
             }
-            else
-            {
-                USBnprintf("Failed to initialise ADS1120 device %X. This SW require PCB version >= 5.2", spiErr);
-            }
-        }
-        else
-        {
-        	// Return non-fault state as long as COM port has not been opened
-        	// to ensure WatchDog does not trigger.
-        	return 0;
+            internalTemp = internalTemp/count;
+
+			USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%"
+					, ads1120[0].data.chA, ads1120[0].data.chB
+					, ads1120[1].data.chA, ads1120[1].data.chB
+					, ads1120[2].data.chA, ads1120[2].data.chB
+					, ads1120[3].data.chA, ads1120[3].data.chB
+					, ads1120[4].data.chA, ads1120[4].data.chB
+					, internalTemp);
         }
     }
 
     if (!isComPortOpen())
-    {
         isFirstWrite=true;
-    }
-    return spiErr;
 }
 
 bool isCalibrationInputValid(const char *inputBuffer)

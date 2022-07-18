@@ -98,7 +98,6 @@ int main(void)
   MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
   InitTemperature(&hspi1);
-  int spiErr = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -107,11 +106,8 @@ int main(void)
   {
 	  // Update the watchdog if the SPI communication to the
 	  // ADS1120 chips work as expected.
-      if (!spiErr)
-      {
-    	  HAL_WWDG_Refresh(&hwwdg);
-      }
-      spiErr = LoopTemperature(bootMsg);
+	  HAL_WWDG_Refresh(&hwwdg);
+      LoopTemperature(bootMsg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

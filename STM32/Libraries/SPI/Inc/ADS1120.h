@@ -9,7 +9,7 @@ typedef enum
     INPUT_TEMP,      // config for temperature reading.
     INPUT_CHA,       // config for first input
     INPUT_CHB,       // config for second input
-    INPUT_CALIBREATE // calibration, measure (AVDD-AVSS)/2.
+    INPUT_CALIBRATE // calibration, measure (AVDD-AVSS)/2.
 } ADS1120_input;
 
 typedef struct ADS1120Data {
