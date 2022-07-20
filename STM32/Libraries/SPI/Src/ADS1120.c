@@ -65,12 +65,12 @@ static ADS1120_input nextInput(ADS1120_input current)
     {
     case INPUT_TEMP:       return INPUT_CHA;
     case INPUT_CHA:        return INPUT_CHB;
-    case INPUT_CHB:        return INPUT_CALIBREATE;
-    case INPUT_CALIBREATE: return INPUT_TEMP;
+    case INPUT_CHB:        return INPUT_CALIBRATE;
+    case INPUT_CALIBRATE:  return INPUT_TEMP;
     }
 
     // Make compiler happy. If no return a warning from compiler is issued.
-    return INPUT_CALIBREATE;
+    return INPUT_CALIBRATE;
 }
 
 
@@ -192,7 +192,7 @@ static int setInput(ADS1120Device *dev, ADS1120_input selectedInput, bool verify
     case INPUT_CHB:
         cfg.mux = 5;
         break;
-    case INPUT_CALIBREATE:
+    case INPUT_CALIBRATE:
         cfg.mux = 0x0E;
         break;
     }
@@ -234,16 +234,16 @@ int ADS1120Init(ADS1120Device *dev)
     stmSetGpio(dev->cs, false);
     if (reset(dev) != HAL_OK)
     {
-        ret = -1;
+        ret = 1;
     }
     else
     {
         HAL_Delay(1); // wait 50µs+32*t(CLK) < 1mSec after reset
 
         // Check that the configuration can be set.
-        ret = setInput(dev, INPUT_CALIBREATE, true);
+        ret = setInput(dev, INPUT_CALIBRATE, true);
         if (ret != 0) {
-            ret = -2;
+            ret = 2;
         }
     }
 
@@ -263,7 +263,7 @@ void ADS1120Loop(ADS1120Device *dev, float *type_calibration)
     {
         // Something is wrong. Restart from calibrate
         stmSetGpio(dev->cs, false);
-        setInput(dev, INPUT_CALIBREATE, false);
+        setInput(dev, INPUT_CALIBRATE, false);
         ADCSync(dev); // If no change in SPI flags a new ADC acquire is not started.
         stmSetGpio(dev->cs, true);
 
@@ -284,7 +284,7 @@ void ADS1120Loop(ADS1120Device *dev, float *type_calibration)
     if (readADC(dev, &adcValue) != HAL_OK)
     {
         // Something is wrong. Restart from calibrate
-        setInput(dev, INPUT_CALIBREATE, false);
+        setInput(dev, INPUT_CALIBRATE, false);
         ADCSync(dev); // If no change in SPI flags a new ADC acquire is not started.
     }
     else
@@ -304,7 +304,7 @@ void ADS1120Loop(ADS1120Device *dev, float *type_calibration)
             data->chB = adc2Temp(((int16_t) adcValue), data->calibration, data->internalTemp, *(type_calibration+2), *(type_calibration + 3));
             break;
 
-        case INPUT_CALIBREATE:
+        case INPUT_CALIBRATE:
             // The offset value from ADC1120 can be either negative or positive.
             data->calibration += (((int16_t) adcValue) - data->calibration) / mAvgTime;
             break;
