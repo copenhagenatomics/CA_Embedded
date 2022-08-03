@@ -65,6 +65,9 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
 
 static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
+	if (!isComPortOpen())
+		return;
+
     float temp;
     if (si7051Temp(hi2c, &temp) != HAL_OK) temp = 10000;
 
