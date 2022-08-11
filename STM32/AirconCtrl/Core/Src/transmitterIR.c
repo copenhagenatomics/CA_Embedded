@@ -14,12 +14,13 @@
 static TIM_HandleTypeDef* timFreqCarrier = NULL;
 static TIM_HandleTypeDef* timSignal = NULL;
 
-static int currenTemp = 0;
+static int currentTemp = 0;
 
 static struct {
 	bool isCommandIssued;
 	bool isAddressSent;
 	bool isCommReady;
+	uint32_t cmdTimeStamp;
 } commandState = {false, false, false};
 
 static union IRCommand {
@@ -36,6 +37,7 @@ static void sendCommand()
 {
 	static int sendBitIdx = 0;
 	static int wordIdx = 0;
+	static int noRepeats = 0;
 
 	if (!commandState.isAddressSent)
 	{
@@ -50,9 +52,13 @@ static void sendCommand()
 	{
 		turnOffLED();
 
-		commandState.isCommandIssued = false;
+		// Repeat command 'NO_COMMAND_REPEATS' times to minimize risk of command
+		// not being received correctly
+		noRepeats = (noRepeats + 1 <= NO_COMMAND_REPEATS) ? noRepeats + 1 : 0;
+		commandState.isCommandIssued = (noRepeats < NO_COMMAND_REPEATS) ? true : false;
 		commandState.isAddressSent = false;
 		commandState.isCommReady = false;
+		commandState.cmdTimeStamp = HAL_GetTick();
 
 		wordIdx = 0;
 		sendBitIdx = 0;
@@ -100,14 +106,14 @@ void pwmGPIO()
 
 void getACStates(int * tempState)
 {
-	*tempState = currenTemp;
+	*tempState = currentTemp;
 }
 
 static uint32_t tempCodes[8] = {TEMP_18, TEMP_19, TEMP_20, TEMP_21, TEMP_22, TEMP_23, TEMP_24, TEMP_25};
 static uint32_t crcCodes[8] = {CRC18, CRC19, CRC20, CRC21, CRC22, CRC23, CRC24, CRC25};
 void updateTemperatureIR(int temp)
 {
-	currenTemp = temp;
+	currentTemp = temp;
 	if (temp == 5)
 	{
 		IRCommand.tempData = TEMP_5;
@@ -127,11 +133,12 @@ void updateTemperatureIR(int temp)
 		IRCommand.miscStates = FAN_HIGH;
 	}
 	commandState.isCommandIssued = true;
+	commandState.cmdTimeStamp = HAL_GetTick();
 }
 
 void turnOffAC()
 {
-	currenTemp = 0;
+	currentTemp = 0;
 
 	IRCommand.tempData = AC_OFF;
 	IRCommand.miscStates = FAN_HIGH;
@@ -152,7 +159,7 @@ void turnOffLED()
 // Callback: timer has rolled over
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
-	if (!commandState.isCommandIssued)
+	if (!commandState.isCommandIssued || (HAL_GetTick() - commandState.cmdTimeStamp) < 100)
 		return;
 
 	if (commandState.isAddressSent && !commandState.isCommReady)

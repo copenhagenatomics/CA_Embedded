@@ -50,6 +50,7 @@
 #define LOW_BIT_ARR		7042 	// Period of 880us (~1136Hz)
 #define LOW_BIT_CCR		4296    // On time (61%)
 
+#define NO_COMMAND_REPEATS 5
 
 void getACStates(int * tempState);
 void updateTemperatureIR(int temp);
