@@ -53,6 +53,7 @@ static char* productType(uint8_t id)
     case AMBcurrent		  :  return "AMBcurrent"; 		 break;
     case Geiger           :  return "Geiger"; 			 break;
     case AirCondition     :  return "AirCondition"; 	 break;
+    case LightController  :  return "LightController"; 	 break;
     }
     return "NA";
 }
