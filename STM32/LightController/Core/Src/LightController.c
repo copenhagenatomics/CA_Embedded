@@ -10,6 +10,7 @@
 #include "CAProtocolStm.h"
 #include "USBprint.h"
 #include "usb_cdc_fops.h"
+#include <stdbool.h>
 
 typedef struct rgbCfg {
     int    red;
@@ -38,6 +39,22 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
+static bool isInputValid(int channel, unsigned int red, unsigned int green, unsigned int blue)
+{
+	if (channel <= 0 || channel > LED_CHANNELS)
+		return false;
+
+	if (red < 0 || red > MAX_PWM)
+		return false;
+
+	if (green < 0 || green > MAX_PWM)
+		return false;
+
+	if (blue < 0 || blue > MAX_PWM)
+		return false;
+
+	return true;
+}
 
 TIM_HandleTypeDef * htim2_ = NULL;
 TIM_HandleTypeDef * htim3_ = NULL;
@@ -83,6 +100,12 @@ static void controlLEDStrip(const char *input)
 
 	if (sscanf(input, "p%d %d %d %d", &channel, &red, &green, &blue) == 4)
 	{
+		if (!isInputValid(channel, red, green, blue))
+		{
+			HALundefined(input);
+			return;
+		}
+
 		updateLED(channel, red, green, blue);
 		updateStates(channel, red, green, blue);
 	}

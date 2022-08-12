@@ -11,6 +11,7 @@
 #include "main.h"
 
 #define LED_CHANNELS 3
+#define MAX_PWM 256
 
 void LightControllerInit(TIM_HandleTypeDef * htim2, TIM_HandleTypeDef * htim3, TIM_HandleTypeDef * htim4, TIM_HandleTypeDef * htim5);
 void LightControllerLoop(const char* bootMsg);
