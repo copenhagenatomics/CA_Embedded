@@ -10,7 +10,9 @@
 
 #include "main.h"
 
-void LightControllerInit(TIM_HandleTypeDef * htim2, TIM_HandleTypeDef * htim3, TIM_HandleTypeDef * htim4);
+#define LED_CHANNELS 3
+
+void LightControllerInit(TIM_HandleTypeDef * htim2, TIM_HandleTypeDef * htim3, TIM_HandleTypeDef * htim4, TIM_HandleTypeDef * htim5);
 void LightControllerLoop(const char* bootMsg);
 
 #endif /* INC_LIGHTCONTROLLER_H_ */
