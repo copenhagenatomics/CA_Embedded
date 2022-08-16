@@ -102,8 +102,6 @@ void writeToFlashSafe(CRC_HandleTypeDef *hcrc, uint32_t indx, uint32_t size, uin
 // is not enabled in project.
 void readFromFlashSafe(CRC_HandleTypeDef *hcrc, uint32_t indx, uint32_t size, uint8_t *data)
 {
-    __HAL_RCC_WWDG_CLK_DISABLE();
-
     // Read data including CRC value
     for(uint32_t i=0; i<size; i++)
     {
@@ -122,7 +120,5 @@ void readFromFlashSafe(CRC_HandleTypeDef *hcrc, uint32_t indx, uint32_t size, ui
     // default values are loaded and stored in boards.
     if (crcStored != crcVal)
     	*data = 0xFF;
-
-    __HAL_RCC_WWDG_CLK_ENABLE();
 }
 #endif
