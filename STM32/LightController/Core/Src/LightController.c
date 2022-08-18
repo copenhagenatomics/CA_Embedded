@@ -12,18 +12,8 @@
 #include "usb_cdc_fops.h"
 #include <stdbool.h>
 
-typedef struct rgbCfg {
-    int    red;
-    int    green;
-    int    blue;
-} rgbCfg;
 
-static rgbCfg rgbCfgs[LED_CHANNELS] =
-{
-        { 0, 0, 0 },
-        { 0, 0, 0 },
-        { 0, 0, 0 }
-};
+static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
 
 static void controlLEDStrip(const char *input);
 
@@ -82,24 +72,18 @@ static void updateLED(int channel, unsigned int red, unsigned int green, unsigne
 	portHandle->Instance->CCR3 = blue;
 }
 
-static void updateStates(int channel, unsigned int red, unsigned int green, unsigned int blue)
-{
-	rgbCfgs[channel-1].red = red;
-	rgbCfgs[channel-1].green = green;
-	rgbCfgs[channel-1].blue = blue;
-}
-
-
 // Update LED strip with user input colors
 static void controlLEDStrip(const char *input)
 {
 	int channel;
-	unsigned int red;
-	unsigned int green;
-	unsigned int blue;
+	unsigned int rgb;
 
-	if (sscanf(input, "p%d %d %d %d", &channel, &red, &green, &blue) == 4)
+	if (sscanf(input, "p%d %x", &channel, &rgb) == 2)
 	{
+		uint8_t red = (rgb >> 16) & 0xFF;
+		uint8_t green = (rgb >> 8) & 0xFF;
+		uint8_t blue = rgb & 0xFF;
+
 		if (!isInputValid(channel, red, green, blue))
 		{
 			HALundefined(input);
@@ -107,7 +91,7 @@ static void controlLEDStrip(const char *input)
 		}
 
 		updateLED(channel, red, green, blue);
-		updateStates(channel, red, green, blue);
+		rgbs[channel-1] = rgb;
 	}
 	else
 	{
@@ -120,9 +104,7 @@ static void printStates()
 	if (!isComPortOpen())
 		return;
 
-	USBnprintf("%d, %d, %d, %d, %d, %d, %d, %d, %d", rgbCfgs[0].red, rgbCfgs[0].green, rgbCfgs[0].blue,
-												     rgbCfgs[1].red, rgbCfgs[1].green, rgbCfgs[1].blue,
-													 rgbCfgs[2].red, rgbCfgs[2].green, rgbCfgs[2].blue);
+	USBnprintf("%x, %x, %x", rgbs[0], rgbs[1], rgbs[2]);
 }
 
 // Initialise PWM group
