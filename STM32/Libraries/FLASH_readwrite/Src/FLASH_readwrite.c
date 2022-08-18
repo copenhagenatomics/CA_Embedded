@@ -75,6 +75,7 @@ void writeToFlashSafe(CRC_HandleTypeDef *hcrc, uint32_t indx, uint32_t size, uin
     HAL_FLASH_Unlock();
     FLASH_Erase_Sector(FLASH_SECTOR, FLASH_VOLTAGE_RANGE_3);
     HAL_FLASH_Lock();
+    __HAL_RCC_WWDG_CLK_ENABLE();
 
     // Compute CRC of data to be saved.
     uint32_t crcVal = computeCRC(hcrc, size, data);
@@ -87,6 +88,7 @@ void writeToFlashSafe(CRC_HandleTypeDef *hcrc, uint32_t indx, uint32_t size, uin
 	}
 	uint32_t saveSize = size + sizeof(uint32_t);
 
+	__HAL_RCC_WWDG_CLK_DISABLE();
     // Write to sector
     HAL_FLASH_Unlock();
     for(uint32_t i=0; i<saveSize; i++)
