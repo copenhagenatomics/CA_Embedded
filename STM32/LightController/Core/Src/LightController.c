@@ -29,9 +29,14 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-static bool isInputValid(int channel, unsigned int red, unsigned int green, unsigned int blue)
+static bool isInputValid(int channel, unsigned int red, unsigned int green, unsigned int blue, const char *input)
 {
 	if (channel <= 0 || channel > LED_CHANNELS)
+		return false;
+
+	// Check the RGB format is exactly 6 hex characters long
+    char* idx = index(input, ' ');
+	if (strlen(&idx[1]) != 6)
 		return false;
 
 	if (red < 0 || red > MAX_PWM)
@@ -84,13 +89,35 @@ static void controlLEDStrip(const char *input)
 		uint8_t green = (rgb >> 8) & 0xFF;
 		uint8_t blue = rgb & 0xFF;
 
-		if (!isInputValid(channel, red, green, blue))
+		if (!isInputValid(channel, red, green, blue, input))
 		{
 			HALundefined(input);
 			return;
 		}
 
-		updateLED(channel, red, green, blue);
+		// If the user specifices white then turn on white pin separately and turn off
+		// other LED lights
+		if (rgb == 0xFFFFFF)
+		{
+			for (int i = 1; i <= LED_CHANNELS; i++)
+			{
+				if (i == channel)
+					updateLED(i, 0, 0, 0);
+				else
+					updateLED(i, red, 0, 0);
+			}
+		}
+		else
+		{
+			for (int i = 1; i <= LED_CHANNELS; i++)
+			{
+				if (i == channel)
+					updateLED(i, red, green, blue);
+				else
+					updateLED(i, 0, 0, 0);
+			}
+		}
+
 		rgbs[channel-1] = rgb;
 	}
 	else
