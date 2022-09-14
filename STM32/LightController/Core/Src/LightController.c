@@ -11,8 +11,11 @@
 #include "USBprint.h"
 #include "usb_cdc_fops.h"
 #include <stdbool.h>
+#include <time.h>
+#include <stdlib.h>
+#include <math.h>
 
-
+static bool isParty[3] = {false};
 static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
 
 static void controlLEDStrip(const char *input);
@@ -119,6 +122,11 @@ static void controlLEDStrip(const char *input)
 		}
 
 		rgbs[channel-1] = rgb;
+		isParty[channel-1] = false;
+	}
+	else if (sscanf(input, "p%d party", &channel) == 1)
+	{
+		isParty[channel-1] = true;
 	}
 	else
 	{
@@ -151,6 +159,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     {
         printStates();
     }
+
+    for (int i=0; i<LED_CHANNELS; i++)
+    {
+		if (isParty[i])
+		{
+			int channel = i + 1;
+			int red = rand() % MAX_PWM;
+			int green = rand() % MAX_PWM;
+			int blue = rand() % MAX_PWM;
+
+			updateLED(channel, red, green, blue);
+			rgbs[channel-1] = (unsigned int) (red << 16) | (green << 8) | blue;
+		}
+    }
 }
 
 // Initialize board
@@ -168,6 +190,9 @@ void LightControllerInit(TIM_HandleTypeDef * htim2, TIM_HandleTypeDef * htim3, T
 	htim3_ = htim3;
 	htim4_ = htim4;
 	loopTimer = htim5;
+
+	// Initialize random number generator
+	srand(time(NULL));
 }
 
 // Main loop - Board only reacts on user inputs
