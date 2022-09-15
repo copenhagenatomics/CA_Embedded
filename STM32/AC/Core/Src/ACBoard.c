@@ -30,13 +30,15 @@ static struct
 } heaterPorts[4];
 static StmGpio fanCtrl;
 static double heatSinkTemperature = 0; // Heat Sink temperature
+static bool isFanAutoOn = true;
 
 // Forward declare functions.
 static void CAallOn(bool isOn);
 static void CAportState(int port, bool state, int percent, int duration);
+static void userInput(const char *input);
 static CAProtocolCtx caProto =
 {
-        .undefined = HALundefined,
+        .undefined = userInput,
         .printHeader = CAPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, // TODO: change method for calibration?
@@ -47,6 +49,20 @@ static CAProtocolCtx caProto =
         .allOn = CAallOn,
         .portState = CAportState,
 };
+
+static void userInput(const char *input)
+{
+	if (strncmp(input, "fan on", 6) == 0)
+	{
+		isFanAutoOn = false;
+		stmSetGpio(fanCtrl, true);
+	}
+	else if (strncmp(input, "fan off", 7) == 0)
+	{
+		isFanAutoOn = true;
+		stmSetGpio(fanCtrl, false);
+	}
+}
 
 static void GpioInit()
 {
@@ -172,13 +188,17 @@ static void CAportState(int port, bool state, int percent, int duration)
 static void heatSinkLoop()
 {
     // Turn on fan if temp > 55 and turn of when temp < 50.
-    if (stmGetGpio(fanCtrl))
+    if (stmGetGpio(fanCtrl) && isFanAutoOn)
     {
         if (heatSinkTemperature < 50)
+        {
             stmSetGpio(fanCtrl, false);
+        }
+        else if (heatSinkTemperature > 55)
+        {
+            stmSetGpio(fanCtrl, true);
+        }
     }
-    else if (heatSinkTemperature > 55)
-        stmSetGpio(fanCtrl, true);
 }
 
 void ACBoardInit(ADC_HandleTypeDef* hadc)
