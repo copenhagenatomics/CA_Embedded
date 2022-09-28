@@ -11,8 +11,11 @@
 #include "USBprint.h"
 #include "usb_cdc_fops.h"
 #include <stdbool.h>
+#include <time.h>
+#include <stdlib.h>
+#include <math.h>
 
-
+static bool isParty[3] = {false};
 static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
 
 static void controlLEDStrip(const char *input);
@@ -29,9 +32,14 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-static bool isInputValid(int channel, unsigned int red, unsigned int green, unsigned int blue)
+static bool isInputValid(int channel, unsigned int red, unsigned int green, unsigned int blue, const char *input)
 {
 	if (channel <= 0 || channel > LED_CHANNELS)
+		return false;
+
+	// Check the RGB format is exactly 6 hex characters long
+    char* idx = index(input, ' ');
+	if (strlen(&idx[1]) != 6)
 		return false;
 
 	if (red < 0 || red > MAX_PWM)
@@ -84,14 +92,41 @@ static void controlLEDStrip(const char *input)
 		uint8_t green = (rgb >> 8) & 0xFF;
 		uint8_t blue = rgb & 0xFF;
 
-		if (!isInputValid(channel, red, green, blue))
+		if (!isInputValid(channel, red, green, blue, input))
 		{
 			HALundefined(input);
 			return;
 		}
 
-		updateLED(channel, red, green, blue);
+		// If the user specifices white then turn on white pin separately and turn off
+		// other LED lights
+		if (rgb == 0xFFFFFF)
+		{
+			for (int i = 1; i <= LED_CHANNELS; i++)
+			{
+				if (i == channel)
+					updateLED(i, 0, 0, 0);
+				else
+					updateLED(i, red, 0, 0);
+			}
+		}
+		else
+		{
+			for (int i = 1; i <= LED_CHANNELS; i++)
+			{
+				if (i == channel)
+					updateLED(i, red, green, blue);
+				else
+					updateLED(i, 0, 0, 0);
+			}
+		}
+
 		rgbs[channel-1] = rgb;
+		isParty[channel-1] = false;
+	}
+	else if (sscanf(input, "p%d party", &channel) == 1)
+	{
+		isParty[channel-1] = true;
 	}
 	else
 	{
@@ -119,11 +154,27 @@ static void pwmInit(TIM_HandleTypeDef * htim)
 static TIM_HandleTypeDef* loopTimer = NULL;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	static int updateCounter = 1;
     // loopTimer corresponds to htim5 which triggers with a frequency of 10Hz
     if (htim == loopTimer)
     {
         printStates();
     }
+
+    for (int i=0; i<LED_CHANNELS; i++)
+    {
+		if (isParty[i] && updateCounter == 5)
+		{
+			int channel = i + 1;
+			int red = rand() % MAX_PWM;
+			int green = rand() % MAX_PWM;
+			int blue = rand() % MAX_PWM;
+
+			updateLED(channel, red, green, blue);
+			rgbs[channel-1] = (unsigned int) (red << 16) | (green << 8) | blue;
+		}
+    }
+    updateCounter = (updateCounter < 5) ? updateCounter + 1 : 1;
 }
 
 // Initialize board
@@ -141,6 +192,9 @@ void LightControllerInit(TIM_HandleTypeDef * htim2, TIM_HandleTypeDef * htim3, T
 	htim3_ = htim3;
 	htim4_ = htim4;
 	loopTimer = htim5;
+
+	// Initialize random number generator
+	srand(time(NULL));
 }
 
 // Main loop - Board only reacts on user inputs

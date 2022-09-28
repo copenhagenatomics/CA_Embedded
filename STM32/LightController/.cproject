@@ -53,10 +53,15 @@
 									<listOptionValue builtIn="false" value="../USB_DEVICE/Target"/>
 									<listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Core/Inc"/>
 									<listOptionValue builtIn="false" value="../Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/LightController/Libraries/circularBuffer/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Libraries/circularBuffer/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Libraries/Util/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Libraries/jumpToBootloader/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Libraries/FLASH_readwrite/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Libraries/USBprint/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/LightController/Libraries/jumpToBootloader/Inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/LightController/Libraries/USBprint/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/LightController/Libraries/Util/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/LightController/Libraries/USBprint/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/LightController/Libraries/circularBuffer/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/LightController/Libraries/FLASH_readwrite/Inc}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1417588006" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
