@@ -154,15 +154,17 @@ static void pwmInit(TIM_HandleTypeDef * htim)
 static TIM_HandleTypeDef* loopTimer = NULL;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	static int updateCounter = 0;
     // loopTimer corresponds to htim5 which triggers with a frequency of 10Hz
     if (htim == loopTimer)
     {
         printStates();
     }
 
+    updateCounter++;
     for (int i=0; i<LED_CHANNELS; i++)
     {
-		if (isParty[i])
+		if (isParty[i] && updateCounter == 3)
 		{
 			int channel = i + 1;
 			int red = rand() % MAX_PWM;
@@ -171,6 +173,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			updateLED(channel, red, green, blue);
 			rgbs[channel-1] = (unsigned int) (red << 16) | (green << 8) | blue;
+
+			updateCounter = 0;
 		}
     }
 }
