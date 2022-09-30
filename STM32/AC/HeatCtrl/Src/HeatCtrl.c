@@ -143,6 +143,9 @@ void adjustPWMDown()
 
 void getPWMPinPercent(int pin, uint8_t *pwmPercent)
 {
-    HeatCtrl *ctx = &heaters[pin];
-	*pwmPercent = ctx->pwmPercent;
+    if (pin >= 0 && pin < noOfHeaters)
+    {
+		HeatCtrl *ctx = &heaters[pin];
+		*pwmPercent = ctx->pwmPercent;
+    }
 }

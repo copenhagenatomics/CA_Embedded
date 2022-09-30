@@ -211,9 +211,8 @@ static void heatSinkLoop()
     }
     else if (heatSinkTemperature > MAX_TEMPERATURE) // Safety mode to avoid overheating of the board
     {
-
     	unsigned long now = HAL_GetTick();
-    	if (now - previous > 2000)
+    	if (now - previous > 2000)	// 2000ms. Should be aligned with the control period of heater.
     		adjustPWMDown();
     	previous = now;
     }
