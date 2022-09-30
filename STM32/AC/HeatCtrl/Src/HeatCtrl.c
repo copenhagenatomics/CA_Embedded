@@ -128,3 +128,21 @@ void setPWMPin(int pin, int pwmPct, int duration_ms)
         ctx->periodBegin = HAL_GetTick();
     }
 }
+
+void adjustPWMDown()
+{
+    for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
+    {
+    	if (ctx->pwmPercent >= 1)
+    	{
+    		ctx->pwmPercent -= 1;
+    		ctx->pwmDuration = MAX_DURATION;
+    	}
+    }
+}
+
+void getPWMPinPercent(int pin, uint8_t *pwmPercent)
+{
+    HeatCtrl *ctx = &heaters[pin];
+	*pwmPercent = ctx->pwmPercent;
+}

@@ -16,3 +16,5 @@ void turnOffPin(int pin);
 void turnOnPin(int pin);
 void turnOnPinDuration(int pin, int duration);
 void setPWMPin(int pin, int pwmPct, int duration);
+void adjustPWMDown();
+void getPWMPinPercent(int pin, uint8_t *pwmPercent);

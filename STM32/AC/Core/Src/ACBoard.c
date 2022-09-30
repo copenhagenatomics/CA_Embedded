@@ -22,6 +22,8 @@
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
 
+#define MAX_TEMPERATURE 80
+
 /* GPIO settings. */
 static struct
 {
@@ -182,11 +184,19 @@ static void CAallOn(bool isOn)
 }
 static void CAportState(int port, bool state, int percent, int duration)
 {
+	uint8_t pwmPercent;
+	getPWMPinPercent(port-1, &pwmPercent);
+	// If heat sink has reached the maximum allowed temperature and user
+	// tries to heat the system further up then disregard the input command
+	if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
+		return;
+
     actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
 }
 
 static void heatSinkLoop()
 {
+	static unsigned long previous = 0;
     // Turn on fan if temp > 55 and turn of when temp < 50.
     if (stmGetGpio(fanCtrl) && isFanAutoOn)
     {
@@ -194,10 +204,18 @@ static void heatSinkLoop()
         {
             stmSetGpio(fanCtrl, false);
         }
-        else if (heatSinkTemperature > 55)
-        {
-            stmSetGpio(fanCtrl, true);
-        }
+    }
+    else if (heatSinkTemperature > 55)
+    {
+    	stmSetGpio(fanCtrl, true);
+    }
+    else if (heatSinkTemperature > MAX_TEMPERATURE) // Safety mode to avoid overheating of the board
+    {
+
+    	unsigned long now = HAL_GetTick();
+    	if (now - previous > 2000)
+    		adjustPWMDown();
+    	previous = now;
     }
 }
 
