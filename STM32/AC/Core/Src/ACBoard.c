@@ -213,8 +213,10 @@ static void heatSinkLoop()
     {
     	unsigned long now = HAL_GetTick();
     	if (now - previous > 2000)	// 2000ms. Should be aligned with the control period of heater.
+    	{
+    		previous = now;
     		adjustPWMDown();
-    	previous = now;
+    	}
     }
 }
 
