@@ -184,8 +184,7 @@ static void CAallOn(bool isOn)
 }
 static void CAportState(int port, bool state, int percent, int duration)
 {
-	uint8_t pwmPercent;
-	getPWMPinPercent(port-1, &pwmPercent);
+	uint8_t pwmPercent = getPWMPinPercent(port-1);
 	// If heat sink has reached the maximum allowed temperature and user
 	// tries to heat the system further up then disregard the input command
 	if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
@@ -198,12 +197,9 @@ static void heatSinkLoop()
 {
 	static unsigned long previous = 0;
     // Turn on fan if temp > 55 and turn of when temp < 50.
-    if (stmGetGpio(fanCtrl) && isFanAutoOn)
+    if (heatSinkTemperature < 50 && isFanAutoOn)
     {
-        if (heatSinkTemperature < 50)
-        {
-            stmSetGpio(fanCtrl, false);
-        }
+		stmSetGpio(fanCtrl, false);
     }
     else if (heatSinkTemperature > 55)
     {

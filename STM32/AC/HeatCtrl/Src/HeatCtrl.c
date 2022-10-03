@@ -136,16 +136,24 @@ void adjustPWMDown()
     	if (ctx->pwmPercent >= 1)
     	{
     		ctx->pwmPercent -= 1;
-    		ctx->pwmDuration = MAX_DURATION;
+    		// If overheat prevention state has been enabled then extend the pwm duration
+    		// such that the board tries to keep the maximal attainable temperature
+    		// However, the board should ultimately go into safe mode by shutting off
+    		// if no new commands are received in case of loss of communication.
+    		ctx->pwmDuration = (ctx->pwmDuration != MAX_DURATION) ? ctx->pwmDuration*20 : MAX_DURATION;
     	}
     }
 }
 
-void getPWMPinPercent(int pin, uint8_t *pwmPercent)
+uint8_t getPWMPinPercent(int pin)
 {
     if (pin >= 0 && pin < noOfHeaters)
     {
 		HeatCtrl *ctx = &heaters[pin];
-		*pwmPercent = ctx->pwmPercent;
+		return ctx->pwmPercent;
     }
+    // In the case of passing -1 (i.e. targeting all ports) return 0
+    // As there are only options for setting target to 100 or 0 for all
+    // 0 is the always safe option.
+    return 0;
 }
