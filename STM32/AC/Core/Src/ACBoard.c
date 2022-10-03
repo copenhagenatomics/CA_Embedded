@@ -22,7 +22,7 @@
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
 
-#define MAX_TEMPERATURE 80
+#define MAX_TEMPERATURE 70
 
 /* GPIO settings. */
 static struct
