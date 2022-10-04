@@ -127,15 +127,16 @@ void LoopTemperature(const char* bootMsg)
     }
 
     // Upload data every "tsUpload" ms.
-    if (tdiff_u32(HAL_GetTick(), timeStamp) > tsUpload)
+    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
     {
-    	HAL_WWDG_Refresh(hwwdg);
         timeStamp = HAL_GetTick();
+    	HAL_WWDG_Refresh(hwwdg);
 
         if (isComPortOpen())
         {
             if (isFirstWrite)
             {
+                __HAL_RCC_WWDG_CLK_ENABLE(); // Enable wwdg now that print frequency has stabilised.
                 if (hspi != NULL)
                     spiErr = initSpiDevices(hspi);
                 isFirstWrite = false;

@@ -101,6 +101,9 @@ int main(void)
   MX_WWDG_Init();
   MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
+  // Disable wwdg until print frequency has stabilised after first run.
+  // Enabled again in LoopTemperature.
+  __HAL_RCC_WWDG_CLK_DISABLE();
   InitTemperature(&hspi1, &hwwdg);
   /* USER CODE END 2 */
 
