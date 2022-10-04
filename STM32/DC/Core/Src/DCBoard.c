@@ -288,6 +288,11 @@ static void checkButtonPress()
 // Public member functions.
 void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c, WWDG_HandleTypeDef* hwwdg)
 {
+    BoardType board;
+    if (getBoardInfo(&board, NULL) || board != DC_Board)
+        return;
+
+
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
     initCAProtocol(&caProto, usb_cdc_rx);
