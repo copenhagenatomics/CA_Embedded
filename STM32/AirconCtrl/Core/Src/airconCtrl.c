@@ -9,6 +9,7 @@
 #include "USBprint.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
+#include "systemInfo.h"
 #include "usb_cdc_fops.h"
 #include "stm32f4xx_hal_tim.h"
 #include "transmitterIR.h"
@@ -117,6 +118,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_, WWDG_HandleTypeDef *hwwdg)
 {
+    BoardType board;
+    if (getBoardInfo(&board, NULL) || board != AirCondition)
+        return;
+
     hwwdg_ = hwwdg;
     loopTimer = loopTimer_;
 
