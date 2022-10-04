@@ -2,6 +2,7 @@
 #include "HeatCtrl.h"
 
 #define MAX_DURATION ((uint32_t) -1)
+#define MAX_TIMEOUT  60000 // Auto regulation time out from overheat prevention mode
 
 typedef struct HeatCtrl
 {
@@ -136,11 +137,11 @@ void adjustPWMDown()
     	if (ctx->pwmPercent >= 1)
     	{
     		ctx->pwmPercent -= 1;
-    		// If overheat prevention state has been enabled then extend the pwm duration
+    		// If the overheat prevention state has been enabled then extend the pwm duration
     		// such that the board tries to keep the maximal attainable temperature
     		// However, the board should ultimately go into safe mode by shutting off
     		// if no new commands are received in case of loss of communication.
-    		ctx->pwmDuration = (ctx->pwmDuration != MAX_DURATION) ? ctx->pwmDuration*20 : MAX_DURATION;
+    		ctx->pwmDuration = (ctx->pwmDuration != MAX_DURATION) ? MAX_TIMEOUT : MAX_DURATION;
     	}
     }
 }

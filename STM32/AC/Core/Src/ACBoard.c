@@ -32,7 +32,7 @@ static struct
 } heaterPorts[4];
 static StmGpio fanCtrl;
 static double heatSinkTemperature = 0; // Heat Sink temperature
-static bool isFanAutoOn = true;
+static bool isFanForceOn = false;
 
 // Forward declare functions.
 static void CAallOn(bool isOn);
@@ -56,12 +56,12 @@ static void userInput(const char *input)
 {
 	if (strncmp(input, "fan on", 6) == 0)
 	{
-		isFanAutoOn = false;
+		isFanForceOn = true;
 		stmSetGpio(fanCtrl, true);
 	}
 	else if (strncmp(input, "fan off", 7) == 0)
 	{
-		isFanAutoOn = true;
+		isFanForceOn = false;
 		stmSetGpio(fanCtrl, false);
 	}
 }
@@ -197,7 +197,7 @@ static void heatSinkLoop()
 {
 	static unsigned long previous = 0;
     // Turn on fan if temp > 55 and turn of when temp < 50.
-    if (heatSinkTemperature < 50 && isFanAutoOn)
+    if (heatSinkTemperature < 50 && !isFanForceOn)
     {
 		stmSetGpio(fanCtrl, false);
     }
