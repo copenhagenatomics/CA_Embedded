@@ -63,8 +63,12 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
     return current_scalar * ADCMean(pData, channel) + current_bias;
 }
 
+WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
+	// Watch dog refresh. Triggers reset if reset after <90ms or >110ms.
+	// Ensures ADC sampling is performed with correct timing.
+	HAL_WWDG_Refresh(hwwdg_);
 	if (!isComPortOpen())
 		return;
 
@@ -282,12 +286,13 @@ static void checkButtonPress()
 }
 
 // Public member functions.
-void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c)
+void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c, WWDG_HandleTypeDef* hwwdg)
 {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
     initCAProtocol(&caProto, usb_cdc_rx);
     hi2c = _hi2c;
+    hwwdg_ = hwwdg;
 }
 
 void DCBoardLoop(const char* bootMsg)
