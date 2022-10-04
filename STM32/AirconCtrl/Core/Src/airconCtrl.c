@@ -104,23 +104,26 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 
 TIM_HandleTypeDef *loopTimer = NULL;
+WWDG_HandleTypeDef *hwwdg_ = NULL;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim == loopTimer)
 	{
+		HAL_WWDG_Refresh(hwwdg_);
 		printACTemperature();
 	}
 }
 
 
-void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_)
+void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_, WWDG_HandleTypeDef *hwwdg)
 {
-    initCAProtocol(&caProto, usb_cdc_rx);
+    hwwdg_ = hwwdg;
+    loopTimer = loopTimer_;
+
+	initCAProtocol(&caProto, usb_cdc_rx);
 
     timerCtx = ctx;
-    loopTimer = loopTimer_;
     HAL_TIM_Base_Start(timerCtx);
-    HAL_TIM_Base_Start_IT(loopTimer_);
     __HAL_TIM_SET_COUNTER(timerCtx, 0);
 }
 
