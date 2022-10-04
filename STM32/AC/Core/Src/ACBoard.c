@@ -98,8 +98,12 @@ static double ADCtoTemperature(double adc_val)
     return temp_scalar * adc_val;
 }
 
+WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
+	// Update window watchdog. Will trigger reset outside window: <90ms && >110ms.
+	HAL_WWDG_Refresh(hwwdg_);
+
     // Make calibration static since this should be done only once.
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
@@ -216,13 +220,15 @@ static void heatSinkLoop()
     }
 }
 
-void ACBoardInit(ADC_HandleTypeDef* hadc)
+void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
     initCAProtocol(&caProto, usb_cdc_rx);
     GpioInit();
+
+	hwwdg_=hwwdg;
 }
 
 void ACBoardLoop(const char *bootMsg)
