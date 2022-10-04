@@ -13,7 +13,7 @@
 #define LED_CHANNELS 3
 #define MAX_PWM 256
 
-void LightControllerInit(TIM_HandleTypeDef * htim2, TIM_HandleTypeDef * htim3, TIM_HandleTypeDef * htim4, TIM_HandleTypeDef * htim5);
+void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3, TIM_HandleTypeDef *htim4, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg);
 void LightControllerLoop(const char* bootMsg);
 
 #endif /* INC_LIGHTCONTROLLER_H_ */
