@@ -222,6 +222,10 @@ static void heatSinkLoop()
 
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
+    BoardType board;
+    if (getBoardInfo(&board, NULL) || board != AC_Board)
+        return;
+
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
