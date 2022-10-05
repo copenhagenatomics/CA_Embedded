@@ -86,7 +86,8 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
 }
 
 static SPI_HandleTypeDef* hspi = NULL;
-void InitTemperature(SPI_HandleTypeDef* hspi_)
+static WWDG_HandleTypeDef* hwwdg = NULL;
+void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_)
 {
     initCAProtocol(&caProto, usb_cdc_rx);
 
@@ -104,6 +105,7 @@ void InitTemperature(SPI_HandleTypeDef* hspi_)
 
     initSensorCalibration();
     hspi = hspi_;
+    hwwdg = hwwdg_;
 }
 
 void LoopTemperature(const char* bootMsg)
@@ -125,14 +127,16 @@ void LoopTemperature(const char* bootMsg)
     }
 
     // Upload data every "tsUpload" ms.
-    if (tdiff_u32(HAL_GetTick(), timeStamp) > tsUpload)
+    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
     {
         timeStamp = HAL_GetTick();
+    	HAL_WWDG_Refresh(hwwdg);
 
         if (isComPortOpen())
         {
             if (isFirstWrite)
             {
+                __HAL_RCC_WWDG_CLK_ENABLE(); // Enable wwdg now that print frequency has stabilised.
                 if (hspi != NULL)
                     spiErr = initSpiDevices(hspi);
                 isFirstWrite = false;
