@@ -8,6 +8,7 @@
 #include "LightController.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
+#include "systemInfo.h"
 #include "USBprint.h"
 #include "usb_cdc_fops.h"
 #include <stdbool.h>
@@ -152,12 +153,14 @@ static void pwmInit(TIM_HandleTypeDef * htim)
 
 // Callback: timer has rolled over
 static TIM_HandleTypeDef* loopTimer = NULL;
+static WWDG_HandleTypeDef* hwwdg_ = NULL;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	static int updateCounter = 1;
     // loopTimer corresponds to htim5 which triggers with a frequency of 10Hz
     if (htim == loopTimer)
     {
+    	HAL_WWDG_Refresh(hwwdg_);
         printStates();
     }
 
@@ -178,9 +181,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 // Initialize board
-void LightControllerInit(TIM_HandleTypeDef * htim2, TIM_HandleTypeDef * htim3, TIM_HandleTypeDef * htim4, TIM_HandleTypeDef * htim5)
+void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3, TIM_HandleTypeDef *htim4, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg)
 {
 	initCAProtocol(&caProto, usb_cdc_rx);
+
+    BoardType board;
+    if (getBoardInfo(&board, NULL) || board != LightController)
+    {
+        return;
+    }
+
 	// Start LED PWM counters
 	pwmInit(htim2);
 	pwmInit(htim3);
@@ -192,6 +202,8 @@ void LightControllerInit(TIM_HandleTypeDef * htim2, TIM_HandleTypeDef * htim3, T
 	htim3_ = htim3;
 	htim4_ = htim4;
 	loopTimer = htim5;
+
+	hwwdg_ = hwwdg;
 
 	// Initialize random number generator
 	srand(time(NULL));
