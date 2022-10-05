@@ -9,6 +9,7 @@
 #include "USBprint.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
+#include "systemInfo.h"
 #include "usb_cdc_fops.h"
 #include "stm32f4xx_hal_tim.h"
 #include "transmitterIR.h"
@@ -104,23 +105,30 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 
 TIM_HandleTypeDef *loopTimer = NULL;
+WWDG_HandleTypeDef *hwwdg_ = NULL;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim == loopTimer)
 	{
+		HAL_WWDG_Refresh(hwwdg_);
 		printACTemperature();
 	}
 }
 
 
-void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_)
+void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_, WWDG_HandleTypeDef *hwwdg)
 {
-    initCAProtocol(&caProto, usb_cdc_rx);
+    BoardType board;
+    if (getBoardInfo(&board, NULL) || board != AirCondition)
+        return;
+
+    hwwdg_ = hwwdg;
+    loopTimer = loopTimer_;
+
+	initCAProtocol(&caProto, usb_cdc_rx);
 
     timerCtx = ctx;
-    loopTimer = loopTimer_;
     HAL_TIM_Base_Start(timerCtx);
-    HAL_TIM_Base_Start_IT(loopTimer_);
     __HAL_TIM_SET_COUNTER(timerCtx, 0);
 }
 

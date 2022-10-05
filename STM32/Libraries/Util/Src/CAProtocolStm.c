@@ -95,6 +95,10 @@ const char* CAonBoot()
     {
         sprintf(msg, "reconnected Reset Reason: Hardware Watch dog");
     }
+    else if (__HAL_RCC_GET_FLAG(RCC_FLAG_IWDGRST))
+	{
+		sprintf(msg, "reconnected Reset Reason: Internal Watch dog");
+	}
     else if (__HAL_RCC_GET_FLAG(RCC_FLAG_SFTRST))
     {
         sprintf(msg, "reconnected Reset Reason: Software Reset");
