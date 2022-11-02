@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
     if (line = testCMAverage()) { printf("TestSine failed at line %d\n", line); }
     if (line = testCalibration()) { printf("testCAProtocol failed at line %d\n", line); }
     if (line = testPortCtrl()) { printf("testPortCtrl failed at line %d\n", line); }
-    printf("All test performed\n");
+    printf("All tests run successfully\n");
 
     return 0;
 }
