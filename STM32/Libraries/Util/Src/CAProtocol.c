@@ -248,7 +248,7 @@ void inputCAProtocol(CAProtocolCtx* ctx)
         {
             char *argv[4] = { 0 }; // There should not be more then 4 args.
             const char delim = ' ';
-            char *tok = strtok(input, &delim), percent = 0;
+            char *tok = strtok(input, &delim), *percent;
             int count=0, tmp;
             for (; count < 4 && tok; count++)
             {
