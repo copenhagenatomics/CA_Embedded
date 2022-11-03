@@ -264,8 +264,8 @@ void inputCAProtocol(CAProtocolCtx* ctx)
                 break;
             case 3: // pX on ZZZ% or YY
                 {
-                int argc = sscanf(argv[2], "%d%[%]", &count, &percent);
-                if (argc == 2)
+                int argc = sscanf(argv[2], "%d%c", &count, &percent);
+                if (argc == 2 && percent == '%')
                     ctx->portState(port, true, count, -1);
                 else if (argc == 1)
                     ctx->portState(port, true, 100, count);
@@ -274,7 +274,7 @@ void inputCAProtocol(CAProtocolCtx* ctx)
                 break;
                 }
             case 4: // pX on YY ZZZ%
-                if (sscanf(argv[2], "%d", &tmp) == 1 && sscanf(argv[3], "%d%[%]", &count, &percent) == 2)
+                if (sscanf(argv[2], "%d", &tmp) == 1 && sscanf(argv[3], "%d%c", &count, &percent) == 2 && percent == '%')
                     ctx->portState(port, true, count, tmp);
                 else
                     ctx->undefined(input);

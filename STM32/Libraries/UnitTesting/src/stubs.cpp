@@ -232,9 +232,10 @@ int testPortCtrl()
     if (!caProtocol.testPortCtrl("p7 60\r\n", 7, PortCfg())) return __LINE__;
     if (!caProtocol.testPortCtrl("p7 60%\r\n", 7, PortCfg())) return __LINE__;
     if (!caProtocol.testPortCtrl("p7 52 60%\r\n", 7, PortCfg())) return __LINE__;
+    if (!caProtocol.testPortCtrl("p7 on 60e\r\n", 7, PortCfg())) return __LINE__;
     if (!caProtocol.testPortCtrl("p7 on 52 60\r\n", 7, PortCfg())) return __LINE__;
     if (!caProtocol.testPortCtrl("p7 sdfs 52 60%\r\n", 7, PortCfg())) return __LINE__;
-    if (caProtocol.portCtrl.undefCall != 5)  return __LINE__;
+    if (caProtocol.portCtrl.undefCall != 6)  return __LINE__;
     return 0;
 }
 
@@ -245,7 +246,7 @@ int main(int argc, char *argv[])
     if (line = testCMAverage()) { printf("TestSine failed at line %d\n", line); }
     if (line = testCalibration()) { printf("testCAProtocol failed at line %d\n", line); }
     if (line = testPortCtrl()) { printf("testPortCtrl failed at line %d\n", line); }
-    printf("All test performed\n");
+    printf("All tests run successfully\n");
 
     return 0;
 }
