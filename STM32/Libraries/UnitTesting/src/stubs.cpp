@@ -232,9 +232,10 @@ int testPortCtrl()
     if (!caProtocol.testPortCtrl("p7 60\r\n", 7, PortCfg())) return __LINE__;
     if (!caProtocol.testPortCtrl("p7 60%\r\n", 7, PortCfg())) return __LINE__;
     if (!caProtocol.testPortCtrl("p7 52 60%\r\n", 7, PortCfg())) return __LINE__;
+    if (!caProtocol.testPortCtrl("p7 on 60e\r\n", 7, PortCfg())) return __LINE__;
     if (!caProtocol.testPortCtrl("p7 on 52 60\r\n", 7, PortCfg())) return __LINE__;
     if (!caProtocol.testPortCtrl("p7 sdfs 52 60%\r\n", 7, PortCfg())) return __LINE__;
-    if (caProtocol.portCtrl.undefCall != 5)  return __LINE__;
+    if (caProtocol.portCtrl.undefCall != 6)  return __LINE__;
     return 0;
 }
 
