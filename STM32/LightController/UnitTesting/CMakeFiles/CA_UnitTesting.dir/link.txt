@@ -1,0 +1,1 @@
+/usr/bin/c++ -O0 -g3 CMakeFiles/CA_UnitTesting.dir/home/matias/Documents/ws/CA_Embedded/STM32/LightController/Core/Src/LightController.c.o CMakeFiles/CA_UnitTesting.dir/Src/lightContollerTest.cpp.o -o CA_UnitTesting  -lm 

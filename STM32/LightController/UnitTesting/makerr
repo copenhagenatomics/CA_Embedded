@@ -1,0 +1,1327 @@
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h:29,
+                 from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:27,
+                 from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:275,
+                 from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:29,
+                 from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/main.h:30,
+                 from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/LightController.h:12,
+                 from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/Core/Src/LightController.c:8:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h:174:3: error: #error "Please select first the target STM32F4xx device used in your application (in stm32f4xx.h file)"
+  174 |  #error "Please select first the target STM32F4xx device used in your application (in stm32f4xx.h file)"
+      |   ^~~~~
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:31:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:47:3: error: unknown type name ‘uint32_t’
+   47 |   uint32_t PLLState;   /*!< The new state of the PLL.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:50:3: error: unknown type name ‘uint32_t’
+   50 |   uint32_t PLLSource;  /*!< RCC_PLLSource: PLL entry clock source.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:53:3: error: unknown type name ‘uint32_t’
+   53 |   uint32_t PLLM;       /*!< PLLM: Division factor for PLL VCO input clock.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:56:3: error: unknown type name ‘uint32_t’
+   56 |   uint32_t PLLN;       /*!< PLLN: Multiplication factor for PLL VCO output clock.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:60:3: error: unknown type name ‘uint32_t’
+   60 |   uint32_t PLLP;       /*!< PLLP: Division factor for main system clock (SYSCLK).
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:63:3: error: unknown type name ‘uint32_t’
+   63 |   uint32_t PLLQ;       /*!< PLLQ: Division factor for OTG FS, SDIO and RNG clocks.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:6728:45: error: unknown type name ‘RCC_PeriphCLKInitTypeDef’; did you mean ‘RCC_PLLInitTypeDef’?
+ 6728 | HAL_StatusTypeDef HAL_RCCEx_PeriphCLKConfig(RCC_PeriphCLKInitTypeDef  *PeriphClkInit);
+      |                                             ^~~~~~~~~~~~~~~~~~~~~~~~
+      |                                             RCC_PLLInitTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:6729:35: error: unknown type name ‘RCC_PeriphCLKInitTypeDef’; did you mean ‘RCC_PLLInitTypeDef’?
+ 6729 | void HAL_RCCEx_GetPeriphCLKConfig(RCC_PeriphCLKInitTypeDef  *PeriphClkInit);
+      |                                   ^~~~~~~~~~~~~~~~~~~~~~~~
+      |                                   RCC_PLLInitTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:6731:1: error: unknown type name ‘uint32_t’
+ 6731 | uint32_t HAL_RCCEx_GetPeriphCLKFreq(uint32_t PeriphClk);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:1:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  +++ |+#include <stdint.h>
+    1 | /**
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:6731:37: error: unknown type name ‘uint32_t’
+ 6731 | uint32_t HAL_RCCEx_GetPeriphCLKFreq(uint32_t PeriphClk);
+      |                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h:6731:37: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:51:3: error: unknown type name ‘uint32_t’
+   51 |   uint32_t OscillatorType;       /*!< The oscillators to be configured.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:54:3: error: unknown type name ‘uint32_t’
+   54 |   uint32_t HSEState;             /*!< The new state of the HSE.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:57:3: error: unknown type name ‘uint32_t’
+   57 |   uint32_t LSEState;             /*!< The new state of the LSE.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:60:3: error: unknown type name ‘uint32_t’
+   60 |   uint32_t HSIState;             /*!< The new state of the HSI.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:63:3: error: unknown type name ‘uint32_t’
+   63 |   uint32_t HSICalibrationValue;  /*!< The HSI calibration trimming value (default is RCC_HSICALIBRATION_DEFAULT).
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:66:3: error: unknown type name ‘uint32_t’
+   66 |   uint32_t LSIState;             /*!< The new state of the LSI.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:77:3: error: unknown type name ‘uint32_t’
+   77 |   uint32_t ClockType;             /*!< The clock to be configured.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:80:3: error: unknown type name ‘uint32_t’
+   80 |   uint32_t SYSCLKSource;          /*!< The clock source (SYSCLKS) used as system clock.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:83:3: error: unknown type name ‘uint32_t’
+   83 |   uint32_t AHBCLKDivider;         /*!< The AHB clock (HCLK) divider. This clock is derived from the system clock (SYSCLK).
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:86:3: error: unknown type name ‘uint32_t’
+   86 |   uint32_t APB1CLKDivider;        /*!< The APB1 clock (PCLK1) divider. This clock is derived from the AHB clock (HCLK).
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:89:3: error: unknown type name ‘uint32_t’
+   89 |   uint32_t APB2CLKDivider;        /*!< The APB2 clock (PCLK2) divider. This clock is derived from the AHB clock (HCLK).
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1247:78: error: unknown type name ‘uint32_t’
+ 1247 | HAL_StatusTypeDef HAL_RCC_ClockConfig(RCC_ClkInitTypeDef *RCC_ClkInitStruct, uint32_t FLatency);
+      |                                                                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:32:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+   31 | #include "stm32f4xx_hal_rcc_ex.h"
+  +++ |+#include <stdint.h>
+   32 | 
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1256:28: error: unknown type name ‘uint32_t’
+ 1256 | void     HAL_RCC_MCOConfig(uint32_t RCC_MCOx, uint32_t RCC_MCOSource, uint32_t RCC_MCODiv);
+      |                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1256:28: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1256:47: error: unknown type name ‘uint32_t’
+ 1256 | void     HAL_RCC_MCOConfig(uint32_t RCC_MCOx, uint32_t RCC_MCOSource, uint32_t RCC_MCODiv);
+      |                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1256:47: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1256:71: error: unknown type name ‘uint32_t’
+ 1256 | void     HAL_RCC_MCOConfig(uint32_t RCC_MCOx, uint32_t RCC_MCOSource, uint32_t RCC_MCODiv);
+      |                                                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1256:71: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1259:1: error: unknown type name ‘uint32_t’
+ 1259 | uint32_t HAL_RCC_GetSysClockFreq(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1259:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1260:1: error: unknown type name ‘uint32_t’
+ 1260 | uint32_t HAL_RCC_GetHCLKFreq(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1260:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1261:1: error: unknown type name ‘uint32_t’
+ 1261 | uint32_t HAL_RCC_GetPCLK1Freq(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1261:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1262:1: error: unknown type name ‘uint32_t’
+ 1262 | uint32_t HAL_RCC_GetPCLK2Freq(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1262:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1264:72: error: unknown type name ‘uint32_t’
+ 1264 | void     HAL_RCC_GetClockConfig(RCC_ClkInitTypeDef *RCC_ClkInitStruct, uint32_t *pFLatency);
+      |                                                                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:1264:72: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:279:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:48:3: error: unknown type name ‘uint32_t’
+   48 |   uint32_t Pin;       /*!< Specifies the GPIO pins to be configured.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:51:3: error: unknown type name ‘uint32_t’
+   51 |   uint32_t Mode;      /*!< Specifies the operating mode for the selected pins.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:54:3: error: unknown type name ‘uint32_t’
+   54 |   uint32_t Pull;      /*!< Specifies the Pull-up or Pull-Down activation for the selected pins.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:57:3: error: unknown type name ‘uint32_t’
+   57 |   uint32_t Speed;     /*!< Specifies the speed for the selected pins.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:60:3: error: unknown type name ‘uint32_t’
+   60 |   uint32_t Alternate;  /*!< Peripheral to be connected to the selected pins.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:224:21: error: unknown type name ‘GPIO_TypeDef’; did you mean ‘GPIO_InitTypeDef’?
+  224 | void  HAL_GPIO_Init(GPIO_TypeDef  *GPIOx, GPIO_InitTypeDef *GPIO_Init);
+      |                     ^~~~~~~~~~~~
+      |                     GPIO_InitTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:225:23: error: unknown type name ‘GPIO_TypeDef’; did you mean ‘GPIO_InitTypeDef’?
+  225 | void  HAL_GPIO_DeInit(GPIO_TypeDef  *GPIOx, uint32_t GPIO_Pin);
+      |                       ^~~~~~~~~~~~
+      |                       GPIO_InitTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:225:45: error: unknown type name ‘uint32_t’
+  225 | void  HAL_GPIO_DeInit(GPIO_TypeDef  *GPIOx, uint32_t GPIO_Pin);
+      |                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:214:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  213 | #include "stm32f4xx_hal_gpio_ex.h"
+  +++ |+#include <stdint.h>
+  214 | 
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:234:32: error: unknown type name ‘GPIO_TypeDef’; did you mean ‘GPIO_InitTypeDef’?
+  234 | GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+      |                                ^~~~~~~~~~~~
+      |                                GPIO_InitTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:234:53: error: unknown type name ‘uint16_t’
+  234 | GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+      |                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:234:53: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:235:24: error: unknown type name ‘GPIO_TypeDef’; did you mean ‘GPIO_InitTypeDef’?
+  235 | void HAL_GPIO_WritePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState);
+      |                        ^~~~~~~~~~~~
+      |                        GPIO_InitTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:235:45: error: unknown type name ‘uint16_t’
+  235 | void HAL_GPIO_WritePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState);
+      |                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:235:45: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:236:25: error: unknown type name ‘GPIO_TypeDef’; did you mean ‘GPIO_InitTypeDef’?
+  236 | void HAL_GPIO_TogglePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+      |                         ^~~~~~~~~~~~
+      |                         GPIO_InitTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:236:46: error: unknown type name ‘uint16_t’
+  236 | void HAL_GPIO_TogglePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+      |                                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:236:46: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:237:36: error: unknown type name ‘GPIO_TypeDef’; did you mean ‘GPIO_InitTypeDef’?
+  237 | HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+      |                                    ^~~~~~~~~~~~
+      |                                    GPIO_InitTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:237:57: error: unknown type name ‘uint16_t’
+  237 | HAL_StatusTypeDef HAL_GPIO_LockPin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin);
+      |                                                         ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:237:57: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:238:31: error: unknown type name ‘uint16_t’
+  238 | void HAL_GPIO_EXTI_IRQHandler(uint16_t GPIO_Pin);
+      |                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:238:31: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:239:29: error: unknown type name ‘uint16_t’
+  239 | void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
+      |                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h:239:29: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:283:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:54:3: error: unknown type name ‘uint32_t’
+   54 |   uint32_t Line;                    /*!<  Exti line number */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:63:3: error: unknown type name ‘uint32_t’
+   63 |   uint32_t Line;      /*!< The Exti line to be configured. This parameter
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:65:3: error: unknown type name ‘uint32_t’
+   65 |   uint32_t Mode;      /*!< The Exit Mode to be configured for a core.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:67:3: error: unknown type name ‘uint32_t’
+   67 |   uint32_t Trigger;   /*!< The Exti Trigger to be configured. This parameter
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:69:3: error: unknown type name ‘uint32_t’
+   69 |   uint32_t GPIOSel;   /*!< The Exti GPIO multiplexer selection to be configured.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:330:65: error: unknown type name ‘uint32_t’
+  330 | HAL_StatusTypeDef HAL_EXTI_GetHandle(EXTI_HandleTypeDef *hexti, uint32_t ExtiLine);
+      |                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:1:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  +++ |+#include <stdint.h>
+    1 | /**
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:341:1: error: unknown type name ‘uint32_t’
+  341 | uint32_t HAL_EXTI_GetPending(EXTI_HandleTypeDef *hexti, uint32_t Edge);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:341:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:341:57: error: unknown type name ‘uint32_t’
+  341 | uint32_t HAL_EXTI_GetPending(EXTI_HandleTypeDef *hexti, uint32_t Edge);
+      |                                                         ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:341:57: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:342:55: error: unknown type name ‘uint32_t’
+  342 | void HAL_EXTI_ClearPending(EXTI_HandleTypeDef *hexti, uint32_t Edge);
+      |                                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_exti.h:342:55: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:287:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:50:3: error: unknown type name ‘uint32_t’
+   50 |   uint32_t Channel;              /*!< Specifies the channel used for the specified stream.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:53:3: error: unknown type name ‘uint32_t’
+   53 |   uint32_t Direction;            /*!< Specifies if the data will be transferred from memory to peripheral,
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:57:3: error: unknown type name ‘uint32_t’
+   57 |   uint32_t PeriphInc;            /*!< Specifies whether the Peripheral address register should be incremented or not.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:60:3: error: unknown type name ‘uint32_t’
+   60 |   uint32_t MemInc;               /*!< Specifies whether the memory address register should be incremented or not.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:63:3: error: unknown type name ‘uint32_t’
+   63 |   uint32_t PeriphDataAlignment;  /*!< Specifies the Peripheral data width.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:66:3: error: unknown type name ‘uint32_t’
+   66 |   uint32_t MemDataAlignment;     /*!< Specifies the Memory data width.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:69:3: error: unknown type name ‘uint32_t’
+   69 |   uint32_t Mode;                 /*!< Specifies the operation mode of the DMAy Streamx.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:74:3: error: unknown type name ‘uint32_t’
+   74 |   uint32_t Priority;             /*!< Specifies the software priority for the DMAy Streamx.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:77:3: error: unknown type name ‘uint32_t’
+   77 |   uint32_t FIFOMode;             /*!< Specifies if the FIFO mode or Direct mode will be used for the specified stream.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:82:3: error: unknown type name ‘uint32_t’
+   82 |   uint32_t FIFOThreshold;        /*!< Specifies the FIFO threshold level.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:85:3: error: unknown type name ‘uint32_t’
+   85 |   uint32_t MemBurst;             /*!< Specifies the Burst transfer configuration for the memory transfers.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:91:3: error: unknown type name ‘uint32_t’
+   91 |   uint32_t PeriphBurst;          /*!< Specifies the Burst transfer configuration for the peripheral transfers.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:140:3: error: unknown type name ‘DMA_Stream_TypeDef’
+  140 |   DMA_Stream_TypeDef         *Instance;                                                        /*!< Register base address                  */
+      |   ^~~~~~~~~~~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:146:3: error: unknown type name ‘__IO’
+  146 |   __IO HAL_DMA_StateTypeDef  State;                                                            /*!< DMA transfer state                     */
+      |   ^~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:146:30: error: expected ‘:’, ‘,’, ‘;’, ‘}’ or ‘__attribute__’ before ‘State’
+  146 |   __IO HAL_DMA_StateTypeDef  State;                                                            /*!< DMA transfer state                     */
+      |                              ^~~~~
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:639:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:69:71: error: unknown type name ‘uint32_t’
+   69 | HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+      |                                                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:1:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  +++ |+#include <stdint.h>
+    1 | /**
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:69:92: error: unknown type name ‘uint32_t’
+   69 | HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+      |                                                                                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:69:92: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:69:113: error: unknown type name ‘uint32_t’
+   69 | HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+      |                                                                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:69:113: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:69:140: error: unknown type name ‘uint32_t’
+   69 | HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+      |                                                                                                                                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:69:140: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:70:74: error: unknown type name ‘uint32_t’
+   70 | HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+      |                                                                          ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:70:74: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:70:95: error: unknown type name ‘uint32_t’
+   70 | HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+      |                                                                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:70:95: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:70:116: error: unknown type name ‘uint32_t’
+   70 | HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+      |                                                                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:70:116: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:70:143: error: unknown type name ‘uint32_t’
+   70 | HAL_StatusTypeDef HAL_DMAEx_MultiBufferStart_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+      |                                                                                                                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:70:143: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:71:67: error: unknown type name ‘uint32_t’
+   71 | HAL_StatusTypeDef HAL_DMAEx_ChangeMemory(DMA_HandleTypeDef *hdma, uint32_t Address, HAL_DMA_MemoryTypeDef memory);
+      |                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma_ex.h:71:67: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:662:59: error: unknown type name ‘uint32_t’
+  662 | HAL_StatusTypeDef HAL_DMA_Start (DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+      |                                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:640:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  639 | #include "stm32f4xx_hal_dma_ex.h"
+  +++ |+#include <stdint.h>
+  640 | 
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:662:80: error: unknown type name ‘uint32_t’
+  662 | HAL_StatusTypeDef HAL_DMA_Start (DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+      |                                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:662:80: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:662:101: error: unknown type name ‘uint32_t’
+  662 | HAL_StatusTypeDef HAL_DMA_Start (DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+      |                                                                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:662:101: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:663:61: error: unknown type name ‘uint32_t’
+  663 | HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+      |                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:663:61: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:663:82: error: unknown type name ‘uint32_t’
+  663 | HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+      |                                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:663:82: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:663:103: error: unknown type name ‘uint32_t’
+  663 | HAL_StatusTypeDef HAL_DMA_Start_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t DataLength);
+      |                                                                                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:663:103: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:666:112: error: unknown type name ‘uint32_t’
+  666 | HAL_StatusTypeDef HAL_DMA_PollForTransfer(DMA_HandleTypeDef *hdma, HAL_DMA_LevelCompleteTypeDef CompleteLevel, uint32_t Timeout);
+      |                                                                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:666:112: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:681:1: error: unknown type name ‘uint32_t’
+  681 | uint32_t             HAL_DMA_GetError(DMA_HandleTypeDef *hdma);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_dma.h:681:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:291:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:260:35: error: unknown type name ‘uint32_t’
+  260 | void HAL_NVIC_SetPriorityGrouping(uint32_t PriorityGroup);
+      |                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:1:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  +++ |+#include <stdint.h>
+    1 | /**
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:261:27: error: unknown type name ‘IRQn_Type’
+  261 | void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority);
+      |                           ^~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:261:43: error: unknown type name ‘uint32_t’
+  261 | void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority);
+      |                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:261:43: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:261:69: error: unknown type name ‘uint32_t’
+  261 | void HAL_NVIC_SetPriority(IRQn_Type IRQn, uint32_t PreemptPriority, uint32_t SubPriority);
+      |                                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:261:69: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:262:25: error: unknown type name ‘IRQn_Type’
+  262 | void HAL_NVIC_EnableIRQ(IRQn_Type IRQn);
+      |                         ^~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:263:26: error: unknown type name ‘IRQn_Type’
+  263 | void HAL_NVIC_DisableIRQ(IRQn_Type IRQn);
+      |                          ^~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:265:1: error: unknown type name ‘uint32_t’
+  265 | uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:265:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:265:29: error: unknown type name ‘uint32_t’
+  265 | uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb);
+      |                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:265:29: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:274:1: error: unknown type name ‘uint32_t’
+  274 | uint32_t HAL_NVIC_GetPriorityGrouping(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:274:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:275:27: error: unknown type name ‘IRQn_Type’
+  275 | void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t* pPreemptPriority, uint32_t* pSubPriority);
+      |                           ^~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:275:43: error: unknown type name ‘uint32_t’
+  275 | void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t* pPreemptPriority, uint32_t* pSubPriority);
+      |                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:275:43: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:275:67: error: unknown type name ‘uint32_t’
+  275 | void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t* pPreemptPriority, uint32_t* pSubPriority);
+      |                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:275:67: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:275:95: error: unknown type name ‘uint32_t’
+  275 | void HAL_NVIC_GetPriority(IRQn_Type IRQn, uint32_t PriorityGroup, uint32_t* pPreemptPriority, uint32_t* pSubPriority);
+      |                                                                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:275:95: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:276:1: error: unknown type name ‘uint32_t’
+  276 | uint32_t HAL_NVIC_GetPendingIRQ(IRQn_Type IRQn);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:276:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:276:33: error: unknown type name ‘IRQn_Type’
+  276 | uint32_t HAL_NVIC_GetPendingIRQ(IRQn_Type IRQn);
+      |                                 ^~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:277:29: error: unknown type name ‘IRQn_Type’
+  277 | void HAL_NVIC_SetPendingIRQ(IRQn_Type IRQn);
+      |                             ^~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:278:31: error: unknown type name ‘IRQn_Type’
+  278 | void HAL_NVIC_ClearPendingIRQ(IRQn_Type IRQn);
+      |                               ^~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:279:1: error: unknown type name ‘uint32_t’
+  279 | uint32_t HAL_NVIC_GetActive(IRQn_Type IRQn);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:279:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:279:29: error: unknown type name ‘IRQn_Type’
+  279 | uint32_t HAL_NVIC_GetActive(IRQn_Type IRQn);
+      |                             ^~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:280:34: error: unknown type name ‘uint32_t’
+  280 | void HAL_SYSTICK_CLKSourceConfig(uint32_t CLKSource);
+      |                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_cortex.h:280:34: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:331:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:58:3: error: unknown type name ‘__IO’
+   58 |   __IO FLASH_ProcedureTypeDef ProcedureOnGoing;   /*Internal variable to indicate which procedure is ongoing or not in IT context*/
+      |   ^~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:58:31: error: expected ‘:’, ‘,’, ‘;’, ‘}’ or ‘__attribute__’ before ‘ProcedureOnGoing’
+   58 |   __IO FLASH_ProcedureTypeDef ProcedureOnGoing;   /*Internal variable to indicate which procedure is ongoing or not in IT context*/
+      |                               ^~~~~~~~~~~~~~~~
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:295:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:47:3: error: unknown type name ‘uint32_t’
+   47 |   uint32_t TypeErase;   /*!< Mass erase or sector Erase.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:50:3: error: unknown type name ‘uint32_t’
+   50 |   uint32_t Banks;       /*!< Select banks to erase when Mass erase is enabled.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:53:3: error: unknown type name ‘uint32_t’
+   53 |   uint32_t Sector;      /*!< Initial FLASH sector to erase when Mass erase is disabled
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:56:3: error: unknown type name ‘uint32_t’
+   56 |   uint32_t NbSectors;   /*!< Number of sectors to be erased.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:59:3: error: unknown type name ‘uint32_t’
+   59 |   uint32_t VoltageRange;/*!< The device voltage range which defines the erase parallelism
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:69:3: error: unknown type name ‘uint32_t’
+   69 |   uint32_t OptionType;   /*!< Option byte to be configured.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:72:3: error: unknown type name ‘uint32_t’
+   72 |   uint32_t WRPState;     /*!< Write protection activation or deactivation.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:75:3: error: unknown type name ‘uint32_t’
+   75 |   uint32_t WRPSector;         /*!< Specifies the sector(s) to be write protected.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:78:3: error: unknown type name ‘uint32_t’
+   78 |   uint32_t Banks;        /*!< Select banks for WRP activation/deactivation of all sectors.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:81:3: error: unknown type name ‘uint32_t’
+   81 |   uint32_t RDPLevel;     /*!< Set the read protection level.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:84:3: error: unknown type name ‘uint32_t’
+   84 |   uint32_t BORLevel;     /*!< Set the BOR Level.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:87:3: error: unknown type name ‘uint8_t’
+   87 |   uint8_t  USERConfig;   /*!< Program the FLASH User Option Byte: IWDG_SW / RST_STOP / RST_STDBY. */
+      |   ^~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:725:73: error: unknown type name ‘uint32_t’
+  725 | HAL_StatusTypeDef HAL_FLASHEx_Erase(FLASH_EraseInitTypeDef *pEraseInit, uint32_t *SectorError);
+      |                                                                         ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:1:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  +++ |+#include <stdint.h>
+    1 | /**
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:1044:25: error: unknown type name ‘uint32_t’
+ 1044 | void FLASH_Erase_Sector(uint32_t Sector, uint8_t VoltageRange);
+      |                         ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:1044:25: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:1044:42: error: unknown type name ‘uint8_t’
+ 1044 | void FLASH_Erase_Sector(uint32_t Sector, uint8_t VoltageRange);
+      |                                          ^~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash_ex.h:1044:42: note: ‘uint8_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:306:37: error: unknown type name ‘uint32_t’
+  306 | HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint64_t Data);
+      |                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:297:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  296 | #include "stm32f4xx_hal_flash_ramfunc.h"
+  +++ |+#include <stdint.h>
+  297 | 
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:306:59: error: unknown type name ‘uint32_t’
+  306 | HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint64_t Data);
+      |                                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:306:59: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:306:77: error: unknown type name ‘uint64_t’
+  306 | HAL_StatusTypeDef HAL_FLASH_Program(uint32_t TypeProgram, uint32_t Address, uint64_t Data);
+      |                                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:306:77: note: ‘uint64_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:307:40: error: unknown type name ‘uint32_t’
+  307 | HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, uint64_t Data);
+      |                                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:307:40: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:307:62: error: unknown type name ‘uint32_t’
+  307 | HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, uint64_t Data);
+      |                                                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:307:62: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:307:80: error: unknown type name ‘uint64_t’
+  307 | HAL_StatusTypeDef HAL_FLASH_Program_IT(uint32_t TypeProgram, uint32_t Address, uint64_t Data);
+      |                                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:307:80: note: ‘uint64_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:311:39: error: unknown type name ‘uint32_t’
+  311 | void HAL_FLASH_EndOfOperationCallback(uint32_t ReturnValue);
+      |                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:311:39: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:312:39: error: unknown type name ‘uint32_t’
+  312 | void HAL_FLASH_OperationErrorCallback(uint32_t ReturnValue);
+      |                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:312:39: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:335:1: error: unknown type name ‘uint32_t’
+  335 | uint32_t HAL_FLASH_GetError(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:335:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:336:46: error: unknown type name ‘uint32_t’
+  336 | HAL_StatusTypeDef FLASH_WaitForLastOperation(uint32_t Timeout);
+      |                                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_flash.h:336:46: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:371:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_iwdg.h:48:3: error: unknown type name ‘uint32_t’
+   48 |   uint32_t Prescaler;  /*!< Select the prescaler of the IWDG.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_iwdg.h:51:3: error: unknown type name ‘uint32_t’
+   51 |   uint32_t Reload;     /*!< Specifies the IWDG down-counter reload value.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_iwdg.h:61:3: error: unknown type name ‘IWDG_TypeDef’
+   61 |   IWDG_TypeDef                 *Instance;  /*!< Register base address    */
+      |   ^~~~~~~~~~~~
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:379:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:48:3: error: unknown type name ‘uint32_t’
+   48 |   uint32_t PVDLevel;   /*!< PVDLevel: Specifies the PVD detection level.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:51:3: error: unknown type name ‘uint32_t’
+   51 |   uint32_t Mode;      /*!< Mode: Specifies the operating mode for the selected pins.
+      |   ^~~~~~~~
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:272:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:207:1: error: unknown type name ‘uint32_t’
+  207 | uint32_t HAL_PWREx_GetVoltageRange(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:1:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  +++ |+#include <stdint.h>
+    1 | /**
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:208:51: error: unknown type name ‘uint32_t’
+  208 | HAL_StatusTypeDef HAL_PWREx_ControlVoltageScaling(uint32_t VoltageScaling);
+      |                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:208:51: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:300:30: error: unknown type name ‘uint32_t’
+  300 | void HAL_PWR_EnableWakeUpPin(uint32_t WakeUpPinx);
+      |                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:273:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  272 | #include "stm32f4xx_hal_pwr_ex.h"
+  +++ |+#include <stdint.h>
+  273 | 
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:301:31: error: unknown type name ‘uint32_t’
+  301 | void HAL_PWR_DisableWakeUpPin(uint32_t WakeUpPinx);
+      |                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:301:31: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:304:28: error: unknown type name ‘uint32_t’
+  304 | void HAL_PWR_EnterSTOPMode(uint32_t Regulator, uint8_t STOPEntry);
+      |                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:304:28: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:304:48: error: unknown type name ‘uint8_t’
+  304 | void HAL_PWR_EnterSTOPMode(uint32_t Regulator, uint8_t STOPEntry);
+      |                                                ^~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:304:48: note: ‘uint8_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:305:29: error: unknown type name ‘uint32_t’
+  305 | void HAL_PWR_EnterSLEEPMode(uint32_t Regulator, uint8_t SLEEPEntry);
+      |                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:305:29: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:305:49: error: unknown type name ‘uint8_t’
+  305 | void HAL_PWR_EnterSLEEPMode(uint32_t Regulator, uint8_t SLEEPEntry);
+      |                                                 ^~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:305:49: note: ‘uint8_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:403:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:48:3: error: unknown type name ‘uint32_t’
+   48 |   uint32_t Prescaler;         /*!< Specifies the prescaler value used to divide the TIM clock.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:51:3: error: unknown type name ‘uint32_t’
+   51 |   uint32_t CounterMode;       /*!< Specifies the counter mode.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:54:3: error: unknown type name ‘uint32_t’
+   54 |   uint32_t Period;            /*!< Specifies the period value to be loaded into the active
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:58:3: error: unknown type name ‘uint32_t’
+   58 |   uint32_t ClockDivision;     /*!< Specifies the clock division.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:61:3: error: unknown type name ‘uint32_t’
+   61 |   uint32_t RepetitionCounter;  /*!< Specifies the repetition counter value. Each time the RCR downcounter
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:72:3: error: unknown type name ‘uint32_t’
+   72 |   uint32_t AutoReloadPreload;  /*!< Specifies the auto-reload preload.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:81:3: error: unknown type name ‘uint32_t’
+   81 |   uint32_t OCMode;        /*!< Specifies the TIM mode.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:84:3: error: unknown type name ‘uint32_t’
+   84 |   uint32_t Pulse;         /*!< Specifies the pulse value to be loaded into the Capture Compare Register.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:87:3: error: unknown type name ‘uint32_t’
+   87 |   uint32_t OCPolarity;    /*!< Specifies the output polarity.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:90:3: error: unknown type name ‘uint32_t’
+   90 |   uint32_t OCNPolarity;   /*!< Specifies the complementary output polarity.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:94:3: error: unknown type name ‘uint32_t’
+   94 |   uint32_t OCFastMode;    /*!< Specifies the Fast mode state.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:99:3: error: unknown type name ‘uint32_t’
+   99 |   uint32_t OCIdleState;   /*!< Specifies the TIM Output Compare pin state during Idle state.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:103:3: error: unknown type name ‘uint32_t’
+  103 |   uint32_t OCNIdleState;  /*!< Specifies the TIM Output Compare pin state during Idle state.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:113:3: error: unknown type name ‘uint32_t’
+  113 |   uint32_t OCMode;        /*!< Specifies the TIM mode.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:116:3: error: unknown type name ‘uint32_t’
+  116 |   uint32_t Pulse;         /*!< Specifies the pulse value to be loaded into the Capture Compare Register.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:119:3: error: unknown type name ‘uint32_t’
+  119 |   uint32_t OCPolarity;    /*!< Specifies the output polarity.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:122:3: error: unknown type name ‘uint32_t’
+  122 |   uint32_t OCNPolarity;   /*!< Specifies the complementary output polarity.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:126:3: error: unknown type name ‘uint32_t’
+  126 |   uint32_t OCIdleState;   /*!< Specifies the TIM Output Compare pin state during Idle state.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:130:3: error: unknown type name ‘uint32_t’
+  130 |   uint32_t OCNIdleState;  /*!< Specifies the TIM Output Compare pin state during Idle state.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:134:3: error: unknown type name ‘uint32_t’
+  134 |   uint32_t ICPolarity;    /*!< Specifies the active edge of the input signal.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:137:3: error: unknown type name ‘uint32_t’
+  137 |   uint32_t ICSelection;   /*!< Specifies the input.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:140:3: error: unknown type name ‘uint32_t’
+  140 |   uint32_t ICFilter;      /*!< Specifies the input capture filter.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:149:3: error: unknown type name ‘uint32_t’
+  149 |   uint32_t  ICPolarity;  /*!< Specifies the active edge of the input signal.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:152:3: error: unknown type name ‘uint32_t’
+  152 |   uint32_t ICSelection;  /*!< Specifies the input.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:155:3: error: unknown type name ‘uint32_t’
+  155 |   uint32_t ICPrescaler;  /*!< Specifies the Input Capture Prescaler.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:158:3: error: unknown type name ‘uint32_t’
+  158 |   uint32_t ICFilter;     /*!< Specifies the input capture filter.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:167:3: error: unknown type name ‘uint32_t’
+  167 |   uint32_t EncoderMode;   /*!< Specifies the active edge of the input signal.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:170:3: error: unknown type name ‘uint32_t’
+  170 |   uint32_t IC1Polarity;   /*!< Specifies the active edge of the input signal.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:173:3: error: unknown type name ‘uint32_t’
+  173 |   uint32_t IC1Selection;  /*!< Specifies the input.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:176:3: error: unknown type name ‘uint32_t’
+  176 |   uint32_t IC1Prescaler;  /*!< Specifies the Input Capture Prescaler.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:179:3: error: unknown type name ‘uint32_t’
+  179 |   uint32_t IC1Filter;     /*!< Specifies the input capture filter.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:182:3: error: unknown type name ‘uint32_t’
+  182 |   uint32_t IC2Polarity;   /*!< Specifies the active edge of the input signal.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:185:3: error: unknown type name ‘uint32_t’
+  185 |   uint32_t IC2Selection;  /*!< Specifies the input.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:188:3: error: unknown type name ‘uint32_t’
+  188 |   uint32_t IC2Prescaler;  /*!< Specifies the Input Capture Prescaler.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:191:3: error: unknown type name ‘uint32_t’
+  191 |   uint32_t IC2Filter;     /*!< Specifies the input capture filter.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:200:3: error: unknown type name ‘uint32_t’
+  200 |   uint32_t ClockSource;     /*!< TIM clock sources
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:202:3: error: unknown type name ‘uint32_t’
+  202 |   uint32_t ClockPolarity;   /*!< TIM clock polarity
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:204:3: error: unknown type name ‘uint32_t’
+  204 |   uint32_t ClockPrescaler;  /*!< TIM clock prescaler
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:206:3: error: unknown type name ‘uint32_t’
+  206 |   uint32_t ClockFilter;     /*!< TIM clock filter
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:215:3: error: unknown type name ‘uint32_t’
+  215 |   uint32_t ClearInputState;      /*!< TIM clear Input state
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:217:3: error: unknown type name ‘uint32_t’
+  217 |   uint32_t ClearInputSource;     /*!< TIM clear Input sources
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:219:3: error: unknown type name ‘uint32_t’
+  219 |   uint32_t ClearInputPolarity;   /*!< TIM Clear Input polarity
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:221:3: error: unknown type name ‘uint32_t’
+  221 |   uint32_t ClearInputPrescaler;  /*!< TIM Clear Input prescaler
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:224:3: error: unknown type name ‘uint32_t’
+  224 |   uint32_t ClearInputFilter;     /*!< TIM Clear Input filter
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:233:3: error: unknown type name ‘uint32_t’
+  233 |   uint32_t  MasterOutputTrigger;   /*!< Trigger output (TRGO) selection
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:235:3: error: unknown type name ‘uint32_t’
+  235 |   uint32_t  MasterSlaveMode;       /*!< Master/slave mode selection
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:249:3: error: unknown type name ‘uint32_t’
+  249 |   uint32_t  SlaveMode;         /*!< Slave mode selection
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:251:3: error: unknown type name ‘uint32_t’
+  251 |   uint32_t  InputTrigger;      /*!< Input Trigger source
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:253:3: error: unknown type name ‘uint32_t’
+  253 |   uint32_t  TriggerPolarity;   /*!< Input Trigger polarity
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:255:3: error: unknown type name ‘uint32_t’
+  255 |   uint32_t  TriggerPrescaler;  /*!< Input trigger prescaler
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:257:3: error: unknown type name ‘uint32_t’
+  257 |   uint32_t  TriggerFilter;     /*!< Input trigger filter
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:269:3: error: unknown type name ‘uint32_t’
+  269 |   uint32_t OffStateRunMode;      /*!< TIM off state in run mode, This parameter can be a value of @ref TIM_OSSR_Off_State_Selection_for_Run_mode_state */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:271:3: error: unknown type name ‘uint32_t’
+  271 |   uint32_t OffStateIDLEMode;     /*!< TIM off state in IDLE mode, This parameter can be a value of @ref TIM_OSSI_Off_State_Selection_for_Idle_mode_state */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:273:3: error: unknown type name ‘uint32_t’
+  273 |   uint32_t LockLevel;            /*!< TIM Lock level, This parameter can be a value of @ref TIM_Lock_level */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:275:3: error: unknown type name ‘uint32_t’
+  275 |   uint32_t DeadTime;             /*!< TIM dead Time, This parameter can be a number between Min_Data = 0x00 and Max_Data = 0xFF */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:277:3: error: unknown type name ‘uint32_t’
+  277 |   uint32_t BreakState;           /*!< TIM Break State, This parameter can be a value of @ref TIM_Break_Input_enable_disable */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:279:3: error: unknown type name ‘uint32_t’
+  279 |   uint32_t BreakPolarity;        /*!< TIM Break input polarity, This parameter can be a value of @ref TIM_Break_Polarity */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:281:3: error: unknown type name ‘uint32_t’
+  281 |   uint32_t BreakFilter;          /*!< Specifies the break input filter.This parameter can be a number between Min_Data = 0x0 and Max_Data = 0xF */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:283:3: error: unknown type name ‘uint32_t’
+  283 |   uint32_t AutomaticOutput;      /*!< TIM Automatic Output Enable state, This parameter can be a value of @ref TIM_AOE_Bit_Set_Reset */
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:340:3: error: unknown type name ‘TIM_TypeDef’
+  340 |   TIM_TypeDef                        *Instance;         /*!< Register base address                             */
+      |   ^~~~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:346:3: error: unknown type name ‘__IO’
+  346 |   __IO HAL_TIM_StateTypeDef          State;             /*!< TIM operation state                               */
+      |   ^~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:346:38: error: expected ‘:’, ‘,’, ‘;’, ‘}’ or ‘__attribute__’ before ‘State’
+  346 |   __IO HAL_TIM_StateTypeDef          State;             /*!< TIM operation state                               */
+      |                                      ^~~~~
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1876:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:49:3: error: unknown type name ‘uint32_t’
+   49 |   uint32_t IC1Polarity;         /*!< Specifies the active edge of the input signal.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:52:3: error: unknown type name ‘uint32_t’
+   52 |   uint32_t IC1Prescaler;        /*!< Specifies the Input Capture Prescaler.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:55:3: error: unknown type name ‘uint32_t’
+   55 |   uint32_t IC1Filter;           /*!< Specifies the input capture filter.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:58:3: error: unknown type name ‘uint32_t’
+   58 |   uint32_t Commutation_Delay;   /*!< Specifies the pulse value to be loaded into the Capture Compare Register.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:221:75: error: unknown type name ‘uint32_t’
+  221 | HAL_StatusTypeDef HAL_TIMEx_HallSensor_Start_DMA(TIM_HandleTypeDef *htim, uint32_t *pData, uint16_t Length);
+      |                                                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:1:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+  +++ |+#include <stdint.h>
+    1 | /**
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:221:92: error: unknown type name ‘uint16_t’
+  221 | HAL_StatusTypeDef HAL_TIMEx_HallSensor_Start_DMA(TIM_HandleTypeDef *htim, uint32_t *pData, uint16_t Length);
+      |                                                                                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:221:92: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:233:64: error: unknown type name ‘uint32_t’
+  233 | HAL_StatusTypeDef HAL_TIMEx_OCN_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:233:64: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:234:63: error: unknown type name ‘uint32_t’
+  234 | HAL_StatusTypeDef HAL_TIMEx_OCN_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:234:63: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:237:67: error: unknown type name ‘uint32_t’
+  237 | HAL_StatusTypeDef HAL_TIMEx_OCN_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:237:67: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:238:66: error: unknown type name ‘uint32_t’
+  238 | HAL_StatusTypeDef HAL_TIMEx_OCN_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:238:66: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:241:68: error: unknown type name ‘uint32_t’
+  241 | HAL_StatusTypeDef HAL_TIMEx_OCN_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:241:68: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:241:86: error: unknown type name ‘uint32_t’
+  241 | HAL_StatusTypeDef HAL_TIMEx_OCN_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                      ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:241:86: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:241:103: error: unknown type name ‘uint16_t’
+  241 | HAL_StatusTypeDef HAL_TIMEx_OCN_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:241:103: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:242:67: error: unknown type name ‘uint32_t’
+  242 | HAL_StatusTypeDef HAL_TIMEx_OCN_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:242:67: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:253:65: error: unknown type name ‘uint32_t’
+  253 | HAL_StatusTypeDef HAL_TIMEx_PWMN_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:253:65: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:254:64: error: unknown type name ‘uint32_t’
+  254 | HAL_StatusTypeDef HAL_TIMEx_PWMN_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:254:64: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:257:68: error: unknown type name ‘uint32_t’
+  257 | HAL_StatusTypeDef HAL_TIMEx_PWMN_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:257:68: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:258:67: error: unknown type name ‘uint32_t’
+  258 | HAL_StatusTypeDef HAL_TIMEx_PWMN_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:258:67: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:260:69: error: unknown type name ‘uint32_t’
+  260 | HAL_StatusTypeDef HAL_TIMEx_PWMN_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:260:69: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:260:87: error: unknown type name ‘uint32_t’
+  260 | HAL_StatusTypeDef HAL_TIMEx_PWMN_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:260:87: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:260:104: error: unknown type name ‘uint16_t’
+  260 | HAL_StatusTypeDef HAL_TIMEx_PWMN_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:260:104: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:261:68: error: unknown type name ‘uint32_t’
+  261 | HAL_StatusTypeDef HAL_TIMEx_PWMN_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:261:68: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:272:70: error: unknown type name ‘uint32_t’
+  272 | HAL_StatusTypeDef HAL_TIMEx_OnePulseN_Start(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
+      |                                                                      ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:272:70: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:273:69: error: unknown type name ‘uint32_t’
+  273 | HAL_StatusTypeDef HAL_TIMEx_OnePulseN_Stop(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
+      |                                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:273:69: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:276:73: error: unknown type name ‘uint32_t’
+  276 | HAL_StatusTypeDef HAL_TIMEx_OnePulseN_Start_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
+      |                                                                         ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:276:73: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:277:72: error: unknown type name ‘uint32_t’
+  277 | HAL_StatusTypeDef HAL_TIMEx_OnePulseN_Stop_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
+      |                                                                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:277:72: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:287:72: error: unknown type name ‘uint32_t’
+  287 | HAL_StatusTypeDef HAL_TIMEx_ConfigCommutEvent(TIM_HandleTypeDef *htim, uint32_t  InputTrigger,
+      |                                                                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:287:72: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:288:47: error: unknown type name ‘uint32_t’
+  288 |                                               uint32_t  CommutationSource);
+      |                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:288:47: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:289:75: error: unknown type name ‘uint32_t’
+  289 | HAL_StatusTypeDef HAL_TIMEx_ConfigCommutEvent_IT(TIM_HandleTypeDef *htim, uint32_t  InputTrigger,
+      |                                                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:289:75: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:290:50: error: unknown type name ‘uint32_t’
+  290 |                                                  uint32_t  CommutationSource);
+      |                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:290:50: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:291:76: error: unknown type name ‘uint32_t’
+  291 | HAL_StatusTypeDef HAL_TIMEx_ConfigCommutEvent_DMA(TIM_HandleTypeDef *htim, uint32_t  InputTrigger,
+      |                                                                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:291:76: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:292:51: error: unknown type name ‘uint32_t’
+  292 |                                                   uint32_t  CommutationSource);
+      |                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:292:51: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:297:66: error: unknown type name ‘uint32_t’
+  297 | HAL_StatusTypeDef HAL_TIMEx_RemapConfig(TIM_HandleTypeDef *htim, uint32_t Remap);
+      |                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:297:66: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:320:82: error: unknown type name ‘uint32_t’
+  320 | HAL_TIM_ChannelStateTypeDef HAL_TIMEx_GetChannelNState(TIM_HandleTypeDef *htim,  uint32_t ChannelN);
+      |                                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:320:82: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1899:67: error: unknown type name ‘uint32_t’
+ 1899 | HAL_StatusTypeDef HAL_TIM_Base_Start_DMA(TIM_HandleTypeDef *htim, uint32_t *pData, uint16_t Length);
+      |                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1877:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+ 1876 | #include "stm32f4xx_hal_tim_ex.h"
+  +++ |+#include <stdint.h>
+ 1877 | 
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1899:84: error: unknown type name ‘uint16_t’
+ 1899 | HAL_StatusTypeDef HAL_TIM_Base_Start_DMA(TIM_HandleTypeDef *htim, uint32_t *pData, uint16_t Length);
+      |                                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1899:84: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1915:61: error: unknown type name ‘uint32_t’
+ 1915 | HAL_StatusTypeDef HAL_TIM_OC_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1915:61: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1916:60: error: unknown type name ‘uint32_t’
+ 1916 | HAL_StatusTypeDef HAL_TIM_OC_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1916:60: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1918:64: error: unknown type name ‘uint32_t’
+ 1918 | HAL_StatusTypeDef HAL_TIM_OC_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1918:64: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1919:63: error: unknown type name ‘uint32_t’
+ 1919 | HAL_StatusTypeDef HAL_TIM_OC_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1919:63: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1921:65: error: unknown type name ‘uint32_t’
+ 1921 | HAL_StatusTypeDef HAL_TIM_OC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1921:65: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1921:83: error: unknown type name ‘uint32_t’
+ 1921 | HAL_StatusTypeDef HAL_TIM_OC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1921:83: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1921:100: error: unknown type name ‘uint16_t’
+ 1921 | HAL_StatusTypeDef HAL_TIM_OC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1921:100: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1922:64: error: unknown type name ‘uint32_t’
+ 1922 | HAL_StatusTypeDef HAL_TIM_OC_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1922:64: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1937:62: error: unknown type name ‘uint32_t’
+ 1937 | HAL_StatusTypeDef HAL_TIM_PWM_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1937:62: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1938:61: error: unknown type name ‘uint32_t’
+ 1938 | HAL_StatusTypeDef HAL_TIM_PWM_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1938:61: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1940:65: error: unknown type name ‘uint32_t’
+ 1940 | HAL_StatusTypeDef HAL_TIM_PWM_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1940:65: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1941:64: error: unknown type name ‘uint32_t’
+ 1941 | HAL_StatusTypeDef HAL_TIM_PWM_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1941:64: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1943:66: error: unknown type name ‘uint32_t’
+ 1943 | HAL_StatusTypeDef HAL_TIM_PWM_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1943:66: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1943:84: error: unknown type name ‘uint32_t’
+ 1943 | HAL_StatusTypeDef HAL_TIM_PWM_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1943:84: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1943:101: error: unknown type name ‘uint16_t’
+ 1943 | HAL_StatusTypeDef HAL_TIM_PWM_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1943:101: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1944:65: error: unknown type name ‘uint32_t’
+ 1944 | HAL_StatusTypeDef HAL_TIM_PWM_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1944:65: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1959:61: error: unknown type name ‘uint32_t’
+ 1959 | HAL_StatusTypeDef HAL_TIM_IC_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1959:61: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1960:60: error: unknown type name ‘uint32_t’
+ 1960 | HAL_StatusTypeDef HAL_TIM_IC_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1960:60: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1962:64: error: unknown type name ‘uint32_t’
+ 1962 | HAL_StatusTypeDef HAL_TIM_IC_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1962:64: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1963:63: error: unknown type name ‘uint32_t’
+ 1963 | HAL_StatusTypeDef HAL_TIM_IC_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1963:63: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1965:65: error: unknown type name ‘uint32_t’
+ 1965 | HAL_StatusTypeDef HAL_TIM_IC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1965:65: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1965:83: error: unknown type name ‘uint32_t’
+ 1965 | HAL_StatusTypeDef HAL_TIM_IC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1965:83: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1965:100: error: unknown type name ‘uint16_t’
+ 1965 | HAL_StatusTypeDef HAL_TIM_IC_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData, uint16_t Length);
+      |                                                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1965:100: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1966:64: error: unknown type name ‘uint32_t’
+ 1966 | HAL_StatusTypeDef HAL_TIM_IC_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1966:64: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1976:66: error: unknown type name ‘uint32_t’
+ 1976 | HAL_StatusTypeDef HAL_TIM_OnePulse_Init(TIM_HandleTypeDef *htim, uint32_t OnePulseMode);
+      |                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1976:66: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1981:67: error: unknown type name ‘uint32_t’
+ 1981 | HAL_StatusTypeDef HAL_TIM_OnePulse_Start(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
+      |                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1981:67: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1982:66: error: unknown type name ‘uint32_t’
+ 1982 | HAL_StatusTypeDef HAL_TIM_OnePulse_Stop(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
+      |                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1982:66: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1984:70: error: unknown type name ‘uint32_t’
+ 1984 | HAL_StatusTypeDef HAL_TIM_OnePulse_Start_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
+      |                                                                      ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1984:70: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1985:69: error: unknown type name ‘uint32_t’
+ 1985 | HAL_StatusTypeDef HAL_TIM_OnePulse_Stop_IT(TIM_HandleTypeDef *htim, uint32_t OutputChannel);
+      |                                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:1985:69: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2000:66: error: unknown type name ‘uint32_t’
+ 2000 | HAL_StatusTypeDef HAL_TIM_Encoder_Start(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2000:66: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2001:65: error: unknown type name ‘uint32_t’
+ 2001 | HAL_StatusTypeDef HAL_TIM_Encoder_Stop(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2001:65: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2003:69: error: unknown type name ‘uint32_t’
+ 2003 | HAL_StatusTypeDef HAL_TIM_Encoder_Start_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2003:69: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2004:68: error: unknown type name ‘uint32_t’
+ 2004 | HAL_StatusTypeDef HAL_TIM_Encoder_Stop_IT(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2004:68: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2006:70: error: unknown type name ‘uint32_t’
+ 2006 | HAL_StatusTypeDef HAL_TIM_Encoder_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData1,
+      |                                                                      ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2006:70: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2006:88: error: unknown type name ‘uint32_t’
+ 2006 | HAL_StatusTypeDef HAL_TIM_Encoder_Start_DMA(TIM_HandleTypeDef *htim, uint32_t Channel, uint32_t *pData1,
+      |                                                                                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2006:88: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2007:45: error: unknown type name ‘uint32_t’
+ 2007 |                                             uint32_t *pData2, uint16_t Length);
+      |                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2007:45: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2007:63: error: unknown type name ‘uint16_t’
+ 2007 |                                             uint32_t *pData2, uint16_t Length);
+      |                                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2007:63: note: ‘uint16_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2008:69: error: unknown type name ‘uint32_t’
+ 2008 | HAL_StatusTypeDef HAL_TIM_Encoder_Stop_DMA(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2008:69: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2028:98: error: unknown type name ‘uint32_t’
+ 2028 | HAL_StatusTypeDef HAL_TIM_OC_ConfigChannel(TIM_HandleTypeDef *htim, TIM_OC_InitTypeDef *sConfig, uint32_t Channel);
+      |                                                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2028:98: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2029:99: error: unknown type name ‘uint32_t’
+ 2029 | HAL_StatusTypeDef HAL_TIM_PWM_ConfigChannel(TIM_HandleTypeDef *htim, TIM_OC_InitTypeDef *sConfig, uint32_t Channel);
+      |                                                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2029:99: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2030:98: error: unknown type name ‘uint32_t’
+ 2030 | HAL_StatusTypeDef HAL_TIM_IC_ConfigChannel(TIM_HandleTypeDef *htim, TIM_IC_InitTypeDef *sConfig, uint32_t Channel);
+      |                                                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2030:98: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2032:50: error: unknown type name ‘uint32_t’
+ 2032 |                                                  uint32_t OutputChannel,  uint32_t InputChannel);
+      |                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2032:50: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2032:75: error: unknown type name ‘uint32_t’
+ 2032 |                                                  uint32_t OutputChannel,  uint32_t InputChannel);
+      |                                                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2032:75: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2034:44: error: unknown type name ‘uint32_t’
+ 2034 |                                            uint32_t Channel);
+      |                                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2034:44: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2036:67: error: unknown type name ‘uint32_t’
+ 2036 | HAL_StatusTypeDef HAL_TIM_ConfigTI1Input(TIM_HandleTypeDef *htim, uint32_t TI1_Selection);
+      |                                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2036:67: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2039:72: error: unknown type name ‘uint32_t’
+ 2039 | HAL_StatusTypeDef HAL_TIM_DMABurst_WriteStart(TIM_HandleTypeDef *htim, uint32_t BurstBaseAddress,
+      |                                                                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2039:72: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2040:47: error: unknown type name ‘uint32_t’
+ 2040 |                                               uint32_t BurstRequestSrc, uint32_t  *BurstBuffer, uint32_t  BurstLength);
+      |                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2040:47: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2040:73: error: unknown type name ‘uint32_t’
+ 2040 |                                               uint32_t BurstRequestSrc, uint32_t  *BurstBuffer, uint32_t  BurstLength);
+      |                                                                         ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2040:73: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2040:97: error: unknown type name ‘uint32_t’
+ 2040 |                                               uint32_t BurstRequestSrc, uint32_t  *BurstBuffer, uint32_t  BurstLength);
+      |                                                                                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2040:97: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2041:77: error: unknown type name ‘uint32_t’
+ 2041 | HAL_StatusTypeDef HAL_TIM_DMABurst_MultiWriteStart(TIM_HandleTypeDef *htim, uint32_t BurstBaseAddress,
+      |                                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2041:77: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2042:52: error: unknown type name ‘uint32_t’
+ 2042 |                                                    uint32_t BurstRequestSrc, uint32_t *BurstBuffer,
+      |                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2042:52: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2042:78: error: unknown type name ‘uint32_t’
+ 2042 |                                                    uint32_t BurstRequestSrc, uint32_t *BurstBuffer,
+      |                                                                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2042:78: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2043:52: error: unknown type name ‘uint32_t’
+ 2043 |                                                    uint32_t BurstLength,  uint32_t DataLength);
+      |                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2043:52: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2043:75: error: unknown type name ‘uint32_t’
+ 2043 |                                                    uint32_t BurstLength,  uint32_t DataLength);
+      |                                                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2043:75: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2044:71: error: unknown type name ‘uint32_t’
+ 2044 | HAL_StatusTypeDef HAL_TIM_DMABurst_WriteStop(TIM_HandleTypeDef *htim, uint32_t BurstRequestSrc);
+      |                                                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2044:71: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2045:71: error: unknown type name ‘uint32_t’
+ 2045 | HAL_StatusTypeDef HAL_TIM_DMABurst_ReadStart(TIM_HandleTypeDef *htim, uint32_t BurstBaseAddress,
+      |                                                                       ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2045:71: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2046:46: error: unknown type name ‘uint32_t’
+ 2046 |                                              uint32_t BurstRequestSrc, uint32_t  *BurstBuffer, uint32_t  BurstLength);
+      |                                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2046:46: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2046:72: error: unknown type name ‘uint32_t’
+ 2046 |                                              uint32_t BurstRequestSrc, uint32_t  *BurstBuffer, uint32_t  BurstLength);
+      |                                                                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2046:72: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2046:96: error: unknown type name ‘uint32_t’
+ 2046 |                                              uint32_t BurstRequestSrc, uint32_t  *BurstBuffer, uint32_t  BurstLength);
+      |                                                                                                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2046:96: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2047:76: error: unknown type name ‘uint32_t’
+ 2047 | HAL_StatusTypeDef HAL_TIM_DMABurst_MultiReadStart(TIM_HandleTypeDef *htim, uint32_t BurstBaseAddress,
+      |                                                                            ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2047:76: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2048:51: error: unknown type name ‘uint32_t’
+ 2048 |                                                   uint32_t BurstRequestSrc, uint32_t  *BurstBuffer,
+      |                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2048:51: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2048:77: error: unknown type name ‘uint32_t’
+ 2048 |                                                   uint32_t BurstRequestSrc, uint32_t  *BurstBuffer,
+      |                                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2048:77: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2049:51: error: unknown type name ‘uint32_t’
+ 2049 |                                                   uint32_t  BurstLength, uint32_t  DataLength);
+      |                                                   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2049:51: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2049:74: error: unknown type name ‘uint32_t’
+ 2049 |                                                   uint32_t  BurstLength, uint32_t  DataLength);
+      |                                                                          ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2049:74: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2050:70: error: unknown type name ‘uint32_t’
+ 2050 | HAL_StatusTypeDef HAL_TIM_DMABurst_ReadStop(TIM_HandleTypeDef *htim, uint32_t BurstRequestSrc);
+      |                                                                      ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2050:70: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2051:66: error: unknown type name ‘uint32_t’
+ 2051 | HAL_StatusTypeDef HAL_TIM_GenerateEvent(TIM_HandleTypeDef *htim, uint32_t EventSource);
+      |                                                                  ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2051:66: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2052:1: error: unknown type name ‘uint32_t’
+ 2052 | uint32_t HAL_TIM_ReadCapturedValue(TIM_HandleTypeDef *htim, uint32_t Channel);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2052:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2052:61: error: unknown type name ‘uint32_t’
+ 2052 | uint32_t HAL_TIM_ReadCapturedValue(TIM_HandleTypeDef *htim, uint32_t Channel);
+      |                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2052:61: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2098:79: error: unknown type name ‘uint32_t’
+ 2098 | HAL_TIM_ChannelStateTypeDef HAL_TIM_GetChannelState(TIM_HandleTypeDef *htim,  uint32_t Channel);
+      |                                                                               ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2098:79: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2113:25: error: unknown type name ‘TIM_TypeDef’; did you mean ‘TIM_HandleTypeDef’?
+ 2113 | void TIM_Base_SetConfig(TIM_TypeDef *TIMx, TIM_Base_InitTypeDef *Structure);
+      |                         ^~~~~~~~~~~
+      |                         TIM_HandleTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2114:24: error: unknown type name ‘TIM_TypeDef’; did you mean ‘TIM_HandleTypeDef’?
+ 2114 | void TIM_TI1_SetConfig(TIM_TypeDef *TIMx, uint32_t TIM_ICPolarity, uint32_t TIM_ICSelection, uint32_t TIM_ICFilter);
+      |                        ^~~~~~~~~~~
+      |                        TIM_HandleTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2114:43: error: unknown type name ‘uint32_t’
+ 2114 | void TIM_TI1_SetConfig(TIM_TypeDef *TIMx, uint32_t TIM_ICPolarity, uint32_t TIM_ICSelection, uint32_t TIM_ICFilter);
+      |                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2114:43: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2114:68: error: unknown type name ‘uint32_t’
+ 2114 | void TIM_TI1_SetConfig(TIM_TypeDef *TIMx, uint32_t TIM_ICPolarity, uint32_t TIM_ICSelection, uint32_t TIM_ICFilter);
+      |                                                                    ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2114:68: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2114:94: error: unknown type name ‘uint32_t’
+ 2114 | void TIM_TI1_SetConfig(TIM_TypeDef *TIMx, uint32_t TIM_ICPolarity, uint32_t TIM_ICSelection, uint32_t TIM_ICFilter);
+      |                                                                                              ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2114:94: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2115:24: error: unknown type name ‘TIM_TypeDef’; did you mean ‘TIM_HandleTypeDef’?
+ 2115 | void TIM_OC2_SetConfig(TIM_TypeDef *TIMx, TIM_OC_InitTypeDef *OC_Config);
+      |                        ^~~~~~~~~~~
+      |                        TIM_HandleTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2116:24: error: unknown type name ‘TIM_TypeDef’; did you mean ‘TIM_HandleTypeDef’?
+ 2116 | void TIM_ETR_SetConfig(TIM_TypeDef *TIMx, uint32_t TIM_ExtTRGPrescaler,
+      |                        ^~~~~~~~~~~
+      |                        TIM_HandleTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2116:43: error: unknown type name ‘uint32_t’
+ 2116 | void TIM_ETR_SetConfig(TIM_TypeDef *TIMx, uint32_t TIM_ExtTRGPrescaler,
+      |                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2116:43: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2117:24: error: unknown type name ‘uint32_t’
+ 2117 |                        uint32_t TIM_ExtTRGPolarity, uint32_t ExtTRGFilter);
+      |                        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2117:24: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2117:53: error: unknown type name ‘uint32_t’
+ 2117 |                        uint32_t TIM_ExtTRGPolarity, uint32_t ExtTRGFilter);
+      |                                                     ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2117:53: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2123:24: error: unknown type name ‘TIM_TypeDef’; did you mean ‘TIM_HandleTypeDef’?
+ 2123 | void TIM_CCxChannelCmd(TIM_TypeDef *TIMx, uint32_t Channel, uint32_t ChannelState);
+      |                        ^~~~~~~~~~~
+      |                        TIM_HandleTypeDef
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2123:43: error: unknown type name ‘uint32_t’
+ 2123 | void TIM_CCxChannelCmd(TIM_TypeDef *TIMx, uint32_t Channel, uint32_t ChannelState);
+      |                                           ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2123:43: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2123:61: error: unknown type name ‘uint32_t’
+ 2123 | void TIM_CCxChannelCmd(TIM_TypeDef *TIMx, uint32_t Channel, uint32_t ChannelState);
+      |                                                             ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h:2123:61: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/stm32f4xx_hal_conf.h:423:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_wwdg.h:49:3: error: unknown type name ‘uint32_t’
+   49 |   uint32_t Prescaler;     /*!< Specifies the prescaler value of the WWDG.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_wwdg.h:52:3: error: unknown type name ‘uint32_t’
+   52 |   uint32_t Window;        /*!< Specifies the WWDG window value to be compared to the downcounter.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_wwdg.h:55:3: error: unknown type name ‘uint32_t’
+   55 |   uint32_t Counter;       /*!< Specifies the WWDG free-running downcounter  value.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_wwdg.h:58:3: error: unknown type name ‘uint32_t’
+   58 |   uint32_t EWIMode ;      /*!< Specifies if WWDG Early Wakeup Interrupt is enable or not.
+      |   ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_wwdg.h:72:3: error: unknown type name ‘WWDG_TypeDef’
+   72 |   WWDG_TypeDef      *Instance;  /*!< Register base address */
+      |   ^~~~~~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:204:8: error: unknown type name ‘__IO’
+  204 | extern __IO uint32_t uwTick;
+      |        ^~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:204:22: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘uwTick’
+  204 | extern __IO uint32_t uwTick;
+      |                      ^~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:205:8: error: unknown type name ‘uint32_t’
+  205 | extern uint32_t uwTickPrio;
+      |        ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:223:33: error: unknown type name ‘uint32_t’
+  223 | HAL_StatusTypeDef HAL_InitTick (uint32_t TickPriority);
+      |                                 ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:30:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+   29 | #include "stm32f4xx_hal_conf.h"
+  +++ |+#include <stdint.h>
+   30 | 
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:233:16: error: unknown type name ‘uint32_t’
+  233 | void HAL_Delay(uint32_t Delay);
+      |                ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:233:16: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:234:1: error: unknown type name ‘uint32_t’
+  234 | uint32_t HAL_GetTick(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:234:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:235:1: error: unknown type name ‘uint32_t’
+  235 | uint32_t HAL_GetTickPrio(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:235:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:240:1: error: unknown type name ‘uint32_t’
+  240 | uint32_t HAL_GetHalVersion(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:240:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:241:1: error: unknown type name ‘uint32_t’
+  241 | uint32_t HAL_GetREVID(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:241:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:242:1: error: unknown type name ‘uint32_t’
+  242 | uint32_t HAL_GetDEVID(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:242:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:251:1: error: unknown type name ‘uint32_t’
+  251 | uint32_t HAL_GetUIDw0(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:251:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:252:1: error: unknown type name ‘uint32_t’
+  252 | uint32_t HAL_GetUIDw1(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:252:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:253:1: error: unknown type name ‘uint32_t’
+  253 | uint32_t HAL_GetUIDw2(void);
+      | ^~~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:253:1: note: ‘uint32_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/LightController.h:18:49: error: unknown type name ‘uint8_t’
+   18 | int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue);
+      |                                                 ^~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/LightController.h:13:1: note: ‘uint8_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+   12 | #include "main.h"
+  +++ |+#include <stdint.h>
+   13 | 
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/LightController.h:18:63: error: unknown type name ‘uint8_t’
+   18 | int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue);
+      |                                                               ^~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/LightController.h:18:63: note: ‘uint8_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/LightController.h:18:79: error: unknown type name ‘uint8_t’
+   18 | int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue);
+      |                                                                               ^~~~~~~
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../Core/Inc/LightController.h:18:79: note: ‘uint8_t’ is defined in header ‘<stdint.h>’; did you forget to ‘#include <stdint.h>’?
+In file included from /home/matias/Documents/ws/CA_Embedded/STM32/LightController/Core/Src/LightController.c:13:
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/../../Libraries/USBprint/Inc/usb_cdc_fops.h:24:10: fatal error: usbd_cdc.h: No such file or directory
+   24 | #include "usbd_cdc.h"
+      |          ^~~~~~~~~~~~
+compilation terminated.
+make[2]: *** [CMakeFiles/CA_UnitTesting.dir/build.make:76: CMakeFiles/CA_UnitTesting.dir/home/matias/Documents/ws/CA_Embedded/STM32/LightController/Core/Src/LightController.c.o] Error 1
+make[1]: *** [CMakeFiles/Makefile2:83: CMakeFiles/CA_UnitTesting.dir/all] Error 2
+make: *** [Makefile:101: all] Error 2

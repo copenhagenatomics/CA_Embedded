@@ -1,0 +1,4 @@
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/CMakeFiles/CA_UnitTesting.dir
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/CMakeFiles/test.dir
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/CMakeFiles/edit_cache.dir
+/home/matias/Documents/ws/CA_Embedded/STM32/LightController/UnitTesting/CMakeFiles/rebuild_cache.dir
