@@ -62,32 +62,26 @@ void Error_Handler(void);
 #define TempSense_GPIO_Port GPIOA
 #define ctrl1_Pin GPIO_PIN_1
 #define ctrl1_GPIO_Port GPIOA
-#define hall1_Pin GPIO_PIN_2
-#define hall1_GPIO_Port GPIOA
-#define ctrl2_Pin GPIO_PIN_3
+#define ctrl2_Pin GPIO_PIN_2
 #define ctrl2_GPIO_Port GPIOA
+#define hall1_Pin GPIO_PIN_3
+#define hall1_GPIO_Port GPIOA
 #define hall2_Pin GPIO_PIN_4
 #define hall2_GPIO_Port GPIOA
-#define ctrl3_Pin GPIO_PIN_5
-#define ctrl3_GPIO_Port GPIOA
-#define hall3_Pin GPIO_PIN_6
+#define hall3_Pin GPIO_PIN_5
 #define hall3_GPIO_Port GPIOA
-#define ctrl4_Pin GPIO_PIN_7
-#define ctrl4_GPIO_Port GPIOA
-#define hall4_Pin GPIO_PIN_0
-#define hall4_GPIO_Port GPIOB
-#define LED_Pin GPIO_PIN_2
-#define LED_GPIO_Port GPIOB
+#define hall4_Pin GPIO_PIN_6
+#define hall4_GPIO_Port GPIOA
 #define powerCut_Pin GPIO_PIN_10
 #define powerCut_GPIO_Port GPIOB
-#define btn4_Pin GPIO_PIN_15
-#define btn4_GPIO_Port GPIOA
-#define btn3_Pin GPIO_PIN_3
-#define btn3_GPIO_Port GPIOB
-#define btn2_Pin GPIO_PIN_4
-#define btn2_GPIO_Port GPIOB
-#define btn1_Pin GPIO_PIN_5
-#define btn1_GPIO_Port GPIOB
+#define ctrl3_Pin GPIO_PIN_8
+#define ctrl3_GPIO_Port GPIOA
+#define ctrl4_Pin GPIO_PIN_9
+#define ctrl4_GPIO_Port GPIOA
+#define test1_Pin GPIO_PIN_6
+#define test1_GPIO_Port GPIOB
+#define test2_Pin GPIO_PIN_7
+#define test2_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

@@ -213,7 +213,7 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_2;
+  sConfig.Channel = ADC_CHANNEL_3;
   sConfig.Rank = 2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -229,7 +229,7 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = 4;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -237,7 +237,7 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_8;
+  sConfig.Channel = ADC_CHANNEL_6;
   sConfig.Rank = 5;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -386,7 +386,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, ctrl1_Pin|ctrl2_Pin|ctrl3_Pin|ctrl4_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED_Pin|powerCut_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, powerCut_Pin|test1_Pin|test2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : ctrl1_Pin ctrl2_Pin ctrl3_Pin ctrl4_Pin */
   GPIO_InitStruct.Pin = ctrl1_Pin|ctrl2_Pin|ctrl3_Pin|ctrl4_Pin;
@@ -395,23 +395,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_Pin powerCut_Pin */
-  GPIO_InitStruct.Pin = LED_Pin|powerCut_Pin;
+  /*Configure GPIO pins : powerCut_Pin test1_Pin test2_Pin */
+  GPIO_InitStruct.Pin = powerCut_Pin|test1_Pin|test2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : btn4_Pin */
-  GPIO_InitStruct.Pin = btn4_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(btn4_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : btn3_Pin btn2_Pin btn1_Pin */
-  GPIO_InitStruct.Pin = btn3_Pin|btn2_Pin|btn1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }

@@ -222,14 +222,21 @@ static void heatSinkLoop()
 
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
+	// Always allow for DFU also if programmed on non-matching board or PCB version.
+	initCAProtocol(&caProto, usb_cdc_rx);
+
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != AC_Board)
+        return;
+
+    // Pin out has changed from PCB V6.0 - older versions need other software.
+    pcbVersion ver;
+    if (getPcbVersion(&ver) || ver.major < 6)
         return;
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
-    initCAProtocol(&caProto, usb_cdc_rx);
     GpioInit();
 
 	hwwdg_=hwwdg;
