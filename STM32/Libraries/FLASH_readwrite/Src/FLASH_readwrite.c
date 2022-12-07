@@ -81,19 +81,27 @@ void writeToFlashSafe(CRC_HandleTypeDef *hcrc, uint32_t indx, uint32_t size, uin
     uint32_t crcVal = computeCRC(hcrc, size, data);
 
 	// Append CRC converted to uint8_t to data
+    uint8_t crcData[4] = {0};
 	for (uint8_t i = 0; i < 4; i++)
 	{
 		uint8_t convertedCrcTemp = (crcVal >> 8*i) & 0xFF;
-		*(data + size + i) = convertedCrcTemp;
+		//*(data + size + i) = convertedCrcTemp;
+		crcData[i] = convertedCrcTemp;
 	}
-	uint32_t saveSize = size + sizeof(uint32_t);
 
 	__HAL_RCC_WWDG_CLK_DISABLE();
     // Write to sector
     HAL_FLASH_Unlock();
-    for(uint32_t i=0; i<saveSize; i++)
+    // Save data supplied as input
+    for(uint32_t i=0; i<size; i++)
     {
         HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, FLASH_ADDR+indx+i , data[i]);
+    }
+
+    // Save CRC value
+    for(uint32_t i=0; i<4; i++)
+    {
+        HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, FLASH_ADDR+size+i , crcData[i]);
     }
     HAL_FLASH_Lock();
     __HAL_RCC_WWDG_CLK_ENABLE();
