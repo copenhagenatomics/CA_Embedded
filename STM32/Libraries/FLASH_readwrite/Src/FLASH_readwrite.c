@@ -101,7 +101,7 @@ void writeToFlashSafe(CRC_HandleTypeDef *hcrc, uint32_t indx, uint32_t size, uin
     // Save CRC value
     for(uint32_t i=0; i<4; i++)
     {
-        HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, FLASH_ADDR+size+i , crcData[i]);
+        HAL_FLASH_Program(FLASH_TYPEPROGRAM_BYTE, FLASH_ADDR+indx+size+i , crcData[i]);
     }
     HAL_FLASH_Lock();
     __HAL_RCC_WWDG_CLK_ENABLE();
