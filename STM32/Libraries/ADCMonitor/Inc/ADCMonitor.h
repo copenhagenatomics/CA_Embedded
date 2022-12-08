@@ -2,7 +2,11 @@
 #define _ADCMONITOR_H_
 
 #include <stdint.h>
+#if defined(STM32F401xx)
 #include "stm32f4xx_hal.h"
+#elif defined(STM32H753xx)
+#include "stm32h7xx_hal.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
