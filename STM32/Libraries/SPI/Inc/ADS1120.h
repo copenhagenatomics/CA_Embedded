@@ -1,6 +1,10 @@
 #pragma once
 
-#include <stm32f4xx_hal.h>
+#if defined(STM32F401xC)
+#include "stm32f4xx_hal.h"
+#elif defined(STM32H753xx)
+#include "stm32h7xx_hal.h"
+#endif
 #include <StmGpio.h>
 
 // Specific structure for the current setup of the ADS1120.
