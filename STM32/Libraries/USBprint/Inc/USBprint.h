@@ -9,7 +9,7 @@
 #define INC_USBPRINT_H_
 
 #include <unistd.h>
-#if defined(STM32F401xx)
+#if defined(STM32F401xC)
 #include "stm32f4xx_hal.h"
 #elif defined(STM32H753xx)
 #include "stm32h7xx_hal.h"
