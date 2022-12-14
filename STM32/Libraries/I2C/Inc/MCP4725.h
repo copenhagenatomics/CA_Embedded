@@ -8,7 +8,11 @@
 #ifndef INC_MCP4725_H_
 #define INC_MCP4725_H_
 
+#if defined(STM32F401xC)
 #include "stm32f4xx_hal.h"
+#elif defined(STM32H753xx)
+#include "stm32h7xx_hal.h"
+#endif
 #include "MCP4725.h"
 #include <stdbool.h>
 

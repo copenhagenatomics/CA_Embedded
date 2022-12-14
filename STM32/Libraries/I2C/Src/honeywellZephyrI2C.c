@@ -1,7 +1,6 @@
 /* Description:
  * Provides an interface to communicate with the honeywell zephyr air flow sensor. */
 
-#include "stm32f4xx_hal.h"
 #include "honeywellZephyrI2C.h"
 
 #define ZephyrADDR 0x49
