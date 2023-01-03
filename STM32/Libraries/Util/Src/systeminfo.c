@@ -4,10 +4,15 @@
 
 #include <stdio.h>
 
+#if defined(STM32F401xC)
 #include "stm32f4xx_hal.h"
+#include "HAL_otp.h"
+#elif defined(STM32H753xx)
+#include "stm32h7xx_hal.h"
+#include "HAL_H7_otp.h"
+#endif
 #include "systemInfo.h"
 #include "githash.h"
-#include "HAL_otp.h"
 
 // F4xx UID
 #define ID1 *((unsigned long *) (UID_BASE))
@@ -86,7 +91,7 @@ const char* systemInfo()
     len += snprintf(&buf[len], sizeof(buf) - len, "MCU Family: %s\r\n", mcuType());
     len += snprintf(&buf[len], sizeof(buf) - len, "Software Version: %s\r\n", GIT_VERSION);
     len += snprintf(&buf[len], sizeof(buf) - len, "Compile Date: %s\r\n", GIT_DATE);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Git SHA %s\r\n", GIT_SHA);
+    len += snprintf(&buf[len], sizeof(buf) - len, "Git SHA: %s\r\n", GIT_SHA);
     switch(info.otpVersion)
     {
     case OTP_VERSION_1:

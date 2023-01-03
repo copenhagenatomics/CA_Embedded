@@ -5,6 +5,7 @@
  *  TODO: This is a very brute force implementation where no 'protocol' is used
  *        to read/write the flash. So flash layout should be defined.
 */
+#if defined(STM32F401xC)
 
 #include <stm32f4xx_hal.h>
 #include <FLASH_readwrite.h>
@@ -131,4 +132,5 @@ void readFromFlashSafe(CRC_HandleTypeDef *hcrc, uint32_t indx, uint32_t size, ui
     if (crcStored != crcVal)
     	*data = 0xFF;
 }
+#endif
 #endif

@@ -8,6 +8,9 @@
  * Writing: Find the next free block and write version info to this block section
  */
 
+// Only include content of file if project targets an STM32F4xx
+#if defined(STM32F401xC) || defined(STM32F411xx)
+
 #include <string.h>
 
 #include "HAL_otp.h"
@@ -105,3 +108,4 @@ const int HAL_otpWrite(const BoardInfo *boardInfo)
     HAL_FLASH_Lock();
     return OTP_SUCCESS;
 }
+#endif

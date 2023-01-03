@@ -1,6 +1,10 @@
 #pragma once
 
+#if defined(STM32F401xC)
 #include "stm32f4xx_hal.h"
+#elif defined(STM32H753xx)
+#include "stm32h7xx_hal.h"
+#endif
 #include "StmGpio.h"
 
 // error codes

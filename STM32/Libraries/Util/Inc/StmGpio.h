@@ -10,7 +10,12 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#if defined(STM32F401xC)
 #include "stm32f4xx_hal.h"
+#elif defined(STM32H753xx)
+#include "stm32h7xx_hal.h"
+#endif
+
 
 #define stmSetGpio(x, activate) { (x).set(&(x), activate); }
 #define stmGetGpio(x)           (x).get(&(x))

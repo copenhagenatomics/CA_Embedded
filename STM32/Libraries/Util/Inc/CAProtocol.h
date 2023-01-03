@@ -9,7 +9,11 @@
 #define INC_CAPROTOCOL_H_
 
 #include <stdbool.h>
+#if defined(STM32F401xC)
 #include "HAL_otp.h"
+#elif defined(STM32H753xx)
+#include "HAL_H7_otp.h"
+#endif
 
 typedef struct
 {

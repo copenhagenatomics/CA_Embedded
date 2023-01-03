@@ -6,7 +6,6 @@
  */
 
 #include "jumpToBootloader.h"
-#include "stm32f4xx_hal.h"
 #include "string.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
@@ -19,10 +18,14 @@ void JumpToBootloader(void)
      * Step: Set system memory address.
      *
      *       For STM32F429, system memory is on 0x1FFF 0000
+     *       For STM32H7xx, system memory is on 0x1FFF 0000, but the bootloader start address is on 0x1FF09800
      *       For other families, check AN2606 document table 110 with descriptions of memory addresses
      */
+#if defined(STM32H7)
+    volatile uint32_t addr = 0x1FF09800;
+#else
     volatile uint32_t addr = 0x1FFF0000;
-
+#endif
 
     /**
      * Step: Disable RCC, set it to default (after reset) settings
@@ -61,6 +64,7 @@ void JumpToBootloader(void)
      *
      *       For STM32F4xx, MEMRMP register in SYSCFG is used (bits[1:0])
      *       For STM32F0xx, CFGR1 register in SYSCFG is used (bits[1:0])
+     *       For STM32H7xx, UR3 register in SYSCFG is used (bits[15:0]). Boot pin has to be pulled high.
      *       For others, check family reference manual
      */
     //Remap by hand... {
@@ -69,6 +73,9 @@ void JumpToBootloader(void)
 #endif
 #if defined(STM32F0)
     SYSCFG->CFGR1 = 0x01;
+#endif
+#if defined(STM32H7)
+    SYSCFG->UR3 = 0x1FF0 & SYSCFG_UR3_BOOT_ADD1_Msk;
 #endif
     //} ...or if you use HAL drivers
     //__HAL_SYSCFG_REMAPMEMORY_SYSTEMFLASH();    //Call HAL macro to do this for you

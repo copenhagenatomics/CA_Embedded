@@ -1,6 +1,13 @@
+/*
+ * HAL_H7_otp.h
+ *
+ *  Created on: 28 Dec 2022
+ *      Author: matias
+ */
+
 #pragma once
 
-#if defined(STM32F401xC) || defined(STM32F411xx)
+#if defined(STM32H753xx)
 #include <stdint.h>
 
 // Only defined formats will be supported. If code/version is bumped, it MUST be possible to read
