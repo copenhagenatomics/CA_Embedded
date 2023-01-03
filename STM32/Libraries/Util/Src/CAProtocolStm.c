@@ -1,13 +1,24 @@
 #include <string.h>
-#include "stm32f4xx_hal.h"
 #include "CAProtocolStm.h"
 #include "usb_device.h"
 #include "USBprint.h"
 #include "usb_cdc_fops.h"
 #include "jumpToBootloader.h"
-#include "HAL_otp.h"
 #include "systemInfo.h"
 #include "time32.h"
+
+#if defined(STM32F401xC)
+#include "stm32f4xx_hal.h"
+#include "HAL_otp.h"
+#elif defined(STM32H753xx)
+#include "stm32h7xx_hal.h"
+#include "HAL_H7_otp.h"
+#endif
+
+#if defined(STM32H753xx)
+#define RCC_FLAG_WWDGRST RCC_FLAG_WWDG1RST
+#define RCC_FLAG_IWDGRST RCC_FLAG_IWDG1RST
+#endif
 
 void HALundefined(const char *input)
 {

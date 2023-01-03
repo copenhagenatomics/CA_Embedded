@@ -4,10 +4,15 @@
 
 #include <stdio.h>
 
+#if defined(STM32F401xC)
 #include "stm32f4xx_hal.h"
+#include "HAL_otp.h"
+#elif defined(STM32H753xx)
+#include "stm32h7xx_hal.h"
+#include "HAL_H7_otp.h"
+#endif
 #include "systemInfo.h"
 #include "githash.h"
-#include "HAL_otp.h"
 
 // F4xx UID
 #define ID1 *((unsigned long *) (UID_BASE))
