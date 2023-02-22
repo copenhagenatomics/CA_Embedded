@@ -100,6 +100,23 @@ double ADCMean(const int16_t *pData, uint16_t channel)
     return (sum / ADCMonitorData.noOfSamples);
 }
 
+inline float ADCMeanBitShift(const int16_t *pData, uint16_t channel, uint8_t shiftIdx)
+{
+	if (ADCMonitorData.activeBuffer == NotAvailable ||
+	        pData == NULL ||
+	        channel >= ADCMonitorData.noOfChannels)
+	{
+		return 0;
+	}
+
+    uint32_t sum = 0;
+    for (uint32_t sampleId = 0; sampleId < ADCMonitorData.noOfSamples; sampleId++)
+    {
+        sum += pData[sampleId*ADCMonitorData.noOfChannels + channel];
+    }
+    return (sum >> shiftIdx);
+}
+
 double ADCAbsMean(const int16_t *pData, uint16_t channel)
 {
     if (ADCMonitorData.activeBuffer == NotAvailable ||

@@ -42,6 +42,12 @@ double ADCAbsMean(const int16_t *pData, uint16_t channel);
 double ADCrms(const int16_t *pData, uint16_t channel);
 uint16_t ADCmax(const int16_t *pData, uint16_t channel);
 
+// @Description Compute fast mean using bit shift (NOTE: Can only be used if array length is multiple of 2)
+// @Param pData Pointer to buffer from callback function
+// @param channel Channel in sample Data to adjust.
+// @Param shiftIdx number of bit shifts. shiftIdx should be N for length=2^N
+float ADCMeanBitShift(const int16_t *pData, uint16_t channel, uint8_t shiftIdx)
+
 // @Description Set offset on each sample in channel, Xi = Xi + offset
 // @Param pData Pointer to buffer from callback function
 // @Param offset to adjust channel
