@@ -46,7 +46,7 @@ uint16_t ADCmax(const int16_t *pData, uint16_t channel);
 // @Param pData Pointer to buffer from callback function
 // @param channel Channel in sample Data to adjust.
 // @Param shiftIdx number of bit shifts. shiftIdx should be N for length=2^N
-float ADCMeanBitShift(const int16_t *pData, uint16_t channel, uint8_t shiftIdx)
+float ADCMeanBitShift(const int16_t *pData, uint16_t channel, uint8_t shiftIdx);
 
 // @Description Set offset on each sample in channel, Xi = Xi + offset
 // @Param pData Pointer to buffer from callback function
