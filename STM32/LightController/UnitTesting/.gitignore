@@ -1,0 +1,10 @@
+/build/
+.cproject
+.project
+CA_UnitTesting
+CMakeCache.txt
+CMakeFiles
+CTestTestfile.cmake
+Makefile
+cmake_install.cmake
+

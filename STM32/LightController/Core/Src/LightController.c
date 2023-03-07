@@ -15,8 +15,12 @@
 #include <time.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <ctype.h>
 
-static bool isParty[3] = {false};
+
 static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
 
 static void controlLEDStrip(const char *input);
@@ -33,9 +37,14 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-static bool isInputValid(int channel, unsigned int red, unsigned int green, unsigned int blue, const char *input)
+bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 {
-	if (channel <= 0 || channel > LED_CHANNELS)
+	if (sscanf(input, "p%d %x", channel, rgb) != 2)
+	{
+		return false;
+	}
+
+	if (*channel <= 0 || *channel > LED_CHANNELS)
 		return false;
 
 	// Check the RGB format is exactly 6 hex characters long
@@ -43,16 +52,36 @@ static bool isInputValid(int channel, unsigned int red, unsigned int green, unsi
 	if (strlen(&idx[1]) != 6)
 		return false;
 
+	// Check input is valid hex format
+	for (int i = 0; i<6; i++)
+	{
+		if(!isxdigit((unsigned char)input[3+i]))
+		{
+			return false;
+		}
+	}
+
+	uint8_t red = (*rgb >> 16) & 0xFF;
 	if (red < 0 || red > MAX_PWM)
 		return false;
 
+	uint8_t green = (*rgb >> 8) & 0xFF;
 	if (green < 0 || green > MAX_PWM)
 		return false;
 
+	uint8_t blue = *rgb & 0xFF;
 	if (blue < 0 || blue > MAX_PWM)
 		return false;
 
 	return true;
+}
+
+int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue)
+{
+	*red = (rgb >> 16) & 0xFF;
+	*green = (rgb >> 8) & 0xFF;
+	*blue = rgb & 0xFF;
+	return (rgb == 0xFFFFFF) ? 1 : 0; // If 0xFFFFFF turn on the white in other ports
 }
 
 TIM_HandleTypeDef * htim2_ = NULL;
@@ -84,55 +113,29 @@ static void updateLED(int channel, unsigned int red, unsigned int green, unsigne
 // Update LED strip with user input colors
 static void controlLEDStrip(const char *input)
 {
-	int channel;
-	unsigned int rgb;
+	int channel = 1;
+	unsigned int rgb = 0x000000;
 
-	if (sscanf(input, "p%d %x", &channel, &rgb) == 2)
-	{
-		uint8_t red = (rgb >> 16) & 0xFF;
-		uint8_t green = (rgb >> 8) & 0xFF;
-		uint8_t blue = rgb & 0xFF;
-
-		if (!isInputValid(channel, red, green, blue, input))
-		{
-			HALundefined(input);
-			return;
-		}
-
-		// If the user specifices white then turn on white pin separately and turn off
-		// other LED lights
-		if (rgb == 0xFFFFFF)
-		{
-			for (int i = 1; i <= LED_CHANNELS; i++)
-			{
-				if (i == channel)
-					updateLED(i, 0, 0, 0);
-				else
-					updateLED(i, red, 0, 0);
-			}
-		}
-		else
-		{
-			for (int i = 1; i <= LED_CHANNELS; i++)
-			{
-				if (i == channel)
-					updateLED(i, red, green, blue);
-				else
-					updateLED(i, 0, 0, 0);
-			}
-		}
-
-		rgbs[channel-1] = rgb;
-		isParty[channel-1] = false;
-	}
-	else if (sscanf(input, "p%d party", &channel) == 1)
-	{
-		isParty[channel-1] = true;
-	}
-	else
+	if (!isInputValid(input, &channel, &rgb))
 	{
 		HALundefined(input);
+		return;
 	}
+
+	uint8_t red, green, blue;
+	int ret = handleInput(rgb, &channel, &red, &green, &blue);
+
+	// If the user specifies white then turn on white pin separately and turn off
+	// other LED lights
+	for (int i = 1; i <= LED_CHANNELS; i++)
+	{
+		if (i == channel)
+			(ret == 0) ? updateLED(i, red, green, blue) : updateLED(i, 0, 0, 0);
+		else
+			(ret == 0) ? updateLED(i, 0, 0, 0) : updateLED(i, red, 0, 0);
+	}
+
+	rgbs[channel-1] = rgb;
 }
 
 static void printStates()
@@ -156,28 +159,12 @@ static TIM_HandleTypeDef* loopTimer = NULL;
 static WWDG_HandleTypeDef* hwwdg_ = NULL;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	static int updateCounter = 1;
     // loopTimer corresponds to htim5 which triggers with a frequency of 10Hz
     if (htim == loopTimer)
     {
     	HAL_WWDG_Refresh(hwwdg_);
         printStates();
     }
-
-    for (int i=0; i<LED_CHANNELS; i++)
-    {
-		if (isParty[i] && updateCounter == 5)
-		{
-			int channel = i + 1;
-			int red = rand() % MAX_PWM;
-			int green = rand() % MAX_PWM;
-			int blue = rand() % MAX_PWM;
-
-			updateLED(channel, red, green, blue);
-			rgbs[channel-1] = (unsigned int) (red << 16) | (green << 8) | blue;
-		}
-    }
-    updateCounter = (updateCounter < 5) ? updateCounter + 1 : 1;
 }
 
 // Initialize board
