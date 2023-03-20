@@ -101,13 +101,13 @@ int main(void)
   MX_GPIO_Init();
   MX_USB_DEVICE_Init();
   MX_SPI1_Init();
-  //MX_WWDG_Init();
-  //MX_IWDG_Init();
+  MX_WWDG_Init();
+  MX_IWDG_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   // Disable wwdg until print frequency has stabilised after first run.
   // Enabled again in LoopTemperature.
-  //__HAL_RCC_WWDG_CLK_DISABLE();
+  __HAL_RCC_WWDG_CLK_DISABLE();
   InitTemperature(&hspi1, &hwwdg, &hcrc);
   /* USER CODE END 2 */
 
@@ -117,7 +117,7 @@ int main(void)
   {
 	  // Update the watchdog if the SPI communication to the
 	  // ADS1120 chips work as expected.
-	  //HAL_IWDG_Refresh(&hiwdg);
+	  HAL_IWDG_Refresh(&hiwdg);
       LoopTemperature(bootMsg);
     /* USER CODE END WHILE */
 
@@ -212,8 +212,8 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
-  hiwdg.Init.Reload = 4095;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_16;
+  hiwdg.Init.Reload = 2499;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();

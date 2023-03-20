@@ -194,8 +194,8 @@ void initSensorCalibration()
 		// If nothing is stored in FLASH default to type K thermocouple
 		for (int i = 0; i < NO_SPI_DEVICES*2; i++)
 		{
-			portCalVal[i][0] = TYPE_J_DELTA;
-			portCalVal[i][1] = TYPE_J_CJ_DELTA;
+			portCalVal[i][0] = TYPE_K_DELTA;
+			portCalVal[i][1] = TYPE_K_CJ_DELTA;
 		}
 	}
 }
@@ -231,7 +231,6 @@ static void calibrateReadWrite(bool write)
     			len += snprintf(&buf[len], sizeof(buf), "CAL");
     		}
     		len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i+1, portCalVal[i][0], portCalVal[i][1]);
-    		//len += snprintf(&buf[len], sizeof(buf) - len, " %d,%lx,%lx", i+1, *((uint32_t *) &portCalVal[i][0]), *((uint32_t *) &portCalVal[i][1]));
     	}
     	len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
 		writeUSB(buf, len);
