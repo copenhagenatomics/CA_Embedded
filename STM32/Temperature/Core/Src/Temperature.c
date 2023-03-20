@@ -228,7 +228,7 @@ static void calibrateReadWrite(bool write)
     	{
     		if (i == 0)
     		{
-    			len += snprintf(&buf[len], sizeof(buf), "CAL");
+    			len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
     		}
     		len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i+1, portCalVal[i][0], portCalVal[i][1]);
     	}
