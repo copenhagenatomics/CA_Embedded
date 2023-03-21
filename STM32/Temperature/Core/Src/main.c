@@ -45,6 +45,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+CRC_HandleTypeDef hcrc;
+
 IWDG_HandleTypeDef hiwdg;
 
 SPI_HandleTypeDef hspi1;
@@ -60,6 +62,7 @@ static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_WWDG_Init(void);
 static void MX_IWDG_Init(void);
+static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -100,11 +103,12 @@ int main(void)
   MX_SPI1_Init();
   MX_WWDG_Init();
   MX_IWDG_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   // Disable wwdg until print frequency has stabilised after first run.
   // Enabled again in LoopTemperature.
   __HAL_RCC_WWDG_CLK_DISABLE();
-  InitTemperature(&hspi1, &hwwdg);
+  InitTemperature(&hspi1, &hwwdg, &hcrc);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -167,6 +171,32 @@ void SystemClock_Config(void)
 }
 
 /**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+
+  /* USER CODE BEGIN CRC_Init 0 */
+
+  /* USER CODE END CRC_Init 0 */
+
+  /* USER CODE BEGIN CRC_Init 1 */
+
+  /* USER CODE END CRC_Init 1 */
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN CRC_Init 2 */
+
+  /* USER CODE END CRC_Init 2 */
+
+}
+
+/**
   * @brief IWDG Initialization Function
   * @param None
   * @retval None
@@ -182,8 +212,8 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
-  hiwdg.Init.Reload = 4095;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_16;
+  hiwdg.Init.Reload = 2499;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();

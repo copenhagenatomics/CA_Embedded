@@ -12,7 +12,7 @@
 
 typedef struct CAProtocolData {
     size_t len;         // Length of current data.
-    uint8_t buf[256];   // Buffer for the string fetched from the circular buffer.
+    uint8_t buf[512];   // Buffer for the string fetched from the circular buffer.
     ReaderFn rxReader;  // Reader for the buffer
 } CAProtocolData;
 

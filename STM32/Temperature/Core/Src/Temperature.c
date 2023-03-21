@@ -12,18 +12,22 @@
 #include "time32.h"
 #include "StmGpio.h"
 #include "ADS1120.h"
+#include <stdbool.h>
+#include "FLASH_readwrite.h"
 
 // Local functions
-static void temperatureUsrHandling(const char *input);
+static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations);
+static void calibrateReadWrite(bool write);
+static void TempPrintHeader();
 
 // Local variables
 static CAProtocolCtx caProto =
 {
-        .undefined = temperatureUsrHandling,
-        .printHeader = CAPrintHeader,
+        .undefined = HALundefined,
+        .printHeader = TempPrintHeader,
         .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = NULL,
-        .calibrationRW = NULL,
+        .calibration = calibrateTypeInput,
+        .calibrationRW = calibrateReadWrite,
         .logging = NULL,
         .otpRead = CAotpRead,
         .otpWrite = NULL
@@ -32,10 +36,14 @@ static CAProtocolCtx caProto =
 // Set all SPI pins high to be enable for communication
 #define NO_SPI_DEVICES 5
 #define CALIMEMSIZE NO_SPI_DEVICES*2
-static uint8_t calibrationValues[CALIMEMSIZE];
 static ADS1120Device ads1120[ NO_SPI_DEVICES ];
-
 float portCalVal[NO_SPI_DEVICES*2][2];
+
+static void TempPrintHeader()
+{
+	CAPrintHeader();
+	calibrateReadWrite(false);
+}
 
 static int initSpiDevices(SPI_HandleTypeDef* hspi)
 {
@@ -85,9 +93,11 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
     return err;
 }
 
+
 static SPI_HandleTypeDef* hspi = NULL;
 static WWDG_HandleTypeDef* hwwdg = NULL;
-void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_)
+static CRC_HandleTypeDef* hcrc = NULL;
+void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
 {
     initCAProtocol(&caProto, usb_cdc_rx);
 
@@ -103,9 +113,11 @@ void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_)
     if (ver.major == 5 && ver.minor < 2)
         return;
 
-    initSensorCalibration();
     hspi = hspi_;
-    hwwdg = hwwdg_;
+	hwwdg = hwwdg_;
+	hcrc = hcrc_;
+
+    initSensorCalibration();
 }
 
 void LoopTemperature(const char* bootMsg)
@@ -174,64 +186,54 @@ void LoopTemperature(const char* bootMsg)
         isFirstWrite=true;
 }
 
-bool isCalibrationInputValid(const char *inputBuffer)
-{
-    // Ensure all calibration values are set
-    if (strlen(inputBuffer) != NO_SPI_DEVICES*2)
-    {
-        return false;
-    }
-
-    // Check all characters are valid calibration inputs
-    for (int j = 0; j < strlen(inputBuffer); j++)
-    {
-    	// Support Type J and Type K only
-        if (inputBuffer[j] != 'J' && inputBuffer[j] != 'K')
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
-void setSensorCalibration(int pinNumber, char type)
-{
-	if (type == 'J')
-	{
-	    portCalVal[pinNumber][0] = TYPE_J_DELTA;
-	    portCalVal[pinNumber][1] = TYPE_J_CJ_DELTA;
-	}
-	else if (type == 'K')
-	{
-	    portCalVal[pinNumber][0] = TYPE_K_DELTA;
-	    portCalVal[pinNumber][1] = TYPE_K_CJ_DELTA;
-	}
-}
-
 void initSensorCalibration()
 {
-    for (int pinNumber = 0; pinNumber < NO_SPI_DEVICES*2; pinNumber++)
-    {
-    	// Default to type K thermocouple
-    	setSensorCalibration(pinNumber, 'K');
-    }
+	readFromFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
+	if (*((uint8_t*) portCalVal) == 0xFF)
+	{
+		// If nothing is stored in FLASH default to type K thermocouple
+		for (int i = 0; i < NO_SPI_DEVICES*2; i++)
+		{
+			portCalVal[i][0] = TYPE_K_DELTA;
+			portCalVal[i][1] = TYPE_K_CJ_DELTA;
+		}
+	}
 }
 
-static void temperatureUsrHandling(const char *inputBuffer)
+static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations)
 {
-	if (isCalibrationInputValid(inputBuffer))
-	{
-		// Set the calibration type to the type specified by user.
-		for (int pinNumber = 0; pinNumber < NO_SPI_DEVICES*2; pinNumber++)
-		{
-			setSensorCalibration(pinNumber, inputBuffer[pinNumber]);
-		}
-        strcpy((char*) calibrationValues, inputBuffer);
-        USBnprintf("Calibration updated to: %s", inputBuffer);
-	}
-	else
-	{
-		HALundefined(inputBuffer);
-	}
+	__HAL_RCC_WWDG_CLK_DISABLE();
+    for (int count = 0; count < noOfCalibrations; count++)
+    {
+        if (1 <= calibrations[count].port && calibrations[count].port <= 10)
+        {
+        	portCalVal[calibrations[count].port-1][0] = calibrations[count].alpha;
+			portCalVal[calibrations[count].port-1][1] = calibrations[count].beta;
+        }
+    }
+    // Update automatically when receiving new calibration values
+    calibrateReadWrite(true);
+    __HAL_RCC_WWDG_CLK_ENABLE();
+}
+
+static void calibrateReadWrite(bool write)
+{
+    if (write)
+        writeToFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
+    else
+    {
+    	char buf[512];
+    	int len = 0;
+    	for (int i = 0; i < NO_SPI_DEVICES*2; i++)
+    	{
+    		if (i == 0)
+    		{
+    			len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
+    		}
+    		len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i+1, portCalVal[i][0], portCalVal[i][1]);
+    	}
+    	len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
+		writeUSB(buf, len);
+    }
 }
 
