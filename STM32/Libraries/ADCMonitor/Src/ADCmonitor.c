@@ -97,7 +97,7 @@ double ADCMean(const int16_t *pData, uint16_t channel)
         sum += pData[sampleId*ADCMonitorData.noOfChannels + channel];
     }
 
-    return (sum / ADCMonitorData.noOfSamples);
+    return (((double) sum) / ((double) ADCMonitorData.noOfSamples));
 }
 
 inline float ADCMeanBitShift(const int16_t *pData, uint16_t channel, uint8_t shiftIdx)
