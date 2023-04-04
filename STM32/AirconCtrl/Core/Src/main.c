@@ -105,9 +105,9 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_WWDG_Init();
   MX_TIM2_Init();
   MX_IWDG_Init();
-  MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
   // Timer needs to be started outside init function
   // otherwise wwdg will timeout upon startup
