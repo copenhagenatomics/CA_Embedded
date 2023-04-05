@@ -4,8 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../Libraries/ADCMonitor/**",
-                "${workspaceFolder}/../Libraries/I2C/**",
+                "${workspaceFolder}/../Libraries/SPI/**",
                 "${workspaceFolder}/../Libraries/circularBuffer/**",
                 "${workspaceFolder}/../Libraries/FLASH_readwrite/**",
                 "${workspaceFolder}/../Libraries/jumpToBootloader/**",
@@ -32,8 +31,7 @@
             "name": "Windows",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../Libraries/ADCMonitor/**",
-                "${workspaceFolder}/../Libraries/I2C/**",
+                "${workspaceFolder}/../Libraries/SPI/**",
                 "${workspaceFolder}/../Libraries/circularBuffer/**",
                 "${workspaceFolder}/../Libraries/FLASH_readwrite/**",
                 "${workspaceFolder}/../Libraries/jumpToBootloader/**",
