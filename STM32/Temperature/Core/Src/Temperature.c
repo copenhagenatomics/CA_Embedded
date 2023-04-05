@@ -172,7 +172,7 @@ void LoopTemperature(const char* bootMsg)
             }
             internalTemp = internalTemp/count;
 
-			USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%, %.2f, %.2f%"
+			USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f"
 					, ads1120[0].data.chA, ads1120[0].data.chB
 					, ads1120[1].data.chA, ads1120[1].data.chB
 					, ads1120[2].data.chA, ads1120[2].data.chB
