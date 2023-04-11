@@ -74,7 +74,7 @@ static ADS1120_input nextInput(ADS1120_input current)
 }
 
 
-static double adc2Temp(int16_t adcValue, int16_t calibration, int16_t internalTemp, float delta, float cj_delta)
+static double adc2Temp(int16_t adcValue, int16_t calibration, float internalTemp, float delta, float cj_delta)
 {
     if (adcValue == 0x7fff)
         return 10000; // Nothing in port, send 10000 to set an invalid value.
