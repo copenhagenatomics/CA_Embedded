@@ -74,7 +74,7 @@ static ADS1120_input nextInput(ADS1120_input current)
 }
 
 
-static double adc2Temp(int16_t adcValue, int16_t calibration, int16_t internalTemp, float delta, float cj_delta)
+static double adc2Temp(int16_t adcValue, int16_t calibration, float internalTemp, float delta, float cj_delta)
 {
     if (adcValue == 0x7fff)
         return 10000; // Nothing in port, send 10000 to set an invalid value.
@@ -290,6 +290,7 @@ void ADS1120Loop(ADS1120Device *dev, float *type_calibration)
     else
     {
         // The smallest possible State machine
+        double temp;
         switch(data->currentInput)
         {
         case INPUT_TEMP:
@@ -297,11 +298,19 @@ void ADS1120Loop(ADS1120Device *dev, float *type_calibration)
             break;
 
         case INPUT_CHA:
-            data->chA = adc2Temp(((int16_t) adcValue), data->calibration, data->internalTemp, *type_calibration, *(type_calibration + 1));
+            temp = adc2Temp(((int16_t) adcValue), data->calibration, data->internalTemp, *type_calibration, *(type_calibration + 1));
+            if (temp == 10000 || data->chA == 10000)
+                data->chA = temp;
+            else
+                data->chA += (temp - data->chA)/mAvgTime;
             break;
 
         case INPUT_CHB:
-            data->chB = adc2Temp(((int16_t) adcValue), data->calibration, data->internalTemp, *(type_calibration+2), *(type_calibration + 3));
+            temp = adc2Temp(((int16_t) adcValue), data->calibration, data->internalTemp, *type_calibration, *(type_calibration + 1));
+            if (temp == 10000 || data->chB == 10000)
+                data->chB = temp;
+            else
+                data->chB += (temp - data->chB)/mAvgTime;
             break;
 
         case INPUT_CALIBRATE:
