@@ -17,7 +17,9 @@ typedef enum {
 	AMBcurrent 		= 12,
 	Geiger 			= 13,
 	AirCondition 	= 14,
-	LightController = 15
+	LightController = 15,
+    LiquidLevel     = 16,
+    ER              = 17
 } BoardType;
 typedef uint8_t SubBoardType; // SubBoardType needed for some boards.
 

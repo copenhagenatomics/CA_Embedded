@@ -36,6 +36,8 @@ jobs:
           Temperature: STM32/Temperature/**
   build:
     needs: changes
+    # If no changes has been made to projects above do not build
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }} 
     strategy:
       matrix:
         # Parse JSON array containing names of all filters matching any of changed files
