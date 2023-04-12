@@ -5,7 +5,6 @@
  *      Author: agp
  */
 #include "otpApp.h"
-
 #include "usb_cdc_fops.h"
 #include "systemInfo.h"
 #include "HAL_otp.h"
