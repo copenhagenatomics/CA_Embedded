@@ -1,0 +1,80 @@
+name: C/C++ stm32 build for the open-source embedded software
+
+on:
+  push:
+    branches: [ 'main' , 'dev' ]
+    paths: ['STM32/**', '.github/workflows/stm32build.yml']
+  pull_request: 
+    branches: [ 'main' ]
+    paths: ['STM32/**', '.github/workflows/stm32build.yml']
+
+jobs: 
+
+  # JOB to run change detection
+  changes:
+    runs-on: ubuntu-latest
+    # Required permissions
+    permissions:
+      pull-requests: read
+      contents: read
+    outputs:
+      # Expose matched filters as job 'packages' output variable
+      packages: ${{ steps.filter.outputs.changes }}
+    steps:
+    # gets file environment with submodule included for libraries
+    - uses: actions/checkout@v3         
+    # For pull requests it's not necessary to checkout the code
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          AC: STM32/AC/**
+          AirconCtrl: STM32/AirconCtrl/**
+          DC: STM32/DC/**
+          LightController: STM32/LightController/**
+          OTP: STM32/OTP/**
+          Temperature: STM32/Temperature/**
+  build:
+    needs: changes
+    # If no changes has been made to projects above do not build
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }} 
+    strategy:
+      matrix:
+        # Parse JSON array containing names of all filters matching any of changed files
+        package: ${{ fromJSON(needs.changes.outputs.packages) }}
+
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3                         # gets file environment with submodule included for libraries
+    - uses: carlosperate/arm-none-eabi-gcc-action@v1    # Setup the compiler and compile the program
+    - run: make
+      working-directory: 'STM32/${{ matrix.package }}/'
+    - uses: actions/upload-artifact@v3                  # Upload the .elf and .bin file under the summary tab
+      with: 
+        name: ${{ matrix.package }}
+        path: | 
+          STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf
+          STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
+    - uses: NicOfNoomers/release-on-push-monorepo-action@master
+      id: release-on-push
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # tag only pushes to the main branch
+      with:
+        bump_version_scheme: minor
+        use_github_release_notes: true
+        tag_prefix: "${{ matrix.package }}-"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Read PCB version
+      id: pcbversion
+      run: echo "version=$(cat STM32/${{ matrix.package }}/pcbversion)" >> $GITHUB_OUTPUT
+    - name: Release
+      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+      uses: softprops/action-gh-release@v0.1.15
+      with:
+        files: |
+            **/*.elf
+            **/*.bin
+        tag_name: ${{ steps.release-on-push.outputs.tag_name }}
+        name: "${{ steps.release-on-push.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.version }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
