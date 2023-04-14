@@ -1,4 +1,4 @@
-name: C/C++ stm32 build for the open-source embedded software
+name: test
 
 on:
   push:
