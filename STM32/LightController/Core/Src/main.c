@@ -52,6 +52,8 @@ WWDG_HandleTypeDef hwwdg;
 
 /* USER CODE BEGIN PV */
 
+void test(void){;}
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
