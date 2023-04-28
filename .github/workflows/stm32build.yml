@@ -2,14 +2,13 @@ name: C/C++ stm32 build for the open-source embedded software
 
 on:
   push:
-    branches: [ 'main' ]
-    paths: ['STM32/**', '.github/workflows/stm32build.yml']
-  pull_request: 
-    branches: [ 'main' ]
-    paths: ['STM32/**', '.github/workflows/stm32build.yml']
+    branches: ["main"]
+    paths: ["STM32/**", ".github/workflows/stm32build.yml"]
+  pull_request:
+    branches: ["main"]
+    paths: ["STM32/**", ".github/workflows/stm32build.yml"]
 
-jobs: 
-
+jobs:
   # JOB to run change detection
   changes:
     runs-on: ubuntu-latest
@@ -21,26 +20,26 @@ jobs:
       # Expose matched filters as job 'packages' output variable
       packages: ${{ steps.filter.outputs.changes }}
     steps:
-    # gets file environment with submodule included for libraries
-    - uses: actions/checkout@v3         
-    # For pull requests it's not necessary to checkout the code
-    - uses: dorny/paths-filter@v2
-      id: filter
-      with:
-        filters: |
-          AC: STM32/AC/**
-          AirconCtrl: STM32/AirconCtrl/**
-          DC: STM32/DC/**
-          LightController: STM32/LightController/**
-          OTP: STM32/OTP/**
-          Temperature: STM32/Temperature/**
+      # gets file environment with submodule included for libraries
+      - uses: actions/checkout@v3
+      # For pull requests it's not necessary to checkout the code
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            AC: STM32/AC/**
+            AirconCtrl: STM32/AirconCtrl/**
+            DC: STM32/DC/**
+            LightController: STM32/LightController/**
+            OTP: STM32/OTP/**
+            Temperature: STM32/Temperature/**
   build:
     needs: changes
     permissions:
       pull-requests: read
       contents: write
     # If no changes has been made to projects above do not build
-    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }} 
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
       matrix:
         # Parse JSON array containing names of all filters matching any of changed files
@@ -48,37 +47,61 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3                         # gets file environment with submodule included for libraries
-    - uses: carlosperate/arm-none-eabi-gcc-action@v1    # Setup the compiler and compile the program
-    - run: make
-      working-directory: 'STM32/${{ matrix.package }}/'
-    - uses: actions/upload-artifact@v3                  # Upload the .elf and .bin file under the summary tab
-      with: 
-        name: ${{ matrix.package }}
-        path: | 
-          STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf
-          STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
-    - uses: copenhagenatomics/mono_release_on_push_action@master
-      id: release-on-push
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # tag only pushes to the main branch
-      with:
-        bump_version_scheme: minor
-        use_github_release_notes: true
-        tag_prefix: "${{ matrix.package }}-"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Read PCB version
-      id: pcbversion
-      run: echo "version=$(cat STM32/${{ matrix.package }}/pcbversion)" >> $GITHUB_OUTPUT
-    - name: Release
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
-      uses: softprops/action-gh-release@v0.1.15
-      with:
-        files: |
+      # gets file environment with submodule included for libraries
+      - uses: actions/checkout@v3
+      # Setup the compiler and compile the program
+      - uses: carlosperate/arm-none-eabi-gcc-action@v1
+      - run: make
+        working-directory: "STM32/${{ matrix.package }}/"
+        # Upload the .elf and .bin file under the summary tab
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.package }}
+          path: |
+            STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf
+            STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
+      - uses: copenhagenatomics/mono_release_on_push_action@master
+        id: release-on-push
+        # tag only pushes to the main branch
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} 
+        with:
+          bump_version_scheme: minor
+          use_github_release_notes: true
+          tag_prefix: "${{ matrix.package }}-"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read PCB version
+        id: pcbversion
+        # Checks if the file pcbversion exists and that the first line is configured as a version number with v<number>.number and returns the first line, otherwise it returns v0.0.
+        run: echo "version=$(if test -f STM32/${{ matrix.package }}/pcbversion && head -n 1 STM32/${{ matrix.package }}/pcbversion | grep -Eq "^v[0-9]+\.[0-9]+$"; then echo $(head -n 1 STM32/${{ matrix.package }}/pcbversion); else echo "v0.0"; fi)" >> $GITHUB_OUTPUT
+
+      - name: Read Breaking PCB version
+        id: breakingpcbversion
+        # Checks if the file pcbversion exists and that the second line is configured as a version number with v<number>.number and returns the second line, otherwise it returns the current pcb version if the second line does not match the structure or v0.0 if the file does not exist.
+        run: echo "breaking=$(if test -f STM32/${{ matrix.package }}/pcbversion && sed -n '2p' STM32/${{ matrix.package }}/pcbversion | grep -Eq "^v[0-9]+\.[0-9]+$"; then echo $(sed -n '2p' STM32/${{ matrix.package }}/pcbversion); else if test -f STM32/${{ matrix.package }}/pcbversion; then echo $(head -n 1 STM32/${{ matrix.package }}/pcbversion); else echo "v0.0"; fi; fi)" >> $GITHUB_OUTPUT
+
+      - name: Release
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+        uses: softprops/action-gh-release@v0.1.15
+        with:
+          files: |
             **/*.elf
             **/*.bin
-        tag_name: ${{ steps.release-on-push.outputs.tag_name }}
-        name: "${{ steps.release-on-push.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.version }}"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          tag_name: ${{ steps.release-on-push.outputs.tag_name }}
+          name: "${{ steps.release-on-push.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.version }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare zip file for Azure blob
+        run: |
+          zip ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
+        shell: bash
+      - name: Publish to Azure blob
+        run: |
+          curl -f -X PUT -H "x-ms-version: 2020-04-08" -H "Content-Type: application/octet-stream" -H "x-ms-blob-type: BlockBlob" \
+            "${{ secrets.AZURE_BLOB_LINK }}/${{ steps.release-on-push.outputs.tag_name }}.zip${{secrets.AZURE_BLOB_QUERYSTRING}}" \
+            --header 'x-ms-meta-BreakingPCBVersion: ${{ steps.breakingpcbversion.outputs.breaking }}' \
+            --header 'x-ms-meta-ReleaseVersion: ${{ steps.release-on-push.outputs.tag_name }}' \
+            --header 'x-ms-meta-ReleaseName: ${{ steps.release-on-push.outputs.version }}' \
+            --upload-file '${{ matrix.package }}.zip'
+        shell: bash
