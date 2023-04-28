@@ -94,7 +94,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare zip file for Azure blob
         run: |
-          zip ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
+          zip -j ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
         shell: bash
       - name: Publish to Azure blob
         run: |
