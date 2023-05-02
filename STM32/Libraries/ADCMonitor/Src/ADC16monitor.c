@@ -38,7 +38,7 @@ void ADCMonitorInit(ADC_HandleTypeDef* hadc, int32_t *pData, uint32_t length)
     HAL_ADC_Start_DMA(hadc, (uint32_t *) pData, length);
 }
 
-int32_t cmaAvarage(int32_t *pData, uint16_t channel, int16_t cma, int k)
+int32_t cmaAvarage(int32_t *pData, uint16_t channel, int32_t cma, int k)
 {
     for (uint32_t sampleId = 0; sampleId < ADCMonitorData.noOfSamples; sampleId++)
     {
