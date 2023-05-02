@@ -29,14 +29,14 @@ void ADCMonitorLoop(ADCCallBack cb);
 // Note, data is altereed in buffer.
 // @param preveous calculated cma
 // @param k is the length of cumulative buffer.
-int16_t cmaAvarage(int32_t *pData, uint16_t channel, int16_t cma, int k);
+int32_t cmaAvarage(int32_t *pData, uint16_t channel, int16_t cma, int k);
 
 // Standard helper function where noOfChannles/NoOfSamples is
 // used from ADCMonitorInit. Can be used for skeleton locally.
 double ADCMean(const int32_t *pData, uint16_t channel);
 double ADCAbsMean(const int32_t *pData, uint16_t channel);
 double ADCrms(const int32_t *pData, uint16_t channel);
-uint16_t ADCmax(const int32_t *pData, uint16_t channel);
+uint32_t ADCmax(const int32_t *pData, uint16_t channel);
 
 // @Description Compute fast mean using bit shift (NOTE: Can only be used if array length is multiple of 2)
 // @Param pData Pointer to buffer from callback function
