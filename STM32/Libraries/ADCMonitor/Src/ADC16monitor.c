@@ -100,7 +100,7 @@ double ADCMean(const int32_t *pData, uint16_t channel)
     return (((double) sum) / ((double) ADCMonitorData.noOfSamples));
 }
 
-inline float ADCMeanBitShift(const int32_t *pData, uint16_t channel, uint8_t shiftIdx)
+float ADCMeanBitShift(const int32_t *pData, uint16_t channel, uint8_t shiftIdx)
 {
 	if (ADCMonitorData.activeBuffer == NotAvailable ||
 	        pData == NULL ||
@@ -135,7 +135,7 @@ double ADCAbsMean(const int32_t *pData, uint16_t channel)
     return (sum / ADCMonitorData.noOfSamples);
 }
 
-uint16_t ADCmax(const int32_t *pData, uint16_t channel)
+uint32_t ADCmax(const int32_t *pData, uint16_t channel)
 {
     if (ADCMonitorData.activeBuffer == NotAvailable ||
         pData == NULL ||
