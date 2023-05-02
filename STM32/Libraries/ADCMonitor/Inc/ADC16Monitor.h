@@ -29,7 +29,7 @@ void ADCMonitorLoop(ADCCallBack cb);
 // Note, data is altereed in buffer.
 // @param preveous calculated cma
 // @param k is the length of cumulative buffer.
-int32_t cmaAvarage(int32_t *pData, uint16_t channel, int16_t cma, int k);
+int32_t cmaAvarage(int32_t *pData, uint16_t channel, int32_t cma, int k);
 
 // Standard helper function where noOfChannles/NoOfSamples is
 // used from ADCMonitorInit. Can be used for skeleton locally.
