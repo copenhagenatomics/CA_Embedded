@@ -4,12 +4,12 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../Libraries/SPI/**",
-                "${workspaceFolder}/../Libraries/circularBuffer/**",
-                "${workspaceFolder}/../Libraries/FLASH_readwrite/**",
-                "${workspaceFolder}/../Libraries/jumpToBootloader/**",
-                "${workspaceFolder}/../Libraries/USBprint/**",
-                "${workspaceFolder}/../Libraries/Util/**"
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/SPI/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/USBprint/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**"
             ],
             "defines": [
                 "_DEBUG",
@@ -31,12 +31,12 @@
             "name": "Windows",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../Libraries/SPI/**",
-                "${workspaceFolder}/../Libraries/circularBuffer/**",
-                "${workspaceFolder}/../Libraries/FLASH_readwrite/**",
-                "${workspaceFolder}/../Libraries/jumpToBootloader/**",
-                "${workspaceFolder}/../Libraries/USBprint/**",
-                "${workspaceFolder}/../Libraries/Util/**"
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/SPI/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/USBprint/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**"
             ],
             "defines": [
                 "_DEBUG",
