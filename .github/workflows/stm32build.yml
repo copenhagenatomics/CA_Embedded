@@ -22,7 +22,9 @@ jobs:
       packages: ${{ steps.filter.outputs.changes }}
     steps:
     # gets file environment with submodule included for libraries
-    - uses: actions/checkout@v3         
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'true'         
     # For pull requests it's not necessary to checkout the code
     - uses: dorny/paths-filter@v2
       id: filter
@@ -49,6 +51,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3                         # gets file environment with submodule included for libraries
+      with:
+        submodules: 'true'
     - uses: carlosperate/arm-none-eabi-gcc-action@v1    # Setup the compiler and compile the program
     - run: make
       working-directory: 'STM32/${{ matrix.package }}/'
