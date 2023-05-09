@@ -1,0 +1,3 @@
+[submodule "CA_Embedded_Libraries"]
+	path = CA_Embedded_Libraries
+	url = git@github.com:copenhagenatomics/CA_Embedded_Libraries.git
