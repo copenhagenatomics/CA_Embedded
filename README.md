@@ -7,8 +7,8 @@ This repository links to a common embedded library repository `CA_Embedded_Libra
 
 The link is done via a git submodule. This makes cloning the project to a local repository slightly different than cloning a standard git repo. The steps are:
 
-1. `git clone https://github.com/copenhagenatomics/CA_AMB.git`
-2. Enter your local directory (named 'CA_AMB' if not specified otherwise)
+1. `git clone https://github.com/copenhagenatomics/CA_Embedded.git`
+2. Enter your local directory (named 'CA_Embedded' if not specified otherwise)
 3. `git submodule init`
 4. `git submodule update`
 
