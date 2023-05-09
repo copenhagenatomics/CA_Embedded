@@ -102,7 +102,6 @@ int main(int argc, char *argv[])
 	int line = 0;
 
 	if (line = testInputValidation()) { printf("testInputValidation failed at line %d\n", line); }
-
-	printf("All tests run\n");
+	if (line == 0) { printf("All tests run successfully\n"); }
     return 0;
 }
