@@ -51,7 +51,7 @@ jobs:
     - name: Check if unittests exist
       id: unittests_exists
       run: |
-        if [ -d "${{ matrix.package }}/UnitTesting" ]; then
+        if [ -d "$STM32/{{ matrix.package }}/UnitTesting" ]; then
           echo 'exist=1' >> $GITHUB_ENV
         else
           echo 'exist=0' >> $GITHUB_ENV
@@ -60,7 +60,7 @@ jobs:
     - name: Run unittests
       if: env.exist == '1'
       run: |
-        cd "${{ matrix.package }}/UnitTesting"
+        cd "$STM32/{{ matrix.package }}/UnitTesting"
         cmake CMakeLists.txt
         make
         output=$(./CA_UnitTesting)
