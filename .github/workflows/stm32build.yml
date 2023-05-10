@@ -106,7 +106,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Read PCB version
       id: pcbversion
-      run: echo "version=$(cat STM32/${{ matrix.package }}/pcbversion)" >> $GITHUB_OUTPUT
+      run: echo "version=$(head -1 STM32/${{ matrix.package }}/pcbversion)" >> $GITHUB_OUTPUT
     - name: Release
       if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
       uses: softprops/action-gh-release@v0.1.15
