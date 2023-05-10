@@ -9,11 +9,11 @@ set(CMAKE_CXX_FLAGS "-O0 -g3")
 set(CMAKE_C_FLAGS "-O0 -g3")
 
 include_directories(../Core/Inc
-                    ../../Libraries/Util/Inc
-                    ../../Libraries/FLASH_readwrite/Inc
-                    ../../Libraries/USBprint/Inc
-                    ../../Libraries/circularBuffer/Inc
-                    ../../Libraries/jumpToBootloader/Inc
+                    ../../../CA_Embedded_Libraries/STM32/Util/Inc
+                    ../../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc
+                    ../../../CA_Embedded_Libraries/STM32/USBprint/Inc
+                    ../../../CA_Embedded_Libraries/STM32/circularBuffer/Inc
+                    ../../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc
                     ../Drivers/CMSIS/Include/
                     ../Drivers/STM32F4xx_HAL_Driver/Inc/
 					../Drivers/CMSIS/Device/ST/STM32F4xx/Include
