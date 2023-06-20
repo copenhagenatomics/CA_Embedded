@@ -49,6 +49,8 @@ jobs:
     steps:
       # gets file environment with submodule included for libraries
       - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
       # Setup the compiler and compile the program
       - uses: carlosperate/arm-none-eabi-gcc-action@v1
       - run: make
@@ -96,12 +98,19 @@ jobs:
         run: |
           zip -j ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
         shell: bash
-      - name: Publish to Azure blob
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+      - name: Test PCB file
         run: |
-          curl -f -X PUT -H "x-ms-version: 2020-04-08" -H "Content-Type: application/octet-stream" -H "x-ms-blob-type: BlockBlob" \
-            "${{ secrets.AZURE_BLOB_LINK }}/${{ steps.release-on-push.outputs.tag_name }}.zip${{secrets.AZURE_BLOB_QUERYSTRING}}" \
-            --header 'x-ms-meta-BreakingPCBVersion: ${{ steps.breakingpcbversion.outputs.breaking }}' \
-            --header 'x-ms-meta-ReleaseVersion: ${{ steps.release-on-push.outputs.tag_name }}' \
-            --header 'x-ms-meta-ReleaseName: ${{ steps.release-on-push.outputs.version }}' \
-            --upload-file '${{ matrix.package }}.zip'
-        shell: bash
+          python tests/pcbVersionTest.py
+        env : 
+          AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
+          PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
+          MODULE_NAME : ${{ matrix.package }}
+      - name: Manage PCB Versioning
+        run: |
+          python .github/workflows/managePCBVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw $(echo "${{ steps.release-on-push.outputs.tag_name }}" | cut -d'-' -f2) -m ${{ matrix.package }}
+        env : 
+          AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
