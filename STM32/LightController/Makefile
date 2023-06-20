@@ -43,17 +43,17 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-../Libraries/circularBuffer/Src/circular_buffer.c \
-../Libraries/FLASH_readwrite/Src/FLASH_readwrite.c \
-../Libraries/FLASH_readwrite/Src/HAL_otp.c \
-../Libraries/jumpToBootloader/Src/jumpToBootloader.c \
-../Libraries/USBprint/Src/usb_cdc_fops.c \
-../Libraries/USBprint/Src/USBprint.c \
-../Libraries/Util/Src/CAProtocol.c \
-../Libraries/Util/Src/CAProtocolStm.c \
-../Libraries/Util/Src/StmGpio.c \
-../Libraries/Util/Src/systeminfo.c \
-../Libraries/Util/Src/time32.c \
+../../CA_Embedded_Libraries/STM32/circularBuffer/Src/circular_buffer.c \
+../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/FLASH_readwrite.c \
+../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/HAL_otp.c \
+../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src/jumpToBootloader.c \
+../../CA_Embedded_Libraries/STM32/USBprint/Src/usb_cdc_fops.c \
+../../CA_Embedded_Libraries/STM32/USBprint/Src/USBprint.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocol.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolStm.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/time32.c \
 Core/Src/main.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
@@ -152,11 +152,11 @@ C_INCLUDES =  \
 -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 -IDrivers/CMSIS/Device/ST/STM32F4xx/Include \
 -IDrivers/CMSIS/Include \
--I../Libraries/circularBuffer/Inc \
--I../Libraries/FLASH_readwrite/Inc \
--I../Libraries/Util/Inc \
--I../Libraries/USBprint/Inc \
--I../Libraries/jumpToBootloader/Inc
+-I../../CA_Embedded_Libraries/STM32/circularBuffer/Inc \
+-I../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc \
+-I../../CA_Embedded_Libraries/STM32/Util/Inc \
+-I../../CA_Embedded_Libraries/STM32/USBprint/Inc \
+-I../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc
 
 
 # compile gcc flags

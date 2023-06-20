@@ -1,10 +1,10 @@
 [ProjectFiles]
-HeaderPath=../Libraries/circularBuffer/Inc;../Libraries/FLASH_readwrite/Inc;../Libraries/Util/Inc;../Libraries/USBprint/Inc;../Libraries/jumpToBootloader/Inc;
+HeaderPath=../../CA_Embedded_Libraries/STM32/circularBuffer/Inc;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc;../../CA_Embedded_Libraries/STM32/Util/Inc;../../CA_Embedded_Libraries/STM32/USBprint/Inc;../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc;
 
 [Groups]
 Core/Src=Core/Src/LightController.c;
-../Libraries/circularBuffer/Src=../Libraries/circularBuffer/Src/circular_buffer.c;
-../Libraries/FLASH_readwrite/Src=../Libraries/FLASH_readwrite/Src/FLASH_readwrite.c;../Libraries/FLASH_readwrite/Src/HAL_otp.c;
-../Libraries/jumpToBootloader/Src=../Libraries/jumpToBootloader/Src/jumpToBootloader.c;
-../Libraries/USBprint/Src=../Libraries/USBprint/Src/usb_cdc_fops.c;../Libraries/USBprint/Src/USBprint.c;
-../Libraries/Util/Src=../Libraries/Util/Src/CAProtocol.c;../Libraries/Util/Src/CAProtocolStm.c;../Libraries/Util/Src/StmGpio.c;../Libraries/Util/Src/systeminfo.c;../Libraries/Util/Src/time32.c;
+../../CA_Embedded_Libraries/STM32/circularBuffer/Src=../../CA_Embedded_Libraries/STM32/circularBuffer/Src/circular_buffer.c;
+../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src=../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/FLASH_readwrite.c;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/HAL_otp.c;
+../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src=../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src/jumpToBootloader.c;
+../../CA_Embedded_Libraries/STM32/USBprint/Src=../../CA_Embedded_Libraries/STM32/USBprint/Src/usb_cdc_fops.c;../../CA_Embedded_Libraries/STM32/USBprint/Src/USBprint.c;
+../../CA_Embedded_Libraries/STM32/Util/Src=../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocol.c;../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolStm.c;../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c;../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c;../../CA_Embedded_Libraries/STM32/Util/Src/time32.c;
