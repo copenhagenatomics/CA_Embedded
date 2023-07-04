@@ -47,13 +47,13 @@ done
 ## Step 2: Ensure correct initialisation in main file.
 project_main=$(find $path/Core/Src/ -iname main.c)
 
-# Find initialisation of MX_ADCx_Init() and MX_DMA_Init() in main.c
+# Find lines where MX_ADCx_Init() and MX_DMA_Init() are initialised in main.c
 adc_main_idx=$(cat $project_main | grep -n 'MX_ADC[0-9]_Init()'| cut -d : -f 1)
 dma_main_idx=$(cat $project_main | grep -n 'MX_DMA_Init()' | cut -d : -f 1)
 
 # Ensure dma_main_idx is lower than adc_main_idx
 # NOTE: No need to check if ADC or DMA is used in project as
-#       it has already been checked in previous step.
+#       this has already been checked in previous step.
 for idx in $adc_main_idx; do
     if [[ $idx -lt $dma_main_idx ]]; then
         echo "MX_DMA_Init() needs to before initialised before MX_ADCx_Init() in $project_main."
