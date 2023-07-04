@@ -35,7 +35,7 @@ jobs:
           LightController: STM32/LightController/**
           OTP: STM32/OTP/**
           Temperature: STM32/Temperature/**
-  run_tests:
+  run_unittests:
     needs: changes
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
     strategy:
@@ -69,6 +69,9 @@ jobs:
           echo "Test failed"
           exit 1
         fi
+    # Run the static code analysis test.
+    - name: Run static tests
+      run: STM32/CommonTests/code_generation_test.sh STM32/${{ matrix.package }}
   build:
     needs: changes
     permissions:
