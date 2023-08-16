@@ -1,5 +1,10 @@
 # git commit version and date
+ifdef VERSION_TAG
+GIT_VERSION := $(VERSION_TAG)
+else
 GIT_VERSION := $(shell git --no-pager describe --always --dirty)
+endif
+
 GIT_SHA := $(shell git rev-parse HEAD)
 
 ifdef OS

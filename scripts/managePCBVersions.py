@@ -54,6 +54,20 @@ def getNecessaryPCBVersions(breaking_pcb_version, current_pcb_version) -> bool:
         return None
     
 
+# Adds / updates entries in the latestVersions dictionary to reflect the new version
+def changeLatestVersion(pcb_version, fw_version):
+    data = json.load(open(PCB_VERSIONS_LOCAL_FILENAME))
+
+    # In case its an older file which hasn't been updated with the latest versions yet...
+    if not data.get("latestVersions"):
+        data["latestVersions"] = {}
+        
+    data["latestVersions"][pcb_version] = fw_version
+    data = json.dumps(data, indent=4)
+    with open(PCB_VERSIONS_LOCAL_FILENAME, "w") as outfile:
+        outfile.write(data)
+
+
 def main(args):
     global module_name
     
@@ -75,8 +89,10 @@ def main(args):
     if current_pcb_version.compare(breaking_pcb_version) == 0:
         # It is a breaking version. Therefore no other versions need to be updated. Only the current
         # version
+        getPcbVersionFile()
         uploadFileToBlob(f"{module_name}-{breaking_pcb_version.fullVersion}-{fw_version}", f"{module_name}.zip")
         uploadFileToBlob(f"{module_name}-{breaking_pcb_version.fullVersion}-latest", f"{module_name}.zip")
+        changeLatestVersion(breaking_pcb_version.fullVersion, fw_version)
     else:
         # It is not a breaking version. Therefore, versions of the PCB that exist between the 
         # breaking version and the current version (inclusive) need to be updated with the firmware
@@ -86,8 +102,11 @@ def main(args):
         # make a new version numbered file too.
         if handled_pcb_list:
             for pcbVersion in handled_pcb_list:
+                changeLatestVersion(pcbVersion.fullVersion, fw_version)
                 uploadFileToBlob(f"{module_name}-{pcbVersion.fullVersion}-{fw_version}", f"{module_name}.zip")
                 uploadFileToBlob(f"{module_name}-{pcbVersion.fullVersion}-latest", f"{module_name}.zip")
+        
+    uploadFileToBlob(f"{module_name}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME)
     
     try:
         console(f"rm -f {PCB_VERSIONS_LOCAL_FILENAME}")

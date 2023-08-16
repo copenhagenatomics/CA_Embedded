@@ -28,7 +28,8 @@ PCB_VERSIONS_LOCAL_FILENAME = "pcbVersions.json"
 # Makes a new PCB version lists file
 def makeNewPcbVersionFile():
     data = {
-        "pcbVersions": {}
+        "pcbVersions": {},
+        "latestVersions": {}
     }
     data = json.dumps(data, indent=4)
     with open(PCB_VERSIONS_LOCAL_FILENAME, "w") as outfile:
