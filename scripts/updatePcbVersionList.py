@@ -3,6 +3,7 @@ import json
 import argparse
 from pcbVersion import PCBVersion
 from simpleConsole import console
+from blobMgmt import getFileFromBlob, uploadFileToBlob
 
 # To use this file correctly, the following environment variables must be set:
 #   - PCB_VERSION_FILE - path to project pcbversion file (see below)
@@ -24,32 +25,32 @@ from simpleConsole import console
 
 PCB_VERSIONS_LOCAL_FILENAME = "pcbVersions.json"
 
-# Gets the latest PCB version list from the blob storage and checks whether the latest version is in
-# the list. If it is, nothing needs to be done, if it is NOT, then it is added and re-uploaded
-def pcbVersionInFile(pcbVersion) -> bool:
-    key=os.environ.get('AZURE_BLOB_QUERYSTRING')
-    module=os.environ.get('MODULE_NAME')
-    CURL_HEAD = 'curl -f -H "x-ms-version: 2020-04-08" -H "Content-Type: application/octet-stream" -H "x-ms-blob-type: BlockBlob"'
-    CURL_URL  = f"https://carelease.blob.core.windows.net/temptest/{module}-pcb_versions_list.json{key}"   
+# Makes a new PCB version lists file
+def makeNewPcbVersionFile():
+    data = {
+        "pcbVersions": {}
+    }
+    data = json.dumps(data, indent=4)
+    with open(PCB_VERSIONS_LOCAL_FILENAME, "w") as outfile:
+        outfile.write(data)
 
-    try:
-        console(f'{CURL_HEAD} -X GET \"{CURL_URL}\" --output {PCB_VERSIONS_LOCAL_FILENAME}')
+
+# Checks if the PCB version is already in the file
+def pcbVersionInFile(filename, version):
+    data = json.load(open(filename))
+    return version.fullVersion in data["pcbVersions"]
+
+
+# Checks whether the version is in the list. If it is, nothing needs to be done, if it is NOT, then 
+# it is added and re-uploaded. Will raise an error if PCB_VERSIONS_LOCAL_FILENAME does not exist
+def addPcbVersionIntoFile(pcbVersion):
+    data = json.load(open(PCB_VERSIONS_LOCAL_FILENAME))
         
-        data = json.load(open(PCB_VERSIONS_LOCAL_FILENAME))
-        
-        # The same version doesn't need to be uploaded twice
-        if pcbVersion.fullVersion in data["pcbVersions"]:
-            print("Skipping, version already exists")
-            return True
-        
-    except Exception as ex:
-        # Assume most common exception type is that the file doesn't already exist on the blob 
-        # storage so we need to make a new one
-        print(ex)
-        data = {
-            "pcbVersions": {}
-        }
-        
+    # The same version doesn't need to be uploaded twice
+    if pcbVersionInFile(PCB_VERSIONS_LOCAL_FILENAME, pcbVersion):
+        print("Skipping, version already exists")
+        return 
+              
     data["pcbVersions"][pcbVersion.fullVersion] = {
                 "major": pcbVersion.major,
                 "minor": pcbVersion.minor,
@@ -60,12 +61,6 @@ def pcbVersionInFile(pcbVersion) -> bool:
     with open(PCB_VERSIONS_LOCAL_FILENAME, "w") as outfile:
         outfile.write(data)
     
-    try:
-        console(f'{CURL_HEAD} -X PUT \"{CURL_URL}\" --upload-file {PCB_VERSIONS_LOCAL_FILENAME}')
-        return True
-    except Exception as ex:
-        print(ex)
-        return False
 
 def checkPCBVersionFile(file_path) -> bool:
     with open(file_path, 'r') as file:
@@ -75,20 +70,16 @@ def checkPCBVersionFile(file_path) -> bool:
             # Ensure that the file has at least two lines
             return False
 
-        print("two lines")
         # Check the format of the first line
         first_line = lines[0].strip()
         if not is_valid_version_format(first_line):
             return None
         pcbVersion = PCBVersion(fullString=first_line)
-        print("valid current")
 
         # Check the format of the second line
         second_line = lines[1].strip()
         if not is_valid_version_format(second_line):
             return None
-
-        print("valid breaking")
 
         # Both lines have valid version formats
         return pcbVersion
@@ -113,6 +104,17 @@ def is_valid_version_format(version) -> bool:
         # Version string contains non-integer characters
         return False
 
+
+def getOrMakePcbVersionsList(module):
+    res = getFileFromBlob(f"{module}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME)
+    if res == 22:
+        makeNewPcbVersionFile()
+    elif res == 0:
+        pass
+    else:
+        raise AssertionError(f"Could not get {module}-pcb_versions_list.json from blob storage")
+    
+
 if __name__ == "__main__":
     # Script can be called with args or with environment variables
     parser = argparse.ArgumentParser(description='Verify format of PCB version file, and upload new PCB versions to the pcb_versions_list file on the blob')
@@ -135,13 +137,18 @@ if __name__ == "__main__":
     if pcbVersion is None:
         raise AssertionError("The format of the pcbVersion file in the newest release is not correct")
     
-    if not pcbVersionInFile(pcbVersion):
-        raise AssertionError("Could not set the pcb on the server correctly")
-    
+
+    module = os.environ.get('MODULE_NAME')
+    getOrMakePcbVersionsList(module)
+    addPcbVersionIntoFile(pcbVersion)
+
     # Add any other versions
     if args.pcb_versions:
         for version in args.pcb_versions:
-            pcbVersionInFile(PCBVersion(fullString=version))
+            addPcbVersionIntoFile(PCBVersion(fullString=version))
+
+    if not uploadFileToBlob(f"{module}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME):
+        raise AssertionError("Could not set the pcb on the server correctly")
     
     try:
         console(f"rm {PCB_VERSIONS_LOCAL_FILENAME}")

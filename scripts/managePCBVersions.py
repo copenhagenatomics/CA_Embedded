@@ -14,43 +14,20 @@ import json
 import os
 import logging as log
 import argparse
-import subprocess
 from pcbVersion import PCBVersion
 from simpleConsole import console
+from blobMgmt import getFileFromBlob, uploadFileToBlob
+from updatePcbVersionList import pcbVersionInFile
 
 PCB_VERSIONS_LOCAL_FILENAME = "pcbVersions.json"
 
 module_name = None
 
-# Functions to simplify reading/writing to the blob
-CURL_HEAD = 'curl -f -H "x-ms-version: 2020-04-08" -H "Content-Type: application/octet-stream" -H "x-ms-blob-type: BlockBlob"'
-CURL_URL_BASE = "https://carelease.blob.core.windows.net/temptest/"
-def getFileFromBlob(remoteFileName, localFileName):
-    try:
-        key=os.environ.get('AZURE_BLOB_QUERYSTRING')
-        console(f'{CURL_HEAD} -X GET \"{CURL_URL_BASE}{remoteFileName}{key}\" --output {localFileName}')
-    except subprocess.CalledProcessError as ex:
-        log.error(ex)
-        return ex.returncode
-    except Exception as ex:
-        log.error(ex)
-        return -1
-    
-    return 0
-
-def uploadFileToBlob(remoteFileName, localFileName):
-    try:
-        key=os.environ.get('AZURE_BLOB_QUERYSTRING')
-        console(f'{CURL_HEAD} -X PUT \"{CURL_URL_BASE}{remoteFileName}{key}\" --upload-file {localFileName}')
-    except Exception as e:
-        log.error(e)
-
-
 # Either retrieves or creates a pcb versions list file
-def getPcbVersionFile() -> bool:
+def getPcbVersionFile():
     ret_code = getFileFromBlob(f"{module_name}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME)
     if ret_code == 0:
-        return True
+        return
     else:
         error_help = f"""Getting file from blob. curl return code: {ret_code}.
 Return code 6: Verify you're connected to the internet.
@@ -85,11 +62,15 @@ def main(args):
     current_pcb_version = PCBVersion(fullString=args.current)
     breaking_pcb_version = PCBVersion(fullString=args.breaking)
 
-    # TODO: Versioning safety
     # It is expected that both the current and breaking pcb versions are in the pcb_versions_list 
     # file. This should be checked. The "updatePcbVersion" script should always be called before 
     # this one, so the current version should already exist. Its only the breaking version that 
     # might not have been entered into the file before
+    getPcbVersionFile()
+    if not pcbVersionInFile(PCB_VERSIONS_LOCAL_FILENAME, current_pcb_version):
+        raise Exception("Current PCB version not found in pcb_versions_list.json")
+    if not pcbVersionInFile(PCB_VERSIONS_LOCAL_FILENAME, breaking_pcb_version):
+        raise Exception("Breaking PCB version not found in pcb_versions_list.json")
     
     if current_pcb_version.compare(breaking_pcb_version) == 0:
         # It is a breaking version. Therefore no other versions need to be updated. Only the current
