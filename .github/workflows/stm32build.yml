@@ -157,7 +157,7 @@ jobs:
           python-version: "3.10"
       - name: Test PCB file
         run: |
-          python scripts/pcbVersionTest.py
+          python scripts/updatePcbVersionList.py
         env : 
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
           PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
