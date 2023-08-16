@@ -20,19 +20,58 @@ jobs:
       # Expose matched filters as job 'packages' output variable
       packages: ${{ steps.filter.outputs.changes }}
     steps:
-      # gets file environment with submodule included for libraries
-      - uses: actions/checkout@v3
-      # For pull requests it's not necessary to checkout the code
-      - uses: dorny/paths-filter@v2
-        id: filter
-        with:
-          filters: |
-            AC: STM32/AC/**
-            AirconCtrl: STM32/AirconCtrl/**
-            DC: STM32/DC/**
-            LightController: STM32/LightController/**
-            OTP: STM32/OTP/**
-            Temperature: STM32/Temperature/**
+    # gets file environment with submodule included for libraries
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'true'         
+    # For pull requests it's not necessary to checkout the code
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          AC: STM32/AC/**
+          AirconCtrl: STM32/AirconCtrl/**
+          DC: STM32/DC/**
+          LightController: STM32/LightController/**
+          OTP: STM32/OTP/**
+          Temperature: STM32/Temperature/**
+  run_unittests:
+    needs: changes
+    if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
+    strategy:
+      matrix:
+        # Parse JSON array containing names of all filters matching any of changed files
+        package: ${{ fromJSON(needs.changes.outputs.packages) }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3   # gets file environment with submodule included for libraries
+      with:
+        submodules: 'true'
+    # Check whether the unittest folder exist in the modified project. If so, run unittests.
+    - name: Check if unittests exist
+      id: unittests_exists
+      run: |
+        if [ -d "STM32/${{ matrix.package }}/UnitTesting" ]; then
+          echo 'exist=1' >> $GITHUB_ENV
+        else
+          echo 'exist=0' >> $GITHUB_ENV
+        fi
+    # Build and run unittests. If the unittest fails the line number is output.
+    - name: Run unittests
+      if: env.exist == '1'
+      run: |
+        cd "STM32/${{ matrix.package }}/UnitTesting"
+        cmake CMakeLists.txt
+        make
+        output=$(./CA_UnitTesting)
+        echo $output
+        if [[ $output =~ "failed" ]]; then 
+          echo "Test failed"
+          exit 1
+        fi
+    # Run the static code analysis test.
+    - name: Run static tests
+      run: STM32/CommonTests/code_generation_test.sh STM32/${{ matrix.package }}
   build:
     needs: changes
     permissions:
