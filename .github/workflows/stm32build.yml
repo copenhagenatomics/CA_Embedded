@@ -8,7 +8,7 @@ on:
     branches: ["main"]
     paths: ["STM32/**", ".github/workflows/stm32build.yml"]
   # Included to try dry-running this YML
-  workflow_dispatch:
+  workflow_dispatch: true
 
 jobs:
   # JOB to run change detection
