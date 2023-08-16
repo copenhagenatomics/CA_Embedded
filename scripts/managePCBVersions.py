@@ -1,0 +1,131 @@
+# To use this code:
+
+# Set the necessary environment variables:
+# AZURE_BLOB_QUERYSTRING: The query string for Azure Blob Storage authentication.
+# Run the script with the following command-line arguments:
+# -c or --current: The PCB version that the current firmware was built for (e.g., "1.1.1").
+# -b or --breaking: The earliest PCB version that the current firmware is compatible with (e.g., "1.1.1").
+# -fw or --fw_version: The firmware version that was built (e.g., "1.1.1").
+# -m or --module: The name of the module that was built (e.g., "module_name").
+# The script will perform the necessary tasks based on the provided arguments and the defined functions.
+# It will download the PCB version file from Azure Blob Storage, compare the versions, and upload files to Azure Blob Storage.
+
+import json
+import os
+import logging as log
+import argparse
+import subprocess
+from pcbVersion import PCBVersion
+from simpleConsole import console
+
+PCB_VERSIONS_LOCAL_FILENAME = "pcbVersions.json"
+
+module_name = None
+
+# Functions to simplify reading/writing to the blob
+CURL_HEAD = 'curl -f -H "x-ms-version: 2020-04-08" -H "Content-Type: application/octet-stream" -H "x-ms-blob-type: BlockBlob"'
+CURL_URL_BASE = "https://carelease.blob.core.windows.net/temptest/"
+def getFileFromBlob(remoteFileName, localFileName):
+    try:
+        key=os.environ.get('AZURE_BLOB_QUERYSTRING')
+        console(f'{CURL_HEAD} -X GET \"{CURL_URL_BASE}{remoteFileName}{key}\" --output {localFileName}')
+    except subprocess.CalledProcessError as ex:
+        log.error(ex)
+        return ex.returncode
+    except Exception as ex:
+        log.error(ex)
+        return -1
+    
+    return 0
+
+def uploadFileToBlob(remoteFileName, localFileName):
+    try:
+        key=os.environ.get('AZURE_BLOB_QUERYSTRING')
+        console(f'{CURL_HEAD} -X PUT \"{CURL_URL_BASE}{remoteFileName}{key}\" --upload-file {localFileName}')
+    except Exception as e:
+        log.error(e)
+
+
+# Either retrieves or creates a pcb versions list file
+def getPcbVersionFile() -> bool:
+    ret_code = getFileFromBlob(f"{module_name}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME)
+    if ret_code == 0:
+        return True
+    else:
+        error_help = f"""Getting file from blob. curl return code: {ret_code}.
+Return code 6: Verify you're connected to the internet.
+Return code 22: The file \"{module_name}-pcb_versions_list.json\" does not exist on the blob storage. Create it using the updatePcbVersion.py script first"""
+        raise Exception(error_help)
+
+
+# Gets all the PCB versions from the breaking version to the latest version, from the PCB version 
+# list file
+def getNecessaryPCBVersions(breaking_pcb_version, current_pcb_version) -> bool:
+    handled_pcb_list = []
+    try:
+        getPcbVersionFile()
+        data = json.load(open(PCB_VERSIONS_LOCAL_FILENAME))
+        data = data["pcbVersions"]
+        for pcbVersion in data:
+            tempPcbVersion = PCBVersion(fullString=pcbVersion)
+            if tempPcbVersion.compare(breaking_pcb_version) >= 0 and tempPcbVersion.compare(current_pcb_version) <= 0:
+                # Selected PCB version should be updated with the current FW release
+                handled_pcb_list.append(tempPcbVersion)
+        return handled_pcb_list
+    except Exception as e:
+        print(e)
+        return None
+    
+
+def main(args):
+    global module_name
+    
+    fw_version = args.fw_version
+    module_name = args.module
+    current_pcb_version = PCBVersion(fullString=args.current)
+    breaking_pcb_version = PCBVersion(fullString=args.breaking)
+
+    # TODO: Versioning safety
+    # It is expected that both the current and breaking pcb versions are in the pcb_versions_list 
+    # file. This should be checked. The "updatePcbVersion" script should always be called before 
+    # this one, so the current version should already exist. Its only the breaking version that 
+    # might not have been entered into the file before
+    
+    if current_pcb_version.compare(breaking_pcb_version) == 0:
+        # It is a breaking version. Therefore no other versions need to be updated. Only the current
+        # version
+        uploadFileToBlob(f"{module_name}-{breaking_pcb_version.fullVersion}-{fw_version}", f"{module_name}.zip")
+        uploadFileToBlob(f"{module_name}-{breaking_pcb_version.fullVersion}-latest", f"{module_name}.zip")
+    else:
+        # It is not a breaking version. Therefore, versions of the PCB that exist between the 
+        # breaking version and the current version (inclusive) need to be updated with the firmware
+        handled_pcb_list = getNecessaryPCBVersions(breaking_pcb_version, current_pcb_version)
+        
+        # Overwrite the old "latest" file with a new one (so the "latest" is always the latest) and
+        # make a new version numbered file too.
+        if handled_pcb_list:
+            for pcbVersion in handled_pcb_list:
+                uploadFileToBlob(f"{module_name}-{pcbVersion.fullVersion}-{fw_version}", f"{module_name}.zip")
+                uploadFileToBlob(f"{module_name}-{pcbVersion.fullVersion}-latest", f"{module_name}.zip")
+    
+    try:
+        console(f"rm -f {PCB_VERSIONS_LOCAL_FILENAME}")
+    except Exception as e:
+        log.error(e)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description='Manage the PCB version for this build.')
+    parser.add_argument('-c', '--current',
+                        required=True, help='The pcb version that the current FW was built for (1.1.1)')
+    parser.add_argument('-b', '--breaking',
+                        required=True, help='The earliest pcb version that the current FW is compatible with (1.1.1)')
+    parser.add_argument('-fw', '--fw_version',
+                        required=True, help='The firmware version built (1.1.1)')
+    parser.add_argument('-m', '--module',
+                        required=True, help='The name of the module built (1.1.1)')
+
+    args = parser.parse_args()
+
+    main(args)
