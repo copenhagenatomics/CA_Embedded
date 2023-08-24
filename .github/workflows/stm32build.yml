@@ -116,7 +116,7 @@ jobs:
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-2
         # tag only pushes to the main branch
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} 
+        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} 
         with:
           bump_version_scheme: minor
           use_github_release_notes: true
