@@ -90,7 +90,7 @@ def is_valid_version_format(version) -> bool:
     # Check if the version string follows the format v1.0 or v1.0.0
     try:
         # Remove the leading 'v' character and split the version string
-        version_parts = version.lstrip('v').split('.')
+        version_parts = version.lstrip("vV").split('.')
         
         if len(version_parts) < 2 or len(version_parts) > 3:
             # Invalid version format if it doesn't have 2 or 3 parts

@@ -71,7 +71,7 @@ def changeLatestVersion(pcb_version, fw_version):
 def main(args):
     global module_name
     
-    fw_version = args.fw_version
+    fw_version = args.fw_version.lstrip("vV")
     module_name = args.module
     current_pcb_version = PCBVersion(fullString=args.current)
     breaking_pcb_version = PCBVersion(fullString=args.breaking)
