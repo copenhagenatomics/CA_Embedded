@@ -157,11 +157,11 @@ jobs:
         run: |
           python scripts/updatePcbVersionList.py
         env : 
-          AZURE_BLOB_QUERYSTRING : ${{ TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
+          AZURE_BLOB_QUERYSTRING : ${{ secrets.TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
           PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
         run: |
           python scripts/managePCBVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw $(echo "${{ steps.release-on-push-2.outputs.tag_name }}" | cut -d'-' -f2) -m ${{ matrix.package }}
         env : 
-          AZURE_BLOB_QUERYSTRING : ${{ TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
+          AZURE_BLOB_QUERYSTRING : ${{ secrets.TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
