@@ -105,6 +105,7 @@ jobs:
         bump_version_scheme: minor
         use_github_release_notes: true
         tag_prefix: "${{ matrix.package }}-"
+        dry_run: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Read PCB version
@@ -117,7 +118,7 @@ jobs:
         files: |
             **/*.elf
             **/*.bin
-        tag_name: "double" # ${{ steps.release-on-push.outputs.tag_name }}
+        tag_name: ${{ steps.release-on-push.outputs.tag_name }}
         name: "${{ steps.release-on-push.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.version }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
