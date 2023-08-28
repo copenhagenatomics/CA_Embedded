@@ -100,7 +100,7 @@ jobs:
           STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
     - uses: copenhagenatomics/mono_release_on_push_action@master
       id: release-on-push
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # tag only pushes to the main branch
+      # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # tag only pushes to the main branch
       with:
         bump_version_scheme: minor
         use_github_release_notes: true
@@ -111,7 +111,7 @@ jobs:
       id: pcbversion
       run: echo "version=$(head -1 STM32/${{ matrix.package }}/pcbversion)" >> $GITHUB_OUTPUT
     - name: Release
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+      # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
       uses: softprops/action-gh-release@v0.1.15
       with:
         files: |
