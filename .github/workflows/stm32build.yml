@@ -111,13 +111,13 @@ jobs:
       id: pcbversion
       run: echo "version=$(head -1 STM32/${{ matrix.package }}/pcbversion)" >> $GITHUB_OUTPUT
     - name: Release
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+      # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
       uses: softprops/action-gh-release@v0.1.15
       with:
         files: |
             **/*.elf
             **/*.bin
-        tag_name: ${{ steps.release-on-push.outputs.tag_name }}
+        tag_name: "double" # ${{ steps.release-on-push.outputs.tag_name }}
         name: "${{ steps.release-on-push.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.version }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
