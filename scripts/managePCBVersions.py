@@ -54,7 +54,9 @@ def getNecessaryPCBVersions(breaking_pcb_version, current_pcb_version) -> bool:
         return None
     
 
-# Adds / updates entries in the latestVersions dictionary to reflect the new version
+# Adds / updates entries in the latestVersions dictionary to reflect the new version. The entry is 
+# essential to allow the dfu scripts to determine if a board is already running the latest version 
+# or not
 def changeLatestVersion(pcb_version, fw_version):
     data = json.load(open(PCB_VERSIONS_LOCAL_FILENAME))
 
@@ -127,5 +129,6 @@ if __name__ == "__main__":
                         required=True, help='The name of the module built (1.1.1)')
 
     args = parser.parse_args()
+    assert os.environ.get('AZURE_BLOB_QUERYSTRING') is not None, "The AZURE_BLOB_QUERYSTRING env param does not exist"
 
     main(args)
