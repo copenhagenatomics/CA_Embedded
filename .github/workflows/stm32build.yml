@@ -92,12 +92,15 @@ jobs:
           submodules: 'true'
       # Setup the compiler and compile the program
       - uses: carlosperate/arm-none-eabi-gcc-action@v1
-      # Generate the next release tag for including in the build. Note: dry_run. It doesn't actually
-      # Release in case something goes wrong in the build
+      # Generate the next release + tag for including in the build
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-1
         with:
           bump_version_scheme: minor
+          # Tag prefix required for this action to update the most relevant version number
+          tag_prefix: "${{ matrix.package }}-"
+          # Note: This is a dry_run, because if something goes wrong in the build (next step), we 
+          # don't want to actually make any release.
           dry_run: "true"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -146,22 +149,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare zip file for Azure blob
-        run: |
-          zip -j ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
+        run: zip -j ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
         shell: bash
       - name: Set up Python 3.10
         uses: actions/setup-python@v3
         with:
           python-version: "3.10"
       - name: Test PCB file
-        run: |
-          python scripts/updatePcbVersionList.py
+        run: python scripts/updatePcbVersionList.py
         env : 
           AZURE_BLOB_QUERYSTRING : ${{ secrets.TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
           PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
-        run: |
-          python scripts/managePCBVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw $(echo "${{ steps.release-on-push-1.outputs.tag_name }}" | cut -d'-' -f2) -m ${{ matrix.package }}
+        run: python scripts/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw $(echo "${{ steps.release-on-push-1.outputs.tag_name }}" | cut -d'-' -f2) -m ${{ matrix.package }}
         env : 
           AZURE_BLOB_QUERYSTRING : ${{ secrets.TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
