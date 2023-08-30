@@ -160,6 +160,8 @@ static void sendCommand()
         // not being received correctly
         if (!commandState.isNewController) 
         {
+            setupSignalTimer(START_BIT_ARR, 0);
+
             if (numRepeats++ < NUM_COMMAND_REPEATS) 
             {
                 startSendingTempUpdate(currentTemp, false);
@@ -169,31 +171,38 @@ static void sendCommand()
                 numRepeats = 0;
                 startSendingTempUpdate(currentTemp, true);
             }
-            TIM3->ARR = START_BIT_ARR;
         }
         else
         {
+            setupSignalTimer(START_BIT_ARR_AC2, 0);
+
             /* For the new controller, each packet consists of the same message sent twice */
             if (numRepeats++ < (2 * NUM_COMMAND_REPEATS))
             {
+                /* Hackity hack: to prevent the double packets being hampered by the minimum send 
+                ** time, (see HAL_TIM_PWM_PulseFinishedCallback()), take a copy of the original time
+                ** stamp here and re-apply it if necessary */
+                uint32_t tmpTimestamp = commandState.cmdTimeStamp;
                 startSendingTempUpdate(currentTemp, true);
+                if (numRepeats % 2) /* e.g. odd numbers */
+                {
+                    commandState.cmdTimeStamp = tmpTimestamp;
 
-                /* In between "double packets" a shorter rest period is observed on the second AC
-                ** controller */
-                TIM3->ARR = numRepeats % 2 ? START_BIT_REST_AC2 : START_BIT_ARR_AC2;
+                    /* In between "double packets" a shorter rest period is observed on the second 
+                    ** AC controller */
+                    setupSignalTimer(START_BIT_REST_AC2, 0);
+                }
             }
             else
             {
-                numRepeats = 0;
-
                 /* Finishes the transmission */
+                numRepeats = 0;
                 commandState.isCommandIssued = false;
             }
         }
 
         wordIdx = 0;
         sendBitIdx = 0;
-        TIM3->CCR2 = 0;
         return;
     }
 
@@ -340,7 +349,9 @@ void turnOffLED()
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
     if (!commandState.isCommandIssued || (HAL_GetTick() - commandState.cmdTimeStamp) < 100)
+    {
         return;
+    }
 
     if (commandState.isAddressSent && !commandState.isCommReady)
     {
