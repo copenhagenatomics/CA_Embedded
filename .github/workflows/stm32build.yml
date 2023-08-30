@@ -105,7 +105,6 @@ jobs:
         bump_version_scheme: minor
         use_github_release_notes: true
         tag_prefix: "${{ matrix.package }}-"
-        dry_run: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Read PCB version
