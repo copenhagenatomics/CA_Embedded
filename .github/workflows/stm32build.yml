@@ -98,7 +98,7 @@ jobs:
         path: | 
           STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf
           STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
-    - uses: copenhagenatomics/mono_release_on_push_action@master
+    - uses: copenhagenatomics/mono_release_on_push_action@77f72f30f7ae516c440bb9e464eacc94a7f7f744
       id: release-on-push
       # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # tag only pushes to the main branch
       with:
