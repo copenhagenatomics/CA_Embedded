@@ -315,11 +315,17 @@ void turnOffAC()
     startSendingTempUpdate(0, false);
 }
 
+/*!
+** @brief Starts the PWM for the IR LED
+*/
 void turnOnLED()
 {
     HAL_TIM_PWM_Start(timFreqCarrier, TIM_CHANNEL_1);
 }
 
+/*!
+** @brief Stops the PWM for the IR LED
+*/
 void turnOffLED()
 {
     HAL_TIM_PWM_Stop(timFreqCarrier, TIM_CHANNEL_1);
