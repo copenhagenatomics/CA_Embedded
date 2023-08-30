@@ -97,9 +97,9 @@
 #define LOW_BIT_CCR		4296    // On time (61%)
 
 /* Second aircon remote timings */
-#define START_BIT_ARR_AC2   70400   // Period = 8800 us
-#define START_BIT_CCR_AC2   35200   // On time (50%)
-#define START_BIT_REST_AC2  35200   // Period = 4400 us
+#define START_BIT_ARR_AC2   65535 // 70400   // Period = 8800 us
+#define START_BIT_CCR_AC2   32767 // 35200   // On time (50%)
+#define START_BIT_REST_AC2  32767 // 35200   // Period = 4400 us
 
 #define HIGH_BIT_ARR_AC2    18400   // Period of 2300us (~435Hz)
 #define HIGH_BIT_CCR_AC2    4800    // On time (26%)

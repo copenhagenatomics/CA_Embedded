@@ -162,7 +162,7 @@ static void sendCommand()
         {
             setupSignalTimer(START_BIT_ARR, 0);
 
-            if (numRepeats++ < NUM_COMMAND_REPEATS) 
+            if (++numRepeats < NUM_COMMAND_REPEATS) 
             {
                 startSendingTempUpdate(currentTemp, false);
             }
@@ -177,7 +177,7 @@ static void sendCommand()
             setupSignalTimer(START_BIT_ARR_AC2, 0);
 
             /* For the new controller, each packet consists of the same message sent twice */
-            if (numRepeats++ < (2 * NUM_COMMAND_REPEATS))
+            if (++numRepeats < (2 * NUM_COMMAND_REPEATS))
             {
                 /* Hackity hack: to prevent the double packets being hampered by the minimum send 
                 ** time, (see HAL_TIM_PWM_PulseFinishedCallback()), take a copy of the original time
@@ -190,10 +190,10 @@ static void sendCommand()
 
                     /* In between "double packets" a shorter rest period is observed on the second 
                     ** AC controller */
-                    setupSignalTimer(START_BIT_REST_AC2, 0);
+                    setupSignalTimer(START_BIT_REST_AC2, START_BIT_REST_AC2);
                 }
             }
-            else
+            else if (commandState.isCommandIssued)
             {
                 /* Finishes the transmission */
                 numRepeats = 0;
@@ -208,7 +208,7 @@ static void sendCommand()
 
     // After overload of counter the new PWM settings will be set 
     // that codes for a logical 1 and 0 respectively.
-    IRCommand.command[wordIdx] & (1 << (31-sendBitIdx)) ? setupHighBit() : setupLowBit();
+    (IRCommand.command[wordIdx] & (1 << (31-sendBitIdx))) ? setupHighBit() : setupLowBit();
 
     if (++sendBitIdx % 32 == 0)
     {
@@ -245,24 +245,25 @@ static bool startSendingTempUpdate(int temp, bool isNewController)
                         IRCommand.miscStates = FAN_HIGH;
                         break;
         }
+        IRCommand.address = IR_ADDRESS;
         commandState.len_bits = MSG_LEN_BITS;
     }
     else
     {
         switch(temp)
         {
-            case 0:     IRCommand.command_u16[1] = AC2_OFF;
-                        IRCommand.command_u16[2] = AC2_OFF_SWING_END;
+            case 0:     IRCommand.command_u16[0] = AC2_OFF;
+                        IRCommand.command_u16[3] = AC2_OFF_SWING_END;
                         break;
             case 5:     return false;
-            case 30:    IRCommand.command_u16[1] = AC2_FAN_MODE_2;
-                        IRCommand.command_u16[2] = AC2_TEMP_30;
+            case 30:    IRCommand.command_u16[0] = AC2_FAN_MODE_2;
+                        IRCommand.command_u16[3] = AC2_TEMP_30;
                         break;
-            default:    IRCommand.command_u16[1] = AC2_FAN_MODE_2;
-                        IRCommand.command_u16[2] = (uint16_t) tempCodes[1][temp-18];
+            default:    IRCommand.command_u16[0] = AC2_FAN_MODE_2;
+                        IRCommand.command_u16[3] = (uint16_t) tempCodes[1][temp-18];
                         break;
         }
-        IRCommand.command_u16[0] = AC2_TEMP_COMMAND;
+        IRCommand.command_u16[1] = AC2_TEMP_COMMAND;
         commandState.len_bits = AC2_MSG_LEN_BITS;
     }
 
@@ -271,6 +272,8 @@ static bool startSendingTempUpdate(int temp, bool isNewController)
     commandState.isCommReady = false;
     commandState.cmdTimeStamp = HAL_GetTick();
     currentTemp = temp;
+
+    USBnprintf("Started sending: %x %x %x %x", IRCommand.command[0], IRCommand.command[1], IRCommand.command[2], IRCommand.command[3]);
 
     return true;
 }
