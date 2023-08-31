@@ -97,7 +97,8 @@
 #define LOW_BIT_CCR		4296    // On time (61%)
 
 /* Second aircon remote timings */
-#define START_BIT_ARR_AC2   65535 // 70400   // Period = 8800 us
+/* Desired period is 70400, but register only goes up to 65535. Tested and it works */
+#define START_BIT_ARR_AC2   65535 // 70400   // Period = 8800 us 
 #define START_BIT_CCR_AC2   32767 // 35200   // On time (50%)
 #define START_BIT_REST_AC2  32767 // 35200   // Period = 4400 us
 

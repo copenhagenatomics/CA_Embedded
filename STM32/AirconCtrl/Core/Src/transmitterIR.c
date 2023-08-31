@@ -258,10 +258,12 @@ static bool startSendingTempUpdate(int temp, bool isNewController)
             case 0:     IRCommand.command_u16[0] = AC2_OFF;
                         IRCommand.command_u16[3] = AC2_OFF_SWING_END;
                         break;
-            case 5:     return false;
             case 30:    IRCommand.command_u16[0] = AC2_FAN_MODE_2;
                         IRCommand.command_u16[3] = AC2_TEMP_30;
                         break;
+            /* The new AC unit cannot go below 17 degC. Test team agrees the best choice is to go
+            ** to the lowest setting if "5" is requested. Fall through intentional */                        
+            case 5:     temp = 17;
             default:    IRCommand.command_u16[0] = AC2_FAN_MODE_2;
                         IRCommand.command_u16[3] = (uint16_t) tempCodes[1][temp-18];
                         break;
