@@ -56,11 +56,33 @@ static void printACTemperature()
 	USBnprintf("%d", temp);
 }
 
-
 // ---- DECODING SIGNAL -----
 int arrIdx = 0;
 uint8_t bitIndex;
 TIM_HandleTypeDef *timerCtx;
+static int irqCnt = 0;
+static uint8_t tempCode;
+static uint8_t tempCodeArr[24];
+
+static void finishWord(bool endOfMessage)
+{
+    tempCodeArr[arrIdx++] = tempCode;
+    tempCode = 0;
+    bitIndex = 0;
+
+    if (endOfMessage)
+    {
+        for(int i = 0; i < 24; i++) {
+            char buf[10] = "";
+            int len = snprintf(buf, 10, "%x ", tempCodeArr[i]);
+            writeUSB(buf, len);
+        }
+        USBnprintf("");
+        arrIdx = 0;
+        irqCnt = 0;
+    }
+}
+
 
 /*!
 ** @brief Decodes IR communication pulses into a set of 4 32-bit words
@@ -76,24 +98,17 @@ TIM_HandleTypeDef *timerCtx;
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     static const int LEN_START_BIT = 400;
-    static const int LEN_HIGH_BIT  = 200;
-    static const int LEN_LOW_BIT   = 100;
+    static const int LEN_HIGH_BIT  = 160;
+    static const int LEN_LOW_BIT   = 80;
     static const int NUM_BYTES     = 6;
     static const int BITS_PER_BYTE = 8;
-
-    static int irqCnt = 0;
-    static uint8_t tempCode;
-    static uint8_t tempCodeArr[16];
 
     if (GPIO_Pin == GPIO_PIN_7)
     {
         irqCnt++;
+
         /* The high and low periods can be bunched together and read on the falling edge */
-        if (__HAL_TIM_GET_COUNTER(timerCtx) > 10 * LEN_START_BIT)
-        {
-            arrIdx = 0;
-        }
-        else if (__HAL_TIM_GET_COUNTER(timerCtx) > LEN_START_BIT)
+        if (__HAL_TIM_GET_COUNTER(timerCtx) > LEN_START_BIT)
         {
             tempCode = 0;
             bitIndex = 0;
@@ -109,34 +124,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
             bitIndex++;
         }
 
-        
         if ((bitIndex == BITS_PER_BYTE))
         {
-        	tempCodeArr[arrIdx++] = tempCode;
-        	tempCode = 0;
-            bitIndex = 0;
-
-            if (arrIdx == NUM_BYTES)
-            {
-                for(int i = 0; i < NUM_BYTES; i++) {
-                    char buf[10] = "";
-                    int len = snprintf(buf, 10, "%x ", tempCodeArr[i]);
-                    writeUSB(buf, len);
-                }
-            	USBnprintf("");
-            	arrIdx = 0;
-            	irqCnt = 0;
-            }
+            finishWord(false);
         }
-
-        /* irqCnt for safety in case noise triggers a whole lot of bits */
-        // if(irqCnt > 2*BITS_PER_BYTE*NUM_BYTES) 
-        // {
-        //     tempCode = 0;
-        //     bitIndex = 0;
-        //     arrIdx   = 0;
-        //     irqCnt   = 0;
-        // }
 
         __HAL_TIM_SET_COUNTER(timerCtx, 0);
     }
@@ -174,4 +165,9 @@ void airconCtrlLoop(const char* bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
     pwmGPIO();
+
+    /* Only prints if there is some message unprinted after 90 ms of inactivity */
+    if ((__HAL_TIM_GET_COUNTER(timerCtx) > 9000) && (arrIdx != 0)) {
+        finishWord(true);
+    }
 }

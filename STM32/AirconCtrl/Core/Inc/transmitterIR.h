@@ -50,7 +50,7 @@
 #define FAN_HIGH	0xa0000000
 #define FAN_HIGH_5	0xa000a800
 
-#define MSG_LEN_BITS 113
+#define MSG_LEN_BITS 112
 
 /* IR codes AC2 */
 #define AC2_TEMP_COMMAND 0xB24D

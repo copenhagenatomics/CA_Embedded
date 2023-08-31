@@ -152,7 +152,10 @@ static void sendCommand()
 
     /* End of packet */
     int bits = wordIdx * 32 + sendBitIdx;
-    if (bits >= commandState.len_bits)
+    
+    /* Go for 1 extra bit so that there is a downward going pulse to conclude the message (e.g. for
+    ** 48 bits, there needs to be 49 negative pulses) */
+    if (bits >= (commandState.len_bits+1))
     {
         turnOffLED();
 
@@ -190,7 +193,7 @@ static void sendCommand()
 
                     /* In between "double packets" a shorter rest period is observed on the second 
                     ** AC controller */
-                    setupSignalTimer(START_BIT_REST_AC2, START_BIT_REST_AC2);
+                    setupSignalTimer(START_BIT_REST_AC2, 0);
                 }
             }
             else if (commandState.isCommandIssued)
@@ -273,7 +276,7 @@ static bool startSendingTempUpdate(int temp, bool isNewController)
     commandState.cmdTimeStamp = HAL_GetTick();
     currentTemp = temp;
 
-    USBnprintf("Started sending: %x %x %x %x", IRCommand.command[0], IRCommand.command[1], IRCommand.command[2], IRCommand.command[3]);
+    // USBnprintf("Started sending: %x %x %x %x", IRCommand.command[0], IRCommand.command[1], IRCommand.command[2], IRCommand.command[3]);
 
     return true;
 }
@@ -291,6 +294,7 @@ void pwmGPIO()
 {
     if (!commandState.isCommReady)
     {
+        turnOffLED();
         return;
     }
 
