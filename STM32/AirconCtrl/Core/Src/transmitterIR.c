@@ -350,7 +350,8 @@ void turnOffLED()
 }
 
 /*!
-** @brief Callback called when timer rolls over
+** @brief Callback called when the timer CCR register is triggered (e.g. at the transition point 
+**        during the PWM pulse)
 **
 ** Runs the main state machine of the module:
 ** <img src="aircon_ctrl_ir_states.svg"/>
