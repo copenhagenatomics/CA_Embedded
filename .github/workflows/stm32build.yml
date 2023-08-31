@@ -104,11 +104,15 @@ jobs:
           dry_run: "true"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag Filter
+        id: tagfilter
+        # Checks if the file pcbversion exists and that the first line is configured as a version number with v<number>.number and returns the first line, otherwise it returns v0.0.
+        run: echo "version=$(echo "${{ steps.release-on-push-1.outputs.tag_name }}" | cut -d'-' -f2)" >> $GITHUB_OUTPUT
       # Build the upload artifacts
       - run: make
         working-directory: "STM32/${{ matrix.package }}/"
         env:
-          VERSION_TAG: $(eval "echo "${{ steps.release-on-push-1.outputs.tag_name }}" | cut -d'-' -f2")
+          VERSION_TAG: ${{ steps.tagfilter.outputs.version }}
         # Upload the .elf and .bin file under the summary tab
       - uses: actions/upload-artifact@v3
         with:
@@ -162,6 +166,6 @@ jobs:
           PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
-        run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw $(echo "${{ steps.release-on-push-1.outputs.tag_name }}" | cut -d'-' -f2) -m ${{ matrix.package }}
+        run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
         env : 
           AZURE_BLOB_QUERYSTRING : ${{ secrets.TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
