@@ -70,6 +70,22 @@ def changeLatestVersion(pcb_version, fw_version):
         outfile.write(data)
 
 
+def checkLatestVersion(pcb_version, fw_version):
+    data = json.load(open(PCB_VERSIONS_LOCAL_FILENAME))
+    ret = True
+
+    # In case its an older file which hasn't been updated with the latest versions yet...
+    if data.get("latestVersions"):
+        if data["latestVersions"].get(pcb_version):
+            curr_latest = PCBVersion(fullString=data["latestVersions"][pcb_version])
+            next_latest = PCBVersion(fullString=fw_version)
+            if next_latest.compare(curr_latest) >= 0:
+                return True
+            else:
+                return False
+
+    return ret
+
 def main(args):
     global module_name
     
@@ -93,8 +109,9 @@ def main(args):
         # version
         getPcbVersionFile()
         uploadFileToBlob(f"{module_name}-{breaking_pcb_version.fullVersion}-{fw_version}", f"{module_name}.zip")
-        uploadFileToBlob(f"{module_name}-{breaking_pcb_version.fullVersion}-latest", f"{module_name}.zip")
-        changeLatestVersion(breaking_pcb_version.fullVersion, fw_version)
+        if checkLatestVersion(current_pcb_version.fullString, fw_version) or args.force_latest:
+            uploadFileToBlob(f"{module_name}-{breaking_pcb_version.fullVersion}-latest", f"{module_name}.zip")
+            changeLatestVersion(breaking_pcb_version.fullVersion, fw_version)
     else:
         # It is not a breaking version. Therefore, versions of the PCB that exist between the 
         # breaking version and the current version (inclusive) need to be updated with the firmware
@@ -104,9 +121,10 @@ def main(args):
         # make a new version numbered file too.
         if handled_pcb_list:
             for pcbVersion in handled_pcb_list:
-                changeLatestVersion(pcbVersion.fullVersion, fw_version)
                 uploadFileToBlob(f"{module_name}-{pcbVersion.fullVersion}-{fw_version}", f"{module_name}.zip")
-                uploadFileToBlob(f"{module_name}-{pcbVersion.fullVersion}-latest", f"{module_name}.zip")
+                if checkLatestVersion(current_pcb_version.fullString, fw_version) or args.force_latest:
+                    changeLatestVersion(pcbVersion.fullVersion, fw_version)
+                    uploadFileToBlob(f"{module_name}-{pcbVersion.fullVersion}-latest", f"{module_name}.zip")
         
     uploadFileToBlob(f"{module_name}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME)
     
@@ -127,6 +145,8 @@ if __name__ == "__main__":
                         required=True, help='The firmware version built (1.1.1)')
     parser.add_argument('-m', '--module',
                         required=True, help='The name of the module built (1.1.1)')
+    parser.add_argument('-f', '--force_latest', action="store_true",
+                        help='Forces updating the "latest" on the blob to this version')
 
     args = parser.parse_args()
     assert os.environ.get('AZURE_BLOB_QUERYSTRING') is not None, "The AZURE_BLOB_QUERYSTRING env param does not exist"

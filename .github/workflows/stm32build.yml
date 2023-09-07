@@ -2,11 +2,11 @@ name: C/C++ stm32 build for the open-source embedded software
 
 on:
   push:
-    branches: ["main"]
-    paths: ["STM32/**", ".github/workflows/stm32build.yml"]
+    branches: ['main']
+    paths: ['STM32/**', '.github/workflows/stm32build.yml']
   pull_request:
-    branches: ["main"]
-    paths: ["STM32/**", ".github/workflows/stm32build.yml"]
+    branches: ['main']
+    paths: ['STM32/**', '.github/workflows/stm32build.yml']
 
 jobs:
   # JOB to run change detection
