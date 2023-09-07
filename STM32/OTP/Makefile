@@ -17,7 +17,7 @@ include makefile.init
 makefile.init:
 	# No output .bin/.elf is created 
 
-#######################################
+######################################
 # target
 ######################################
 TARGET = OTP
