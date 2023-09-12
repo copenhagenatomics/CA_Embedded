@@ -2,10 +2,10 @@ name: C/C++ stm32 build for the open-source embedded software
 
 on:
   push:
-    branches: ['main']
+    branches: [ 'main' ]
     paths: ['STM32/**', '.github/workflows/stm32build.yml']
   pull_request:
-    branches: ['main']
+    branches: [ 'main' ]
     paths: ['STM32/**', '.github/workflows/stm32build.yml']
 
 jobs:
@@ -23,7 +23,7 @@ jobs:
     # gets file environment with submodule included for libraries
     - uses: actions/checkout@v3
       with:
-        submodules: 'true'         
+        submodules: 'true'
     # For pull requests it's not necessary to checkout the code
     - uses: dorny/paths-filter@v2
       id: filter
@@ -65,7 +65,7 @@ jobs:
         make
         output=$(./CA_UnitTesting)
         echo $output
-        if [[ $output =~ "failed" ]]; then 
+        if [[ $output =~ "failed" ]]; then
           echo "Test failed"
           exit 1
         fi
@@ -99,7 +99,7 @@ jobs:
           bump_version_scheme: minor
           # Tag prefix required for this action to update the most relevant version number
           tag_prefix: "${{ matrix.package }}-"
-          # Note: This is a dry_run, because if something goes wrong in the build (next step), we 
+          # Note: This is a dry_run, because if something goes wrong in the build (next step), we
           # don't want to actually make any release.
           dry_run: "true"
         env:
@@ -123,7 +123,7 @@ jobs:
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-2
         # tag only pushes to the main branch
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} 
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           bump_version_scheme: minor
           use_github_release_notes: true
@@ -161,11 +161,11 @@ jobs:
           python-version: "3.10"
       - name: Test PCB file
         run: python release_mgmt/updatePcbVersionList.py
-        env : 
-          AZURE_BLOB_QUERYSTRING : ${{ secrets.TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
+        env :
+          AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
           PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
         run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
-        env : 
-          AZURE_BLOB_QUERYSTRING : ${{ secrets.TESTBLOBQUERYSTRING }} # ${{ secrets.AZURE_BLOB_QUERYSTRING }}
+        env :
+          AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
