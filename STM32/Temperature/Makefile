@@ -27,7 +27,7 @@ TARGET = Temperature
 # building variables
 ######################################
 # debug build?
-DEBUG = 1
+DEBUG = 0
 # optimization
 OPT = -O2
 
@@ -160,8 +160,7 @@ C_INCLUDES =  \
 -I../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc \
 -I../../CA_Embedded_Libraries/STM32/Util/Inc \
 -I../../CA_Embedded_Libraries/STM32/USBprint/Inc \
--I../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc
-
+-I../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc 
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

@@ -18,13 +18,15 @@
 // Local functions
 static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations);
 static void calibrateReadWrite(bool write);
-static void TempPrintHeader();
+static void printTempHeader();
+static void printTempStatus();
 
 // Local variables
 static CAProtocolCtx caProto =
 {
         .undefined = HALundefined,
-        .printHeader = TempPrintHeader,
+        .printHeader = printTempHeader,
+        .printStatus = printTempStatus,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = calibrateTypeInput,
         .calibrationRW = calibrateReadWrite,
@@ -39,11 +41,34 @@ static CAProtocolCtx caProto =
 static ADS1120Device ads1120[ NO_SPI_DEVICES ];
 float portCalVal[NO_SPI_DEVICES*2][2];
 
-static void TempPrintHeader()
+static void printTempHeader()
 {
 	CAPrintHeader();
 	calibrateReadWrite(false);
 }
+
+static void printTempStatus()
+{
+    static char buf[600] = { 0 };
+    int len = 0;
+    uint32_t tempStatus = bsGetStatus();
+
+    for (int i = 0; i < NO_SPI_DEVICES; i++)
+    {
+        if (tempStatus & (TEMP_ADS1120_Error_Msk) << i)
+        {
+            len += snprintf(&buf[len], sizeof(buf) - len, 
+                "Communication lost to the ADS1120 chip that measures temperature on port %d and %d.\r\n", i*2, i*2+1);
+        }
+    }
+    writeUSB(buf, len);
+}
+
+// static void printTempStatus()
+// {
+// 	CAPrintStatus();
+// 	printSystemStatus();
+// }
 
 static int initSpiDevices(SPI_HandleTypeDef* hspi)
 {
@@ -81,6 +106,7 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
     {
         int ret = ADS1120Init(&ads1120[i]);
         if (ret != 0) {
+
             err |= ret << (4*i);
 
             // If connection could not be established to chip
@@ -88,9 +114,31 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
         	ads1120[i].data.internalTemp = 10010;
             ads1120[i].data.chA = 10010;
             ads1120[i].data.chB = 10010;
+
+            // The TEMP_ADS1120_Error_Msk maps to the bit relating to the
+            // 0th ADS1120 on the temperature board. Hence, we shift the index
+            // according to the relevant chip having an error.
+            bsSetField( ((BS_ERROR_Msk) |
+                         (TEMP_ADS1120_Error_Msk << i)) );
         }
     }
     return err;
+}
+
+static float internalTemperature(int spiErr)
+{
+    int count = 0;
+    double internalTemp = 0;
+    for (int i = 0; i < NO_SPI_DEVICES; i++)
+    {
+        // Do not include internal temperature of chip if
+        // connection could not be established to ADS1120 chip.
+        if (((spiErr >> 4*i) & 0x0F) != 0) continue;
+
+        internalTemp += ads1120[i].data.internalTemp;
+        count++;
+    }
+    return internalTemp/count;
 }
 
 
@@ -159,26 +207,15 @@ void LoopTemperature(const char* bootMsg)
                 USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices are attached");
             }
 
-            int count = 0;
-            double internalTemp = 0;
-            for (int i = 0; i < NO_SPI_DEVICES; i++)
-            {
-            	// Do not include internal temperature of chip if
-            	// connection could not be established to ADS1120 chip.
-            	if (((spiErr >> 4*i) & 0x0F) != 0) continue;
+            float internalTemp = internalTemperature(spiErr);
 
-            	internalTemp += ads1120[i].data.internalTemp;
-            	count++;
-            }
-            internalTemp = internalTemp/count;
-
-			USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f"
+			USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x"
 					, ads1120[0].data.chA, ads1120[0].data.chB
 					, ads1120[1].data.chA, ads1120[1].data.chB
 					, ads1120[2].data.chA, ads1120[2].data.chB
 					, ads1120[3].data.chA, ads1120[3].data.chB
 					, ads1120[4].data.chA, ads1120[4].data.chB
-					, internalTemp);
+					, internalTemp, bsGetStatus());
         }
     }
 
