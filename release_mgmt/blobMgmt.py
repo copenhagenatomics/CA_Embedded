@@ -5,7 +5,7 @@ import logging as log
 
 # Functions to simplify reading/writing to the blob
 CURL_HEAD = 'curl -f -H "x-ms-version: 2020-04-08" -H "Content-Type: application/octet-stream" -H "x-ms-blob-type: BlockBlob"'
-CURL_URL_BASE = "https://carelease.blob.core.windows.net/temptest/"
+CURL_URL_BASE = "https://carelease.blob.core.windows.net/boards/"
 def getFileFromBlob(remoteFileName, localFileName):
     try:
         key=os.environ.get('AZURE_BLOB_QUERYSTRING')
