@@ -1,0 +1,1 @@
+This folder contains files used for uploading released firmware builds to blob storage, so they can be referenced and downloaded for remote firmware update (DFU). The main process for this is a github "workflow" for that runs whenever a CA_Embedded branch is merged into main.
