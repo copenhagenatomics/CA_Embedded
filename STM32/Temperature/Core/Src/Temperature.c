@@ -64,12 +64,6 @@ static void printTempStatus()
     writeUSB(buf, len);
 }
 
-// static void printTempStatus()
-// {
-// 	CAPrintStatus();
-// 	printSystemStatus();
-// }
-
 static int initSpiDevices(SPI_HandleTypeDef* hspi)
 {
     // Initialise Chip Select pin
