@@ -55,7 +55,7 @@ static void printTempStatus()
 
     for (int i = 0; i < NO_SPI_DEVICES; i++)
     {
-        if (tempStatus & (TEMP_ADS1120_Error_Msk) << i)
+        if (tempStatus & (TEMP_ADS1120_Error_Msk) << (i*2))
         {
             len += snprintf(&buf[len], sizeof(buf) - len, 
                 "Communication lost to the ADS1120 chip that measures temperature on port %d and %d.\r\n", i*2, i*2+1);
@@ -113,7 +113,7 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
             // 0th ADS1120 on the temperature board. Hence, we shift the index
             // according to the relevant chip having an error.
             bsSetField( ((BS_ERROR_Msk) |
-                         (TEMP_ADS1120_Error_Msk << i)) );
+                         (ret << (i*2))) );
         }
     }
     return err;

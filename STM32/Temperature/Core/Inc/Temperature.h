@@ -11,14 +11,14 @@
 
 /* Temperature board status register definitions */
 
-// There are 5 ADS1120 chips on the temperature board. 
-// The position and mask below is mapped to the lsb of the board
-// specific area of the board status code. Hence, this maps to the
-// first ADS1120 chip. 
-// Hence, to indicate an error on the subsequent ADS1120s the Msk need 
-// to be shifted by the index of the relevant chip. 
+// There are 5 ADS1120 chips on the temperature board which measure
+// the temperature on the 10 ports. The ADS1120 make up the main potential
+// source of hardware problems. 
+// Each ADS1120 has two bits of space allocated for status codes.
+// Hence, the mask points to two bits at the time, but the bit shifting
+// changes depending on which chip is of relevance.
 #define TEMP_ADS1120_Error_Pos      0U
-#define TEMP_ADS1120_Error_Msk      (1UL << TEMP_ADS1120_Error_Pos)
+#define TEMP_ADS1120_Error_Msk      (0x3 << TEMP_ADS1120_Error_Pos) 
 
 
 void initSensorCalibration();
