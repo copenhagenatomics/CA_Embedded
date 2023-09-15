@@ -112,8 +112,7 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
             // The TEMP_ADS1120_Error_Msk maps to the bit relating to the
             // 0th ADS1120 on the temperature board. Hence, we shift the index
             // according to the relevant chip having an error.
-            bsSetField( ((BS_ERROR_Msk) |
-                         (ret << (i*2))) );
+            bsSetError( ret << (i*2) );
         }
     }
     return err;
