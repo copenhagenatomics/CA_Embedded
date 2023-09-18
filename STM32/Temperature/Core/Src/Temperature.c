@@ -55,7 +55,7 @@ static void printTempStatus()
 
     for (int i = 0; i < NO_SPI_DEVICES; i++)
     {
-        if (tempStatus & (TEMP_ADS1120_Error_Msk) << (i*2))
+        if (tempStatus & TEMP_ADS1120_x_Error_Msk(i))
         {
             len += snprintf(&buf[len], sizeof(buf) - len, 
                 "Communication lost to the ADS1120 chip that measures temperature on port %d and %d.\r\n", i*2, i*2+1);
@@ -64,7 +64,29 @@ static void printTempStatus()
     writeUSB(buf, len);
 }
 
-static int initSpiDevices(SPI_HandleTypeDef* hspi)
+static void initConnection(ADS1120Device *ads1120, int channel)
+{
+    // Configure the device.
+    int ret = ADS1120Init(ads1120);
+    if (ret != 0) {
+        // If connection could not be established to chip
+        // set temperatures to 10010 to indicate miscommunication
+        ads1120->data.internalTemp = 10010;
+        ads1120->data.chA = 10010;
+        ads1120->data.chB = 10010;
+
+        // The TEMP_ADS1120_Error_Msk maps to the bit relating to the
+        // 0th ADS1120 on the temperature board. Hence, we shift the index
+        // according to the relevant chip having an error.
+        bsSetErrorRange(ret << (channel*2), TEMP_ADS1120_x_Error_Msk(channel));
+    }
+    else
+    {
+        bsClearField(TEMP_ADS1120_x_Error_Msk(channel));
+    }
+}
+
+static void initSpiDevices(SPI_HandleTypeDef* hspi)
 {
     // Initialise Chip Select pin
     stmGpioInit(&ads1120[0].cs, CS1_GPIO_Port, CS1_Pin, STM_GPIO_OUTPUT);
@@ -95,30 +117,13 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
     HAL_SPI_Transmit(hspi, dummy, 2, 1);
 
     // Now configure the devices.
-    int err = 0;
     for (int i=0; i < NO_SPI_DEVICES; i++)
     {
-        int ret = ADS1120Init(&ads1120[i]);
-        if (ret != 0) {
-
-            err |= ret << (4*i);
-
-            // If connection could not be established to chip
-            // set temperatures to 10010 to indicate miscommunication
-        	ads1120[i].data.internalTemp = 10010;
-            ads1120[i].data.chA = 10010;
-            ads1120[i].data.chB = 10010;
-
-            // The TEMP_ADS1120_Error_Msk maps to the bit relating to the
-            // 0th ADS1120 on the temperature board. Hence, we shift the index
-            // according to the relevant chip having an error.
-            bsSetError( ret << (i*2) );
-        }
+        initConnection(&ads1120[i], i);
     }
-    return err;
 }
 
-static float internalTemperature(int spiErr)
+static float internalTemperature()
 {
     int count = 0;
     double internalTemp = 0;
@@ -126,7 +131,7 @@ static float internalTemperature(int spiErr)
     {
         // Do not include internal temperature of chip if
         // connection could not be established to ADS1120 chip.
-        if (((spiErr >> 4*i) & 0x0F) != 0) continue;
+        if (((bsGetStatus() >> 2*i) & 0x0F) != 0) continue;
 
         internalTemp += ads1120[i].data.internalTemp;
         count++;
@@ -163,21 +168,31 @@ void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_H
 
 void LoopTemperature(const char* bootMsg)
 {
-    static int spiErr = 0;
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
     static bool isFirstWrite = true;
 
     CAhandleUserInputs(&caProto, bootMsg);
 
+    uint32_t boardState = bsGetStatus();
     for (int i=0; i < NO_SPI_DEVICES && hspi != NULL && !isFirstWrite; i++)
     {
-    	// Continue if connection could not be established to ADS1120 chip.
-    	if (((spiErr >> 4*i) & 0x0F) != 0) continue;
+    	// Try to re-establish connection to ADS1120.
+    	if (((boardState >> 2*i) & 0x0F) != 0)
+        {
+            initConnection(&ads1120[i], i);
+            // If there are no more errors left then clear the error bit.
+            if (bsGetStatus() == 0)
+            {
+                bsClearField(BS_ERROR_Msk);
+            }
+            continue;
+        } 
 
         float *calPtr = &portCalVal[i*2][0];
         ADS1120Loop(&ads1120[i], calPtr);
     }
+    float internalTemp = internalTemperature();
 
     // Upload data every "tsUpload" ms.
     if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
@@ -191,7 +206,7 @@ void LoopTemperature(const char* bootMsg)
             {
                 __HAL_RCC_WWDG_CLK_ENABLE(); // Enable wwdg now that print frequency has stabilised.
                 if (hspi != NULL)
-                    spiErr = initSpiDevices(hspi);
+                    initSpiDevices(hspi);
                 isFirstWrite = false;
                 return;
             }
@@ -199,8 +214,6 @@ void LoopTemperature(const char* bootMsg)
             if (hspi == NULL) {
                 USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices are attached");
             }
-
-            float internalTemp = internalTemperature(spiErr);
 
 			USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x"
 					, ads1120[0].data.chA, ads1120[0].data.chB
