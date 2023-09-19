@@ -123,6 +123,36 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi)
     }
 }
 
+static SPI_HandleTypeDef* hspi = NULL;
+static void updateTempAndStates()
+{
+    uint32_t boardState = bsGetStatus();
+    for (int i=0; i < NO_SPI_DEVICES && hspi != NULL; i++)
+    {
+    	// Try to re-establish connection to ADS1120.
+        // If the connection is broken
+    	if (((boardState >> i*2) & 0x0F) != 0)
+        {
+            initConnection(&ads1120[i], i);
+            // If there are no more errors left then clear the error bit.
+            if (bsGetStatus() == 0){
+                bsClearField(BS_ERROR_Msk);
+            }
+            continue;
+        } 
+
+        // Get measurements
+        float *calPtr = &portCalVal[i*2][0];
+        int ret = ADS1120Loop(&ads1120[i], calPtr);
+
+        // If the return value is different from 0 - set an error.
+        if (ret != 0)
+        {
+            bsSetErrorRange(ret << (i*2), TEMP_ADS1120_x_Error_Msk(i));
+        }
+    }
+}
+
 static float internalTemperature()
 {
     int count = 0;
@@ -131,6 +161,7 @@ static float internalTemperature()
     {
         // Do not include internal temperature of chip if
         // connection could not be established to ADS1120 chip.
+        // Reconnection is handled in updateTempAndStates()
         if (((bsGetStatus() >> 2*i) & 0x0F) != 0) continue;
 
         internalTemp += ads1120[i].data.internalTemp;
@@ -139,8 +170,6 @@ static float internalTemperature()
     return internalTemp/count;
 }
 
-
-static SPI_HandleTypeDef* hspi = NULL;
 static WWDG_HandleTypeDef* hwwdg = NULL;
 static CRC_HandleTypeDef* hcrc = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
@@ -171,28 +200,15 @@ void LoopTemperature(const char* bootMsg)
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
     static bool isFirstWrite = true;
+    static float internalTemp = 0;
 
     CAhandleUserInputs(&caProto, bootMsg);
 
-    uint32_t boardState = bsGetStatus();
-    for (int i=0; i < NO_SPI_DEVICES && hspi != NULL && !isFirstWrite; i++)
+    if (!isFirstWrite)
     {
-    	// Try to re-establish connection to ADS1120.
-    	if (((boardState >> 2*i) & 0x0F) != 0)
-        {
-            initConnection(&ads1120[i], i);
-            // If there are no more errors left then clear the error bit.
-            if (bsGetStatus() == 0)
-            {
-                bsClearField(BS_ERROR_Msk);
-            }
-            continue;
-        } 
-
-        float *calPtr = &portCalVal[i*2][0];
-        ADS1120Loop(&ads1120[i], calPtr);
+        updateTempAndStates();
+        internalTemp = internalTemperature();
     }
-    float internalTemp = internalTemperature();
 
     // Upload data every "tsUpload" ms.
     if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
