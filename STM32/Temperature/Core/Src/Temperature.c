@@ -193,6 +193,7 @@ void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_H
 	hcrc = hcrc_;
 
     initSensorCalibration();
+    initSpiDevices(hspi);
 }
 
 void LoopTemperature(const char* bootMsg)
@@ -200,49 +201,40 @@ void LoopTemperature(const char* bootMsg)
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
     static bool isFirstWrite = true;
-    static float internalTemp = 0;
 
     CAhandleUserInputs(&caProto, bootMsg);
 
-    if (!isFirstWrite)
-    {
-        updateTempAndStates();
-        internalTemp = internalTemperature();
-    }
+    // Measure temperatures
+    updateTempAndStates();
+    float internalTemp = internalTemperature();
 
     // Upload data every "tsUpload" ms.
-    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
+    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload && isComPortOpen())
     {
+
         timeStamp = HAL_GetTick();
     	HAL_WWDG_Refresh(hwwdg);
-
-        if (isComPortOpen())
+        
+        if (isFirstWrite)
         {
-            if (isFirstWrite)
-            {
-                __HAL_RCC_WWDG_CLK_ENABLE(); // Enable wwdg now that print frequency has stabilised.
-                if (hspi != NULL)
-                    initSpiDevices(hspi);
-                isFirstWrite = false;
-                return;
-            }
-
-            if (hspi == NULL) {
-                USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices are attached");
-            }
-
-			USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x"
-					, ads1120[0].data.chA, ads1120[0].data.chB
-					, ads1120[1].data.chA, ads1120[1].data.chB
-					, ads1120[2].data.chA, ads1120[2].data.chB
-					, ads1120[3].data.chA, ads1120[3].data.chB
-					, ads1120[4].data.chA, ads1120[4].data.chB
-					, internalTemp, bsGetStatus());
+            __HAL_RCC_WWDG_CLK_ENABLE(); // Enable wwdg now that print frequency has stabilised.
+            isFirstWrite = false;
+            return;
         }
-    }
 
-    if (!isComPortOpen())
-        isFirstWrite=true;
+        if (hspi == NULL) {
+            USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices are attached");
+            return;
+        }
+
+        USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x"
+                , ads1120[0].data.chA, ads1120[0].data.chB
+                , ads1120[1].data.chA, ads1120[1].data.chB
+                , ads1120[2].data.chA, ads1120[2].data.chB
+                , ads1120[3].data.chA, ads1120[3].data.chB
+                , ads1120[4].data.chA, ads1120[4].data.chB
+                , internalTemp, bsGetStatus());
+    }
 }
 
 void initSensorCalibration()
