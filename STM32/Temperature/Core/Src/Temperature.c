@@ -131,7 +131,7 @@ static void updateTempAndStates()
     {
     	// Try to re-establish connection to ADS1120.
         // If the connection is broken
-    	if (((boardState >> i*2) & 0x0F) != 0)
+    	if (((boardState >> i*2) & 0x03) != 0)
         {
             initConnection(&ads1120[i], i);
             // If there are no more errors left then clear the error bit.
@@ -162,7 +162,7 @@ static float internalTemperature()
         // Do not include internal temperature of chip if
         // connection could not be established to ADS1120 chip.
         // Reconnection is handled in updateTempAndStates()
-        if (((bsGetStatus() >> 2*i) & 0x0F) != 0) continue;
+        if (((bsGetStatus() >> 2*i) & 0x03) != 0) continue;
 
         internalTemp += ads1120[i].data.internalTemp;
         count++;
