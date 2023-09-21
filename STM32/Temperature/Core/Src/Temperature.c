@@ -123,23 +123,31 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi)
     }
 }
 
-static SPI_HandleTypeDef* hspi = NULL;
-static void updateTempAndStates()
+static void monitorBoardStatus()
 {
-    uint32_t boardState = bsGetStatus();
-    for (int i=0; i < NO_SPI_DEVICES && hspi != NULL; i++)
+    for (int i=0; i < NO_SPI_DEVICES; i++)
     {
-    	// Try to re-establish connection to ADS1120.
-        // If the connection is broken
-    	if (((boardState >> i*2) & 0x03) != 0)
+        // Try to re-establish connection to ADS1120.
+        // if the connection is broken
+    	if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0)
         {
             initConnection(&ads1120[i], i);
             // If there are no more errors left then clear the error bit.
-            if (bsGetStatus() == 0){
+            if ((bsGetStatus() & TEMP_No_Error_Msk) == 0)
+            {
                 bsClearField(BS_ERROR_Msk);
             }
-            continue;
         } 
+    }
+}
+
+static void getPeripheralTemperatures()
+{
+    for (int i=0; i < NO_SPI_DEVICES; i++)
+    {
+    	// Try to re-establish connection to ADS1120.
+        // If the connection is broken
+    	if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) continue;
 
         // Get measurements
         float *calPtr = &portCalVal[i*2][0];
@@ -153,7 +161,7 @@ static void updateTempAndStates()
     }
 }
 
-static float internalTemperature()
+static float getInternalTemperature()
 {
     int count = 0;
     double internalTemp = 0;
@@ -162,7 +170,7 @@ static float internalTemperature()
         // Do not include internal temperature of chip if
         // connection could not be established to ADS1120 chip.
         // Reconnection is handled in updateTempAndStates()
-        if (((bsGetStatus() >> 2*i) & 0x03) != 0) continue;
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) continue;
 
         internalTemp += ads1120[i].data.internalTemp;
         count++;
@@ -170,6 +178,17 @@ static float internalTemperature()
     return internalTemp/count;
 }
 
+static void enableWWDG()
+{
+    static int isWWDGEnabled = 0;
+    if (!isWWDGEnabled)
+    {
+        isWWDGEnabled = 1;
+        __HAL_RCC_WWDG_CLK_ENABLE(); 
+    }
+}
+
+static SPI_HandleTypeDef* hspi = NULL;
 static WWDG_HandleTypeDef* hwwdg = NULL;
 static CRC_HandleTypeDef* hcrc = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
@@ -200,32 +219,28 @@ void LoopTemperature(const char* bootMsg)
 {
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
-    static bool isFirstWrite = true;
 
     CAhandleUserInputs(&caProto, bootMsg);
 
+    // Check the status off the board
+    monitorBoardStatus();
     // Measure temperatures
-    updateTempAndStates();
-    float internalTemp = internalTemperature();
+    getPeripheralTemperatures();
+    float internalTemp = getInternalTemperature();
 
     // Upload data every "tsUpload" ms.
-    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload && isComPortOpen())
+    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
     {
-
         timeStamp = HAL_GetTick();
     	HAL_WWDG_Refresh(hwwdg);
         
-        if (isFirstWrite)
+        if (!isComPortOpen())
         {
-            __HAL_RCC_WWDG_CLK_ENABLE(); // Enable wwdg now that print frequency has stabilised.
-            isFirstWrite = false;
             return;
         }
 
-        if (hspi == NULL) {
-            USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices are attached");
-            return;
-        }
+        // Enable wwdg now that print frequency has stabilised.
+        enableWWDG(); 
 
         USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x"
                 , ads1120[0].data.chA, ads1120[0].data.chB

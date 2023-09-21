@@ -20,6 +20,9 @@
  */
 #define TEMP_ADS1120_x_Error_Msk(x)  (0x03 << (2*(x)))
 
+// Mask to check whether there are currently any errors on the board 
+#define TEMP_No_Error_Msk            0x7FFFFFFF
+
 
 void initSensorCalibration();
 void setSensorCalibration(int pinNumber, char type);
