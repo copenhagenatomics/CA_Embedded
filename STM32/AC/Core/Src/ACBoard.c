@@ -258,6 +258,8 @@ static void heatSinkLoop()
     }
     else // Safety mode to avoid overheating of the board
     {
+        stmSetGpio(fanCtrl, true);
+        
         unsigned long now = HAL_GetTick();
         if (now - previous > 2000)  // 2000ms. Should be aligned with the control period of heater.
         {
