@@ -333,7 +333,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     initCAProtocol(&caProto, usb_cdc_rx);
 
     BoardType board;
-    if (getBoardInfo(&board, NULL) || board != DC_Board)
+    if (getBoardInfo(&board, NULL) || board != AC_Board)
     {
         bsSetError(AC_BOARD_VERSION_ERROR);
     }
