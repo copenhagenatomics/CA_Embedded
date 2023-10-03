@@ -18,10 +18,8 @@
 #define AC_BOARD_PORT_x_STATUS_Msk(x) (1U << (x))
 #define AC_BOARD_PORTS_STATUS_Msk     ((1U << 5U) - 1U)
 
-#define AC_BOARD_VERSION_ERROR        (1U << 5U)
-
 /* Define showing which bits are "errors" and which are only for information */
-#define AC_BOARD_No_Error_Msk         (0x78000020U)
+#define AC_BOARD_No_Error_Msk         (BS_SYSTEM_ERRORS_Msk)
 
 /* Common definitions for AC Board */
 #define AC_BOARD_NUM_PORTS            4

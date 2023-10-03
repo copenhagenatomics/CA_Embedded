@@ -77,20 +77,6 @@ static void printAcStatus()
     static char buf[600] = { 0 };
     int len = 0;
 
-    if (bsGetStatus() & AC_BOARD_VERSION_ERROR)
-    {
-        BoardType bt;
-        pcbVersion pv;
-        (void) getBoardInfo(&bt, NULL);
-        (void) getPcbVersion(&pv);
-        len += snprintf(&buf[len], sizeof(buf) - len, 
-            "Error: Incorrent Version.\r\n"
-            "   Board is: %d.\r\n"
-            "   Board should be: %d.\r\n"
-            "   PCB Version is: %d.%d.\r\n"
-            "   PCB Version should be > 6.0.\r\n", (int)bt, (int)AC_Board, pv.major, pv.minor);
-    }
-
     len += snprintf(&buf[len], sizeof(buf) - len, "Fan     On: %d\r\n", stmGetGpio(fanCtrl));
     for (int i = 0; i < AC_BOARD_NUM_PORTS; i++)
     {
@@ -160,7 +146,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     if (!isComPortOpen()) return;
 
     /* If the version is incorrect, there is no point printing data or doing maths */
-    if (bsGetStatus() & AC_BOARD_VERSION_ERROR)
+    if (bsGetStatus() & BS_VERSION_ERROR_Msk)
     {
         USBnprintf("0x%x", bsGetStatus());
         return;
@@ -310,10 +296,7 @@ static void updateBoardStatus()
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
     ** the (other) error bits are cleared, but doing here means it only needs to be done once */
-    if (!(bsGetStatus() & AC_BOARD_No_Error_Msk))
-    {
-        bsClearField(BS_ERROR_Msk);
-    }
+    bsClearError(AC_BOARD_No_Error_Msk);
 }
 
 /***************************************************************************************************
@@ -329,20 +312,23 @@ static void updateBoardStatus()
 */
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
+    setFirmwareBoardType(AC_Board);
+    setFirmwareBoardVersion((pcbVersion){6, 0});
+
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usb_cdc_rx);
 
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != AC_Board)
     {
-        bsSetError(AC_BOARD_VERSION_ERROR);
+        bsSetError(BS_VERSION_ERROR_Msk);
     }
 
     // Pin out has changed from PCB V6.0 - older versions need other software.
     pcbVersion ver;
     if (getPcbVersion(&ver) || ver.major < 6)
     {
-        bsSetError(AC_BOARD_VERSION_ERROR);
+        bsSetError(BS_VERSION_ERROR_Msk);
     }
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
