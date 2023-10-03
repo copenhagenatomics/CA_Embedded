@@ -34,7 +34,7 @@ static void CAallOn(bool isOn);
 static void CAportState(int port, bool state, int percent, int duration);
 static void userInput(const char *input);
 static void printAcStatus();
-static void updateErrorField();
+static void updateBoardStatus();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -76,6 +76,20 @@ static void printAcStatus()
 {
     static char buf[600] = { 0 };
     int len = 0;
+
+    if (bsGetStatus() & AC_BOARD_VERSION_ERROR)
+    {
+        BoardType bt;
+        pcbVersion pv;
+        (void) getBoardInfo(&bt, NULL);
+        (void) getPcbVersion(&pv);
+        len += snprintf(&buf[len], sizeof(buf) - len, 
+            "Error: Incorrent Version.\r\n"
+            "   Board is: %d.\r\n"
+            "   Board should be: %d.\r\n"
+            "   PCB Version is: %d.%d.\r\n"
+            "   PCB Version should be > 6.0.\r\n", (int)bt, (int)AC_Board, pv.major, pv.minor);
+    }
 
     len += snprintf(&buf[len], sizeof(buf) - len, "Fan     On: %d\r\n", stmGetGpio(fanCtrl));
     for (int i = 0; i < AC_BOARD_NUM_PORTS; i++)
@@ -144,6 +158,13 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     static int16_t current_calibration[ADC_CHANNELS];
 
     if (!isComPortOpen()) return;
+
+    /* If the version is incorrect, there is no point printing data or doing maths */
+    if (bsGetStatus() & AC_BOARD_VERSION_ERROR)
+    {
+        USBnprintf("0x%x", bsGetStatus());
+        return;
+    }
 
     if (!isCalibrationDone)
     {
@@ -279,7 +300,7 @@ static void heatSinkLoop()
 ** Adds the port and fan status bits into the error field, and clears the error bit if there are no
 ** more errors.
 */
-static void updateErrorField() 
+static void updateBoardStatus() 
 {
     stmGetGpio(fanCtrl) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(0)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(0));
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++)
@@ -299,16 +320,22 @@ static void updateErrorField()
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
+/*!
+** @brief Setup function called at startup
+**
+** Checks the hardware matches this FW version, starts the USB communication and starts the ADC. 
+** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
+** link
+*/
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usb_cdc_rx);
 
     BoardType board;
-    if (getBoardInfo(&board, NULL) || board != AC_Board)
+    if (getBoardInfo(&board, NULL) || board != DC_Board)
     {
         bsSetError(AC_BOARD_VERSION_ERROR);
-        return;
     }
 
     // Pin out has changed from PCB V6.0 - older versions need other software.
@@ -316,7 +343,6 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     if (getPcbVersion(&ver) || ver.major < 6)
     {
         bsSetError(AC_BOARD_VERSION_ERROR);
-        return;
     }
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
@@ -327,10 +353,19 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     hwwdg_=hwwdg;
 }
 
+/*!
+** @brief Loop function called repeatedly throughout
+** 
+** * Responds to user input
+** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
+**   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
+** * Runs the closed loop control system for board temperature and PWMs the heaters as per user 
+**   input
+*/
 void ACBoardLoop(const char *bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
-    updateErrorField();
+    updateBoardStatus();
     ADCMonitorLoop(printCurrentArray);
     heatSinkLoop();
 
