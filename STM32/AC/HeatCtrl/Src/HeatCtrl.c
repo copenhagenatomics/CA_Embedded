@@ -177,7 +177,7 @@ void updateHeaterPhaseControl()
 
     /* Starting at the end and working backwards means all the periodBegins are set BACK in time, 
     ** instead of forwards. This means the tdiff_u32() function will produce normal results */
-    for(HeatCtrl *ctx = &heaters[noOfHeaters]; ctx >= heaters; ctx--)
+    for(HeatCtrl *ctx = &heaters[noOfHeaters-1]; ctx >= heaters; ctx--)
     {
         period_begin -= (ctx->pwmPercent * ctx->pwmPeriod) / 100;
         ctx->periodBegin = period_begin;
