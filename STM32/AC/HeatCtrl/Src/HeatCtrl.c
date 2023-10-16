@@ -7,15 +7,16 @@
 typedef struct HeatCtrl
 {
     // pwm data.
-    uint32_t pwmDuration;
+    uint32_t pwmBegin;   // Start of PWM period (for PWM generation)
     uint32_t pwmPeriod;  // Period (in mSec) for a full PWM signal
     uint8_t  pwmPercent; // Percentage of the PWM signal where is should be high.
 
     StmGpio *heater;
     StmGpio *button;
 
-    // timeStamp begin of period. Used to safety shut off and PWM signal generation
+    // timeStamp begin of period. Used to safety shut off after a duration
     uint32_t periodBegin;
+    uint32_t periodDuration;
 } HeatCtrl;
 
 static HeatCtrl heaters[MAX_NO_HEATERS];
@@ -29,9 +30,10 @@ HeatCtrl* heatCtrlAdd(StmGpio *heater, StmGpio * button)
     HeatCtrl *ctx = &heaters[noOfHeaters];
     noOfHeaters++;
 
-    ctx->pwmDuration = 0;     // Default is off.
-    ctx->pwmPeriod   = PWM_PERIOD_MS;  // default value, 1 seconds.
-    ctx->pwmPercent  = 0;     // Default is off.
+    ctx->periodDuration = 0;            // Default is off.
+    ctx->pwmPeriod   = PWM_PERIOD_MS;   // default value, 1 seconds.
+    ctx->pwmPercent  = 0;               // Default is off.
+    ctx->pwmBegin    = 0;               // Default is off.
 
     ctx->heater = heater;
     ctx->button = button;
@@ -47,14 +49,16 @@ void heaterLoop()
     for(HeatCtrl *pCtrl = heaters; pCtrl < &heaters[noOfHeaters]; pCtrl++)
     {
         uint32_t tdiff = tdiff_u32(now, pCtrl->periodBegin);
-        if (tdiff > pCtrl->pwmDuration)
+        if (tdiff > pCtrl->periodDuration)
         {
             // Turn of heater since duration is done.
             pCtrl->pwmPercent = 0;
+            updateHeaterPhaseControl();
         }
 
         // Use modules '%' to get the on/off section in PWM period.
         // If percent is 0, heat shall be off (period is invalid)
+        tdiff = tdiff_u32(now, pCtrl->pwmBegin);
         if (pCtrl->pwmPercent == 0)
         {
             pCtrl->heater->set(pCtrl->heater, false);
@@ -75,7 +79,7 @@ void allOff()
     for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
     {
         ctx->pwmPercent = 0;
-        ctx->pwmDuration = 0;
+        ctx->periodDuration = 0;
     }
     updateHeaterPhaseControl();
 }
@@ -85,7 +89,7 @@ void allOn()
     for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
     {
         ctx->pwmPercent = 100;
-        ctx->pwmDuration = MAX_DURATION;
+        ctx->periodDuration = MAX_DURATION;
     }
     updateHeaterPhaseControl();
 }
@@ -96,7 +100,7 @@ void turnOffPin(int pin)
     {
         HeatCtrl *ctx = &heaters[pin];
         ctx->pwmPercent = 0;
-        ctx->pwmDuration = 0;
+        ctx->periodDuration = 0;
         updateHeaterPhaseControl();
     }
 }
@@ -107,7 +111,7 @@ void turnOnPin(int pin)
     {
         HeatCtrl *ctx = &heaters[pin];
         ctx->pwmPercent = 100;
-        ctx->pwmDuration = MAX_DURATION;
+        ctx->periodDuration = MAX_DURATION;
         updateHeaterPhaseControl();
     }
 }
@@ -118,7 +122,8 @@ void turnOnPinDuration(int pin, int duration_ms)
     {
         HeatCtrl *ctx = &heaters[pin];
         ctx->pwmPercent = 100;
-        ctx->pwmDuration = (duration_ms >= 0) ? duration_ms : MAX_DURATION; // Negative value means forever.
+        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : MAX_DURATION; // Negative value means forever.
+        ctx->periodBegin = HAL_GetTick();
         updateHeaterPhaseControl();
     }
 }
@@ -129,7 +134,8 @@ void setPWMPin(int pin, int pwmPct, int duration_ms)
     {
         HeatCtrl *ctx = &heaters[pin];
         ctx->pwmPercent = pwmPct;
-        ctx->pwmDuration = (duration_ms >= 0) ? duration_ms : MAX_DURATION; // Negative value means forever.
+        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : MAX_DURATION; // Negative value means forever.
+        ctx->periodBegin = HAL_GetTick();
         updateHeaterPhaseControl();
     }
 }
@@ -145,7 +151,7 @@ void adjustPWMDown()
             // such that the board tries to keep the maximal attainable temperature
             // However, the board should ultimately go into safe mode by shutting off
             // if no new commands are received in case of loss of communication.
-            ctx->pwmDuration = (ctx->pwmDuration != MAX_DURATION) ? MAX_TIMEOUT : MAX_DURATION;
+            ctx->periodDuration = (ctx->periodDuration != MAX_DURATION) ? MAX_TIMEOUT : MAX_DURATION;
 
             updateHeaterPhaseControl();
         }
@@ -169,17 +175,24 @@ uint8_t getPWMPinPercent(int pin)
 ** @brief Aligns phase control of all PWM'd heaters
 **
 ** Aligns the start and end of the "on" pulse of all channels (excluding "always on" or "always off"
-** channels) by modifying the "periodBegin" variable for each heater
+** channels) by modifying the "pwmBegin" variable for each heater
 */
 void updateHeaterPhaseControl() 
 {
-    uint32_t period_begin = HAL_GetTick();
-
-    /* Starting at the end and working backwards means all the periodBegins are set BACK in time, 
-    ** instead of forwards. This means the tdiff_u32() function will produce normal results */
-    for(HeatCtrl *ctx = &heaters[noOfHeaters-1]; ctx >= heaters; ctx--)
+    /* Start from one period ago, so everything is time aligned */
+    const uint32_t pwmBegin = HAL_GetTick() - PWM_PERIOD_MS;
+    uint32_t totalPeriod = 0;
+    
+    for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
     {
-        period_begin -= (ctx->pwmPercent * ctx->pwmPeriod) / 100;
-        ctx->periodBegin = period_begin;
+        ctx->pwmBegin = pwmBegin + totalPeriod;
+
+        /* If the totalPeriod reaches the end of the period, wrap it around to the beginning so 
+        ** that none of the heaters are more than one second delayed in starting */
+        totalPeriod += (ctx->pwmPercent * ctx->pwmPeriod) / 100;
+        if(totalPeriod > PWM_PERIOD_MS)
+        {
+            totalPeriod -= PWM_PERIOD_MS;
+        }
     }
 }
