@@ -27,4 +27,3 @@ void turnOnPinDuration(int pin, int duration);
 void setPWMPin(int pin, int pwmPct, int duration);
 void adjustPWMDown();
 uint8_t getPWMPinPercent(int pin);
-void updateHeaterPhaseControl();

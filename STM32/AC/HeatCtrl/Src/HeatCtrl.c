@@ -1,8 +1,16 @@
 #include <time32.h>
 #include "HeatCtrl.h"
 
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
 #define MAX_DURATION ((uint32_t) -1)
 #define MAX_TIMEOUT  60000 // Auto regulation time out from overheat prevention mode
+
+/***************************************************************************************************
+** TYPEDEFS
+***************************************************************************************************/
 
 typedef struct HeatCtrl
 {
@@ -19,8 +27,23 @@ typedef struct HeatCtrl
     uint32_t periodDuration;
 } HeatCtrl;
 
+/***************************************************************************************************
+** PRIVATE VARIABLES
+***************************************************************************************************/
+
 static HeatCtrl heaters[MAX_NO_HEATERS];
 static int noOfHeaters = 0;
+
+/***************************************************************************************************
+** PRIVATE FUNCTION DECLARATIONS
+***************************************************************************************************/
+
+void setPwmPercent(HeatCtrl* ctx, uint32_t pct);
+void updateHeaterPhaseControl();
+
+/***************************************************************************************************
+** FUNCTION DEFINITIONS
+***************************************************************************************************/
 
 HeatCtrl* heatCtrlAdd(StmGpio *heater, StmGpio * button)
 {
@@ -52,8 +75,7 @@ void heaterLoop()
         if (tdiff > pCtrl->periodDuration)
         {
             // Turn of heater since duration is done.
-            pCtrl->pwmPercent = 0;
-            updateHeaterPhaseControl();
+            setPwmPercent(pCtrl, 0);
         }
 
         // Use modules '%' to get the on/off section in PWM period.
@@ -99,9 +121,8 @@ void turnOffPin(int pin)
     if (pin >= 0 && pin < noOfHeaters)
     {
         HeatCtrl *ctx = &heaters[pin];
-        ctx->pwmPercent = 0;
         ctx->periodDuration = 0;
-        updateHeaterPhaseControl();
+        setPwmPercent(ctx, 0);
     }
 }
 
@@ -110,9 +131,8 @@ void turnOnPin(int pin)
     if (pin >= 0 && pin < noOfHeaters)
     {
         HeatCtrl *ctx = &heaters[pin];
-        ctx->pwmPercent = 100;
         ctx->periodDuration = MAX_DURATION;
-        updateHeaterPhaseControl();
+        setPwmPercent(ctx, 100);
     }
 }
 
@@ -121,10 +141,9 @@ void turnOnPinDuration(int pin, int duration_ms)
     if (pin >= 0 && pin < noOfHeaters)
     {
         HeatCtrl *ctx = &heaters[pin];
-        ctx->pwmPercent = 100;
         ctx->periodDuration = (duration_ms >= 0) ? duration_ms : MAX_DURATION; // Negative value means forever.
         ctx->periodBegin = HAL_GetTick();
-        updateHeaterPhaseControl();
+        setPwmPercent(ctx, 100);
     }
 }
 
@@ -133,10 +152,9 @@ void setPWMPin(int pin, int pwmPct, int duration_ms)
     if (pin >= 0 && pin < noOfHeaters && pwmPct >= 0 && pwmPct <= 100)
     {
         HeatCtrl *ctx = &heaters[pin];
-        ctx->pwmPercent = pwmPct;
         ctx->periodDuration = (duration_ms >= 0) ? duration_ms : MAX_DURATION; // Negative value means forever.
         ctx->periodBegin = HAL_GetTick();
-        updateHeaterPhaseControl();
+        setPwmPercent(ctx, pwmPct);
     }
 }
 
@@ -146,14 +164,13 @@ void adjustPWMDown()
     {
         if (ctx->pwmPercent >= 1)
         {
-            ctx->pwmPercent -= 1;
             // If the overheat prevention state has been enabled then extend the pwm duration
             // such that the board tries to keep the maximal attainable temperature
             // However, the board should ultimately go into safe mode by shutting off
             // if no new commands are received in case of loss of communication.
             ctx->periodDuration = (ctx->periodDuration != MAX_DURATION) ? MAX_TIMEOUT : MAX_DURATION;
 
-            updateHeaterPhaseControl();
+            setPwmPercent(ctx, ctx->pwmPercent - 1);
         }
     }
 }
@@ -170,6 +187,10 @@ uint8_t getPWMPinPercent(int pin)
     // 0 is the always safe option.
     return 0;
 }
+
+/***************************************************************************************************
+** PRIVATE FUNCTION DEFINITIONS
+***************************************************************************************************/
 
 /*!
 ** @brief Aligns phase control of all PWM'd heaters
@@ -194,5 +215,22 @@ void updateHeaterPhaseControl()
         {
             totalPeriod -= PWM_PERIOD_MS;
         }
+    }
+}
+
+/*!
+** @brief Sets the heaters pwmPercent member
+**
+** If the new percentage matches the old percentage, does not re-organise the PWM stacking.
+**
+** @param[inout] ctx Pointer to heater to modify
+** @param[in]    pct New on-percent to apply
+*/
+void setPwmPercent(HeatCtrl* ctx, uint32_t pct)
+{
+    if(ctx->pwmPercent != pct)
+    {
+        ctx->pwmPercent = pct;
+        updateHeaterPhaseControl();
     }
 }
