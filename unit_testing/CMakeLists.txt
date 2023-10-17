@@ -34,11 +34,6 @@ enable_testing()
 
 include(GoogleTest)
 
-# HelloTest
-add_executable(hello_test hello_test.cpp)
-target_link_libraries(hello_test GTest::gtest_main)
-gtest_discover_tests(hello_test)
-
 # AC tests
 add_executable(ac_test AC/AC_tests.cpp ${LIB}/Util/Src/time32.c fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.c)
 target_include_directories(ac_test PRIVATE fakes ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src)
