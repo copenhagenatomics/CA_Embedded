@@ -78,19 +78,19 @@ void heaterLoop()
             setPwmPercent(pCtrl, 0);
         }
 
-        // Use modules '%' to get the on/off section in PWM period.
-        // If percent is 0, heat shall be off (period is invalid)
-        tdiff = tdiff_u32(now, pCtrl->pwmBegin);
+        /* If percent is 0, heat shall be off (period is invalid) */
         if (pCtrl->pwmPercent == 0)
         {
             pCtrl->heater->set(pCtrl->heater, false);
         }
+        /* Otherwise, use modules '%' to get the on/off section in PWM period. */
         else
         {
+            tdiff = tdiff_u32(now, pCtrl->pwmBegin);
             uint32_t periodOn = (pCtrl->pwmPercent * pCtrl->pwmPeriod) / 100;
             tdiff = tdiff % pCtrl->pwmPeriod;
 
-            pCtrl->heater->set(pCtrl->heater, tdiff <= periodOn);
+            pCtrl->heater->set(pCtrl->heater, tdiff < periodOn);
         }
     }
 }
@@ -211,7 +211,7 @@ void updateHeaterPhaseControl()
         /* If the totalPeriod reaches the end of the period, wrap it around to the beginning so 
         ** that none of the heaters are more than one second delayed in starting */
         totalPeriod += (ctx->pwmPercent * ctx->pwmPeriod) / 100;
-        if(totalPeriod > PWM_PERIOD_MS)
+        if(totalPeriod >= PWM_PERIOD_MS)
         {
             totalPeriod -= PWM_PERIOD_MS;
         }

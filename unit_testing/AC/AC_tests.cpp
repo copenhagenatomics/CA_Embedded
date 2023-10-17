@@ -28,7 +28,7 @@ class ACHeaterCtrl: public ::testing::Test
             for(int i = 0; i < MAX_NO_HEATERS; i++) 
             {
                 stmGpioInit(&heaterGpios[i], STM_GPIO_OUTPUT);
-                heatCtrlAdd(&heaterGpios[i], &heaterButtons[i]);
+                EXPECT_NE(heatCtrlAdd(&heaterGpios[i], &heaterButtons[i]), nullptr);
             }
         }
 
@@ -75,7 +75,7 @@ TEST_F(ACHeaterCtrl, allOff)
 
     for(int i = 0; i < MAX_NO_HEATERS; i++) 
     {
-        EXPECT_EQ(getPWMPinPercent(i), 1);
+        EXPECT_EQ(getPWMPinPercent(i), 0);
     }
 }
 
@@ -109,10 +109,30 @@ TEST_F(ACHeaterCtrl, turnOnPin)
     }
 }
 
-/* Skipping turnOnPinDuration (for now) as the side-effects are difficult to evaluate without 
-** instrumentation */
+TEST_F(ACHeaterCtrl, turnOnPinDuration)
+{
+    const int durations[MAX_NO_HEATERS] = {PWM_PERIOD_MS, 2 * PWM_PERIOD_MS, 3 * PWM_PERIOD_MS, 4 * PWM_PERIOD_MS};
 
-/* Test limited to effect of PWM as duration is difficult to assess without instrumentation */
+    /* Give each heater a different duration */
+    forceTick(0);
+    for(int i = 0; i < MAX_NO_HEATERS; i++)
+    {
+        turnOnPinDuration(i, durations[i]);
+    }
+
+    /* Check all the heaters GPIO are only turned on until their duration runs out */
+    for(int i = 0; i < durations[3] + 1; i++)
+    {
+        forceTick(i);
+        heaterLoop();
+
+        for(int j = 0; j < MAX_NO_HEATERS; j++)
+        {
+            EXPECT_EQ(heaterGpios[j].state == PIN_SET, i <= durations[j]) << "Heater " << j << " at time " << i;
+        }
+    }
+}
+
 TEST_F(ACHeaterCtrl, setPWMPin) 
 {
     for(int i = 0; i < MAX_NO_HEATERS; i++) 
@@ -172,82 +192,53 @@ TEST_F(ACHeaterCtrl, adjustPWMDown)
     }
 }
 
-/* getPWMPinPercent not tested due to instrumentation issues. It is sort of tested implicitly by 
-** other tests */
+/* getPWMPinPercent is sort of tested implicitly by other tests */
 
 TEST_F(ACHeaterCtrl, updateHeaterPhaseControl)
 {
-    static const int PWM_PERIOD = heaters[MAX_NO_HEATERS-1].pwmPeriod;
-    static const int TICK_TIME  = MAX_NO_HEATERS * PWM_PERIOD;
-
-    forceTick(TICK_TIME);
-    turnOnTest();
-
-    /* Note: some dubious practice here. HeatCtrl is supposed to be private, but by including the .c
-    ** file (instead of .h of UUT), we've got around that. */
-
-    for(int i = 0; i < MAX_NO_HEATERS; i++)
-    {
-        EXPECT_LE(heaters[i].periodBegin, TICK_TIME);
-
-        /* Since all heaters are on 100% of the time, their periodBegins should be aligned in time*/
-        EXPECT_EQ(heaters[i].periodBegin % PWM_PERIOD, TICK_TIME % PWM_PERIOD);
-    }
-
-    allOff();
-
     /* Tryout a few random combinations to make sure the alignment is correct. TODO: use RNG */
-    uint8_t pcts[5][4] = 
+    uint8_t pcts[5][6] = 
     {
-        { 54, 89, 12, 03},
-        { 05, 78, 12, 65},
-        { 82, 02, 10, 00},
-        {100, 00, 00, 10},
-        { 12, 23, 16, 07},
+        /* Min GPIOs, Max GPIOs, 4x PWMs */
+        {2, 3,  54, 89, 12, 95},
+        {1, 2,  05, 78, 12, 65},
+        {0, 1,  82, 02, 10, 00},
+        {1, 2, 100, 00, 00, 10},
+        {0, 1,  12, 23, 16, 07},
     };
 
-    /* For each combination, set the PWMs for each pin one-by-one. Check the on-periods are always
-    ** aligned back-to-back, and that the number of overlapping "stacks" from the beginning of the 
-    ** first PWM period is the minimum achievable for a particular set of PWMs */
+    /* For each combination, set the PWMs, then run through a few PWM cycles to make sure that more tha */
     for(int i = 0; i < 5; i++)
     {
         /* Reset relevant variables to 0 */
         allOff();
-        int pct_count = 0;
 
-        /* Set heater PWM one-by-one */
+        /* Setup PWMs */
+        forceTick(PWM_PERIOD_MS);
         for(int j = 0; j < MAX_NO_HEATERS; j++)
         {
-            forceTick(TICK_TIME);
-            setPWMPin(j, pcts[i][j], 0);
-            pct_count += pcts[i][j];
+            setPWMPin(j, pcts[i][j + 2], -1);
+        }
 
-            int stack_count = 0;
-            uint32_t pb = heaters[0].periodBegin;
+        /* Run for a few periods, checking that the number of GPIOs enabled is never outside the 
+        ** min/max range */
+        for(int j = PWM_PERIOD_MS; j < 4 * PWM_PERIOD_MS; j++)
+        {
+            forceTick(j);
+            heaterLoop();
+
+            /* Count on GPIOs */
+            int onGpios = 0;
             for(int k = 0; k < MAX_NO_HEATERS; k++)
             {
-                uint32_t pct_to_period = heaters[k].pwmPercent * PWM_PERIOD / 100;
-
-                /* Everything should be set back in time */
-                EXPECT_LE(heaters[k].periodBegin, TICK_TIME);
-
-                /* Check each on-period aligns with the next heater */
-                if(k < MAX_NO_HEATERS - 1)
-                {
-                    EXPECT_EQ(heaters[k].periodBegin + pct_to_period, heaters[k+1].periodBegin);
-                }
-
-                /* If the on-period overlaps a max-period boundary, increment the stack_cout */
-                uint32_t normal_pb = heaters[k].periodBegin - pb;
-                if(normal_pb / PWM_PERIOD != (normal_pb + pct_to_period) / PWM_PERIOD)
-                {
-                    stack_count++;
-                }
+                /* Check nothing weird has happened to the PWM (for debug trace) */
+                EXPECT_EQ(getPWMPinPercent(k), pcts[i][k + 2]) << "Heater " << k << ", time " << j << ", pct set " << i;
+                onGpios = heaterGpios[k].state == PIN_SET ? onGpios + 1 : onGpios;
             }
 
-            /* Verify the stack count matches the percent count stack (this should be the minimum 
-            ** number of stacks to achieve the desired PWM settings ) */
-            EXPECT_EQ(stack_count, pct_count / 100) << stack_count << ", " << pct_count;
+            /* Check the number of activated outputs is within bounds */
+            EXPECT_GE(onGpios, pcts[i][0]) << "Pct set " << i << ", time " << j;
+            EXPECT_LE(onGpios, pcts[i][1]) << "Pct set " << i << ", time " << j;
         }
     }
 }

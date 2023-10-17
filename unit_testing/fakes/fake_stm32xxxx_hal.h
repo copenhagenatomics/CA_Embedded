@@ -21,6 +21,7 @@ extern "C" {
 ***************************************************************************************************/
 
 void forceTick(uint32_t next_val);
+void autoIncTick(uint32_t next_val, bool disable=false);
 uint32_t HAL_GetTick(void);
 
 #ifdef __cplusplus
