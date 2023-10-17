@@ -200,7 +200,9 @@ uint8_t getPWMPinPercent(int pin)
 */
 void updateHeaterPhaseControl() 
 {
-    /* Start from one period ago, so everything is time aligned */
+    /* Must start in the past, because otherwise the tdiff_u32 function (in heaterLoop() will give 
+    ** odd results until all the heater periodBegins are in the past relative to "now". Start from 
+    ** exactly one period ago, so everything is time aligned */
     const uint32_t pwmBegin = HAL_GetTick() - PWM_PERIOD_MS;
     uint32_t totalPeriod = 0;
     

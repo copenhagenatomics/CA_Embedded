@@ -5,12 +5,16 @@
 */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include "fake_StmGpio.h"
 #include "fake_stm32xxxx_hal.h"
 
 /* UUT */
 #include "HeatCtrl.c"
+
+using ::testing::AnyOf;
+using ::testing::AllOf;
 
 /***************************************************************************************************
 ** TEST FIXTURES
@@ -240,5 +244,53 @@ TEST_F(ACHeaterCtrl, updateHeaterPhaseControl)
             EXPECT_GE(onGpios, pcts[i][0]) << "Pct set " << i << ", time " << j;
             EXPECT_LE(onGpios, pcts[i][1]) << "Pct set " << i << ", time " << j;
         }
+    }
+}
+
+/*!
+** @brief Checks that the on-periods don't get messed up if the host SW re-asserts the same PWM
+*/
+TEST_F(ACHeaterCtrl, resetPwmMidperiod)
+{
+    /* Setup PWMs */
+    forceTick(0);
+    for(int j = 0; j < MAX_NO_HEATERS; j++)
+    {
+        setPWMPin(j, 10, -1);
+    }
+
+    /* Run for half a period, to make sure the action is as it is supposed to be */
+    for(int j = 0; j < 500; j++)
+    {
+        forceTick(j);
+        heaterLoop();
+
+        if(j < 400)
+        {
+            EXPECT_THAT(PIN_SET, AnyOf(heaterGpios[0].state, heaterGpios[1].state, 
+                                       heaterGpios[2].state, heaterGpios[3].state));
+        }
+        else
+        {
+            EXPECT_THAT(PIN_RESET, AllOf(heaterGpios[0].state, heaterGpios[1].state,
+                                         heaterGpios[2].state, heaterGpios[3].state));
+        }
+    }
+
+    /* Reset the same PWM */
+    for(int j = 0; j < MAX_NO_HEATERS; j++)
+    {
+        setPWMPin(j, 10, -1);
+    }
+
+    /* Verify the PWM doesn't restart */
+    /* Run for the second half a period, to make sure the pins are not re-enabled */
+    for(int j = 500; j < 1000; j++)
+    {
+        forceTick(j);
+        heaterLoop();
+
+        EXPECT_THAT(PIN_RESET, AllOf(heaterGpios[0].state, heaterGpios[1].state,
+                                     heaterGpios[2].state, heaterGpios[3].state));
     }
 }
