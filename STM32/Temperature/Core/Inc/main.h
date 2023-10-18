@@ -58,8 +58,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define Test1_Pin GPIO_PIN_0
-#define Test1_GPIO_Port GPIOB
+#define CS10_Pin GPIO_PIN_0
+#define CS10_GPIO_Port GPIOB
 #define Test2_Pin GPIO_PIN_1
 #define Test2_GPIO_Port GPIOB
 #define LED_Pin GPIO_PIN_2
@@ -84,6 +84,7 @@ void Error_Handler(void);
 #define CS5_GPIO_Port GPIOB
 #define DRDY5_Pin GPIO_PIN_9
 #define DRDY5_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
