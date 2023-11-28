@@ -272,7 +272,7 @@ static void actuatePins(ActuationInfo actuationInfo)
         return;
     }
 
-    if (actuationInfo.timeOn == -1 && (actuationInfo.percent == 100 || actuationInfo.percent == 0))
+    if (actuationInfo.timeOn == -1000 && (actuationInfo.percent == 100 || actuationInfo.percent == 0))
     {
         // pX on or pX off (timeOn == -1 means indefinite)
         if (actuationInfo.percent == 0)
@@ -284,18 +284,18 @@ static void actuatePins(ActuationInfo actuationInfo)
             turnOnPin(actuationInfo.pin);
         }
     }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.percent == 100)
+    else if (actuationInfo.timeOn != -1000 && actuationInfo.percent == 100)
     {
         // pX on YY
         turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
     }
-    else if (actuationInfo.timeOn == -1 && actuationInfo.percent != 0 && actuationInfo.percent != 100)
+    else if (actuationInfo.timeOn == -1000 && actuationInfo.percent != 0 && actuationInfo.percent != 100)
     {
         // pX on ZZZ%
         int pwmState = (actuationInfo.percent * MAX_PWM) / 100;
         setPWMPin(actuationInfo.pin, pwmState, 0);
     }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.percent != 100)
+    else if (actuationInfo.timeOn != -1000 && actuationInfo.percent != 100)
     {
         // pX on YY ZZZ%
         int pwmState = (actuationInfo.percent * MAX_PWM) / 100;
