@@ -186,6 +186,8 @@ typedef struct ActuationInfo {
 } ActuationInfo;
 static void actuatePins(ActuationInfo actuationInfo)
 {
+    static const int INDEFINITE = -1000;
+
     if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 0)
     {
         // all off (pin == -1 means all pins)
@@ -196,9 +198,8 @@ static void actuatePins(ActuationInfo actuationInfo)
         // all on (pin == -1 means all pins)
         allOn();
     }
-    else if (actuationInfo.timeOn == -1 && (actuationInfo.pwmDutyCycle == 100 || actuationInfo.pwmDutyCycle == 0))
+    else if (actuationInfo.timeOn == INDEFINITE && (actuationInfo.pwmDutyCycle == 100 || actuationInfo.pwmDutyCycle == 0))
     {
-        // pX on or pX off (timeOn == -1 means indefinite)
         if (actuationInfo.pwmDutyCycle == 0)
         {
             turnOffPin(actuationInfo.pin);
@@ -208,17 +209,17 @@ static void actuatePins(ActuationInfo actuationInfo)
             turnOnPin(actuationInfo.pin);
         }
     }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle == 100)
+    else if (actuationInfo.timeOn != INDEFINITE && actuationInfo.pwmDutyCycle == 100)
     {
         // pX on YY
         turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
     }
-    else if (actuationInfo.timeOn == -1 && actuationInfo.pwmDutyCycle != 0 && actuationInfo.pwmDutyCycle != 100)
+    else if (actuationInfo.timeOn == INDEFINITE && actuationInfo.pwmDutyCycle != 0 && actuationInfo.pwmDutyCycle != 100)
     {
         // pX on ZZZ%
         setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
     }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle != 100)
+    else if (actuationInfo.timeOn != INDEFINITE && actuationInfo.pwmDutyCycle != 100)
     {
         // pX on YY ZZZ%
         setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
