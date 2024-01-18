@@ -5,6 +5,8 @@
 ** DEFINES
 ***************************************************************************************************/
 
+#define NO_NEW_PCT   0xFFU
+
 #define MAX_TIMEOUT  60000 // Auto regulation time out from overheat prevention mode
 
 /***************************************************************************************************
@@ -57,7 +59,7 @@ HeatCtrl* heatCtrlAdd(StmGpio *heater, StmGpio * button)
     ctx->pwmPeriod   = PWM_PERIOD_MS;   // default value, 1 seconds.
     ctx->pwmPercent  = 0;               // Default is off.
     ctx->pwmBegin    = 0;               // Default is off.
-    ctx->pwmNextPct  = -1;              // Default is no update.
+    ctx->pwmNextPct  = NO_NEW_PCT;      // Default is no update.
 
     ctx->heater = heater;
     ctx->button = button;
@@ -74,6 +76,7 @@ void heaterLoop()
     /* If the PWM period has changed (the period is 1000 ms (ticks) long, and started at 0), then
     ** an update to the PWM percentage can take place, if there is one */
     bool newPeriod = (prev / 1000) != (now / 1000);
+    prev = now;
 
     for(HeatCtrl *pCtrl = heaters; pCtrl < &heaters[noOfHeaters]; pCtrl++)
     {
@@ -82,13 +85,16 @@ void heaterLoop()
         {
             // Turn off heater since duration is done.
             setPwmPercent(pCtrl, 0);
+
+            /* Also prevent any pending changes from taking effect */
+            pCtrl->pwmNextPct = NO_NEW_PCT;
         }
 
         /* Update the PWM percent if it is a new period */
-        if (newPeriod && pCtrl->pwmNextPct != -1)
+        if (newPeriod && (pCtrl->pwmNextPct != NO_NEW_PCT))
         {
             setPwmPercent(pCtrl, pCtrl->pwmNextPct);
-            pCtrl->pwmNextPct = -1;
+            pCtrl->pwmNextPct = NO_NEW_PCT;
         }
 
         /* If percent is 0, heat shall be off (period is invalid) */

@@ -41,7 +41,7 @@ class ACHeaterCtrl: public ::testing::Test
         */
         void turnOnTest()
         {
-            allOn();
+            allOn(60000);
 
             for(int i = 0; i < MAX_NO_HEATERS; i++) 
             {
@@ -105,7 +105,7 @@ TEST_F(ACHeaterCtrl, turnOnPin)
         /* Note: allOff is tested in a different test, so we can probably rely on the 
         ** outcome */
         allOff(); 
-        turnOnPin(i);
+        turnOnPin(i, 60000);
         for(int j = 0; j < MAX_NO_HEATERS; j++)
         {
             EXPECT_EQ(getPWMPinPercent(j), j == i ? 100 : 0);
@@ -121,7 +121,7 @@ TEST_F(ACHeaterCtrl, turnOnPinDuration)
     forceTick(0);
     for(int i = 0; i < MAX_NO_HEATERS; i++)
     {
-        turnOnPinDuration(i, durations[i]);
+        turnOnPin(i, durations[i]);
     }
 
     /* Check all the heaters GPIO are only turned on until their duration runs out */
@@ -132,19 +132,39 @@ TEST_F(ACHeaterCtrl, turnOnPinDuration)
 
         for(int j = 0; j < MAX_NO_HEATERS; j++)
         {
-            EXPECT_EQ(heaterGpios[j].state == PIN_SET, i <= durations[j]) << "Heater " << j << " at time " << i;
+            ASSERT_EQ(heaterGpios[j].state == PIN_SET, i <= durations[j]) << "Heater " << j << " at time " << i;
         }
     }
 }
 
-TEST_F(ACHeaterCtrl, setPWMPin) 
+TEST_F(ACHeaterCtrl, setPWMPinNextPeriod) 
 {
     for(int i = 0; i < MAX_NO_HEATERS; i++) 
     {
         /* Test the function works for a range of PWMs, JIC there is an issue e.g. with 0 or 100 */
         for(int j = 0; j <= 100; j+= 10) 
         {
-            setPWMPin(i, j, 0);
+            /* Start at a new tick boundary */
+            uint32_t startTick = (i + 1) * j * 1000;
+            forceTick(startTick);    
+            heaterLoop();
+
+            setPWMPin(i, j, 2000);
+
+            /* Expect that the PWMPinPercentage doesn't change straightaway */
+            for(int k = 1; k <= 1000; k++)
+            {
+                /* 0 is a special case as the default state is 0 */
+                if(j != 0) 
+                {
+                    ASSERT_NE(getPWMPinPercent(i), j) << "Heater " << i << " at time " << k;
+                }
+
+                forceTick(startTick + k);    
+                heaterLoop();
+            }
+
+            /* Verify that by the next period, only the required heater has changed */
             for(int k = 0; k < MAX_NO_HEATERS; k++) 
             {
                 if(k == i)
@@ -161,6 +181,32 @@ TEST_F(ACHeaterCtrl, setPWMPin)
         }
         
         setPWMPin(i, 0, 0);
+    }
+}
+
+TEST_F(ACHeaterCtrl, setPWMPinNoDuration)
+{
+    for(int i = 0; i < MAX_NO_HEATERS; i++) 
+    {
+        forceTick(999);    
+        heaterLoop();
+        setPWMPin(i, 50, 0);
+
+        /* Since duration is 0, PWM pin should change, either now OR on the next period */
+        ASSERT_NE(getPWMPinPercent(i), 50) << "Heater " << i;
+
+        forceTick(1000);    
+        heaterLoop();
+        ASSERT_NE(getPWMPinPercent(i), 50) << "Heater " << i;
+
+        setPWMPin(i, 50, 2000);
+        forceTick(2000);    
+        heaterLoop();
+        ASSERT_EQ(getPWMPinPercent(i), 50) << "Heater " << i;
+
+        forceTick(3001);
+        heaterLoop();   
+        ASSERT_EQ(getPWMPinPercent(i), 0) << "Heater " << i;
     }
 }
 
