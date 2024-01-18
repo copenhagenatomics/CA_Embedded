@@ -21,10 +21,25 @@
 #include "StmGpio.h"
 #include "ACBoard.h"
 
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
 
 #define MAX_TEMPERATURE 70
+
+/***************************************************************************************************
+** PRIVATE TYPEDEFS
+***************************************************************************************************/
+
+typedef struct ActuationInfo {
+    int pin; // pins 0-3 are interpreted as single ports - pin '-1' is interpreted as all
+    int pwmDutyCycle;
+    int timeOn; // time on is in seconds
+    bool isInputValid;
+} ActuationInfo;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -178,51 +193,46 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
             bsGetStatus());
 }
 
-typedef struct ActuationInfo {
-    int pin; // pins 0-3 are interpreted as single ports - pin '-1' is interpreted as all
-    int pwmDutyCycle;
-    int timeOn; // time on is in seconds - timeOn '-1' is interpreted as indefinitely
-    bool isInputValid;
-} ActuationInfo;
+/*!
+** @brief Calls appropriate backend function based on inputs
+**
+** Depending on the inputs (which are received from communication link), chooses the appropriate 
+** backend function and calls it.
+*/
 static void actuatePins(ActuationInfo actuationInfo)
 {
-    static const int INDEFINITE = -1000;
-
-    if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 0)
-    {
-        // all off (pin == -1 means all pins)
-        allOff();
-    }
-    else if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 100)
-    {
-        // all on (pin == -1 means all pins)
-        allOn();
-    }
-    else if (actuationInfo.timeOn == INDEFINITE && (actuationInfo.pwmDutyCycle == 100 || actuationInfo.pwmDutyCycle == 0))
+    /* All pins functions */
+    if (actuationInfo.pin == -1)
     {
         if (actuationInfo.pwmDutyCycle == 0)
         {
+            // all off (pin == -1 means all pins)
+            allOff();
+        }
+        else if (actuationInfo.pwmDutyCycle == 100)
+        {
+            // all on (pin == -1 means all pins)
+            allOn(actuationInfo.timeOn);
+        }
+        /* It doesn't really make sense to allow setting all pins to the same PWM */
+    } 
+    else
+    {
+        if (actuationInfo.pwmDutyCycle == 0)
+        {
+            // pX off
             turnOffPin(actuationInfo.pin);
+        }
+        else if (actuationInfo.pwmDutyCycle == 100)
+        {
+            // pX on YY
+            turnOnPin(actuationInfo.pin, actuationInfo.timeOn);
         }
         else
         {
-            turnOnPin(actuationInfo.pin);
+            // pX on ZZZ%
+            setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
         }
-    }
-    else if (actuationInfo.timeOn != INDEFINITE && actuationInfo.pwmDutyCycle == 100)
-    {
-        // pX on YY
-        turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
-    }
-    else if (actuationInfo.timeOn == INDEFINITE && actuationInfo.pwmDutyCycle != 0 && actuationInfo.pwmDutyCycle != 100)
-    {
-        // pX on ZZZ%
-        setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
-    }
-    else if (actuationInfo.timeOn != INDEFINITE && actuationInfo.pwmDutyCycle != 100)
-    {
-        // pX on YY ZZZ%
-        setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
     }
 }
 

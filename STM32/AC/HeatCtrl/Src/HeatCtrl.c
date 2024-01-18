@@ -5,7 +5,6 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define MAX_DURATION ((uint32_t) -1)
 #define MAX_TIMEOUT  60000 // Auto regulation time out from overheat prevention mode
 
 /***************************************************************************************************
@@ -106,12 +105,18 @@ void allOff()
     updateHeaterPhaseControl();
 }
 
-void allOn()
+/*!
+** @brief Turns on all ports for the specfied duration
+**
+** @param[in] duration_ms The length of time to keep all ports on, in ms
+*/
+void allOn(int duration_ms)
 {
     for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
     {
         ctx->pwmPercent = 100;
-        ctx->periodDuration = MAX_DURATION;
+        /* Negative values always interpreted as 0 - safety measure  */
+        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : 0; 
     }
     updateHeaterPhaseControl();
 }
@@ -126,51 +131,72 @@ void turnOffPin(int pin)
     }
 }
 
-void turnOnPin(int pin)
+/*!
+** @brief Turns on one port for the specfied duration
+**
+** @param[in] pin         The port to enable
+** @param[in] duration_ms The length of time to keep all the port on, in ms
+*/
+void turnOnPin(int pin, int duration_ms)
 {
     if (pin >= 0 && pin < noOfHeaters)
     {
         HeatCtrl *ctx = &heaters[pin];
-        ctx->periodDuration = MAX_DURATION;
-        setPwmPercent(ctx, 100);
-    }
-}
-
-void turnOnPinDuration(int pin, int duration_ms)
-{
-    if (pin >= 0 && pin < noOfHeaters)
-    {
-        HeatCtrl *ctx = &heaters[pin];
-        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : MAX_DURATION; // Negative value means forever.
+        /* Negative values always interpreted as 0 - safety measure  */
+        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : 0;
         ctx->periodBegin = HAL_GetTick();
         setPwmPercent(ctx, 100);
     }
 }
 
+/*!
+** @brief Turns on one port for the specfied duration with a PWM value
+**
+** @param[in] pin         The port to enable
+** @param[in] pwmPct      The pwmPct to use
+** @param[in] duration_ms The length of time to keep all the port on, in ms
+**
+** PWM has an effective resolution of 100 Hz, as the AC can only be enabled / disabled at 0 
+** crossings.
+*/
 void setPWMPin(int pin, int pwmPct, int duration_ms)
 {
     if (pin >= 0 && pin < noOfHeaters && pwmPct >= 0 && pwmPct <= 100)
     {
         HeatCtrl *ctx = &heaters[pin];
-        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : MAX_DURATION; // Negative value means forever.
+        /* Negative values always interpreted as 0 - safety measure */
+        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : 0;
         ctx->periodBegin = HAL_GetTick();
         setPwmPercent(ctx, pwmPct);
     }
 }
 
+/*!
+** @brief Reduces the PWM, and extends duration to maintain energy delivered
+**
+** Reduces the PWM by 1%, and extends duration of "on-time" (up to a maximum) by the inverse of the
+** percentage drop. This means the board tries to keep the maximal attainable temperature.
+** However, the board should ultimately go into safe mode by shutting off if no new commands are 
+** received in case of loss of communication.
+*/
 void adjustPWMDown()
 {
     for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
     {
-        if (ctx->pwmPercent >= 1)
+        if (ctx->pwmPercent > 1)
         {
-            // If the overheat prevention state has been enabled then extend the pwm duration
-            // such that the board tries to keep the maximal attainable temperature
-            // However, the board should ultimately go into safe mode by shutting off
-            // if no new commands are received in case of loss of communication.
-            ctx->periodDuration = (ctx->periodDuration != MAX_DURATION) ? MAX_TIMEOUT : MAX_DURATION;
+            uint8_t new_pct = ctx->pwmPercent - 1;
+            float duration_scaler = ((float) ctx->pwmPercent) / new_pct;
 
-            setPwmPercent(ctx, ctx->pwmPercent - 1);
+            /* Extend time on to match lost PWM pct, and keep equal energy delivered */
+            ctx->periodDuration = duration_scaler * ctx->periodDuration;
+            ctx->periodDuration = (ctx->periodDuration > MAX_TIMEOUT) ? MAX_TIMEOUT : ctx->periodDuration;
+            setPwmPercent(ctx, new_pct);
+        }
+        else
+        {
+            ctx->periodDuration = 0;
+            setPwmPercent(ctx, 0);
         }
     }
 }
