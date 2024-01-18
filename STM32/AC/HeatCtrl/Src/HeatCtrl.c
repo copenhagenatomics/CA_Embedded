@@ -17,6 +17,7 @@ typedef struct HeatCtrl
     uint32_t pwmBegin;   // Start of PWM period (for PWM generation)
     uint32_t pwmPeriod;  // Period (in mSec) for a full PWM signal
     uint8_t  pwmPercent; // Percentage of the PWM signal where is should be high.
+    uint8_t  pwmNextPct; // PWM percentage to set at the beginning of the next period.
 
     StmGpio *heater;
     StmGpio *button;
@@ -56,6 +57,7 @@ HeatCtrl* heatCtrlAdd(StmGpio *heater, StmGpio * button)
     ctx->pwmPeriod   = PWM_PERIOD_MS;   // default value, 1 seconds.
     ctx->pwmPercent  = 0;               // Default is off.
     ctx->pwmBegin    = 0;               // Default is off.
+    ctx->pwmNextPct  = -1;              // Default is no update.
 
     ctx->heater = heater;
     ctx->button = button;
@@ -66,15 +68,27 @@ HeatCtrl* heatCtrlAdd(StmGpio *heater, StmGpio * button)
 
 void heaterLoop()
 {
+    static uint32_t prev = HAL_GetTick();
     uint32_t now = HAL_GetTick();
+
+    /* If the PWM period has changed (the period is 1000 ms (ticks) long, and started at 0), then
+    ** an update to the PWM percentage can take place, if there is one */
+    bool newPeriod = (prev / 1000) != (now / 1000);
 
     for(HeatCtrl *pCtrl = heaters; pCtrl < &heaters[noOfHeaters]; pCtrl++)
     {
         uint32_t tdiff = tdiff_u32(now, pCtrl->periodBegin);
         if (tdiff > pCtrl->periodDuration)
         {
-            // Turn of heater since duration is done.
+            // Turn off heater since duration is done.
             setPwmPercent(pCtrl, 0);
+        }
+
+        /* Update the PWM percent if it is a new period */
+        if (newPeriod && pCtrl->pwmNextPct != -1)
+        {
+            setPwmPercent(pCtrl, pCtrl->pwmNextPct);
+            pCtrl->pwmNextPct = -1;
         }
 
         /* If percent is 0, heat shall be off (period is invalid) */
@@ -97,12 +111,10 @@ void heaterLoop()
 // Interface functions
 void allOff()
 {
-    for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
+    for(int i = 0; i < noOfHeaters; i++)
     {
-        ctx->pwmPercent = 0;
-        ctx->periodDuration = 0;
+        turnOffPin(i);
     }
-    updateHeaterPhaseControl();
 }
 
 /*!
@@ -112,13 +124,10 @@ void allOff()
 */
 void allOn(int duration_ms)
 {
-    for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
+    for(int i = 0; i < noOfHeaters; i++)
     {
-        ctx->pwmPercent = 100;
-        /* Negative values always interpreted as 0 - safety measure  */
-        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : 0; 
+        turnOnPin(i, duration_ms);
     }
-    updateHeaterPhaseControl();
 }
 
 void turnOffPin(int pin)
@@ -157,7 +166,7 @@ void turnOnPin(int pin, int duration_ms)
 ** @param[in] duration_ms The length of time to keep all the port on, in ms
 **
 ** PWM has an effective resolution of 100 Hz, as the AC can only be enabled / disabled at 0 
-** crossings.
+** crossings. Setting a PWM always takes effect on the next PWM period, not immediately.
 */
 void setPWMPin(int pin, int pwmPct, int duration_ms)
 {
@@ -167,7 +176,7 @@ void setPWMPin(int pin, int pwmPct, int duration_ms)
         /* Negative values always interpreted as 0 - safety measure */
         ctx->periodDuration = (duration_ms >= 0) ? duration_ms : 0;
         ctx->periodBegin = HAL_GetTick();
-        setPwmPercent(ctx, pwmPct);
+        ctx->pwmNextPct = pwmPct;
     }
 }
 
