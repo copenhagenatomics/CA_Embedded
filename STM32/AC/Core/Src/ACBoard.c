@@ -45,7 +45,7 @@ typedef struct ActuationInfo {
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-static void CAallOn(bool isOn);
+static void CAallOn(bool isOn, int duration_ms);
 static void CAportState(int port, bool state, int percent, int duration);
 static void userInput(const char *input);
 static void printAcStatus();
@@ -114,6 +114,10 @@ static void userInput(const char *input)
         isFanForceOn = false;
         stmSetGpio(fanCtrl, false);
     }
+    else 
+    {
+        HALundefined(input);
+    }
 }
 
 static void GpioInit()
@@ -158,7 +162,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
 
-    if (!isComPortOpen()) return;
+    // if (!isComPortOpen()) return;
 
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
@@ -236,9 +240,23 @@ static void actuatePins(ActuationInfo actuationInfo)
     }
 }
 
-static void CAallOn(bool isOn)
+static void CAallOn(bool isOn, int duration_ms)
 {
-    (isOn) ? allOn() : allOff();
+    if (isOn)
+    {
+        if(duration_ms < 0) 
+        {
+            HALundefined("all on <duration>");
+        }
+        else
+        {
+            allOn(duration_ms);
+        }
+    }
+    else
+    {
+        allOff();
+    }
 }
 static void CAportState(int port, bool state, int percent, int duration)
 {

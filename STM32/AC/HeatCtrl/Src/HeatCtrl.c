@@ -70,7 +70,7 @@ HeatCtrl* heatCtrlAdd(StmGpio *heater, StmGpio * button)
 
 void heaterLoop()
 {
-    static uint32_t prev = HAL_GetTick();
+    static uint32_t prev = 0;
     uint32_t now = HAL_GetTick();
 
     /* If the PWM period has changed (the period is 1000 ms (ticks) long, and started at 0), then
