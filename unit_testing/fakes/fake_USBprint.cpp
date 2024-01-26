@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cstdio>
 #include <cstdarg>
+#include <sstream>
 
 #include "USBprint.h"
 
@@ -15,6 +16,7 @@
 ***************************************************************************************************/
 
 #define TX_RX_BUFFER_LENGTH 1024
+#define TEST_OUT_FILENAME   "testout.txt"
 
 /***************************************************************************************************
 ** NAMESPACES
@@ -57,7 +59,7 @@ ssize_t writeUSB(const void *buf, size_t count)
 {
     /* For first time, open a new file */
     if(!test_out.is_open()) {
-        test_out.open("test_out.txt");
+        test_out.open(TEST_OUT_FILENAME);
     }
 
     test_out.write((const char *)buf, count);
@@ -95,7 +97,7 @@ int usbRx(uint8_t* buf)
 /*!
 ** @brief Sends data to the USB device
 */
-void usbXfer(const char * format, ...)
+void hostUSBprintf(const char * format, ...)
 {
     va_list argptr;
     va_start(argptr, format);
@@ -105,4 +107,25 @@ void usbXfer(const char * format, ...)
     RX_offset += len;
     
     va_end(argptr);
+}
+
+/*!
+** @brief Flushes USB rx buffer
+*/
+void usbFlush()
+{
+    RX_offset = 0;
+}
+
+stringstream hostUSBread()
+{
+    test_out.flush();
+    ifstream test_in(TEST_OUT_FILENAME);
+    
+    stringstream stream;
+    stream << test_in.rdbuf();
+
+    test_in.close();
+
+    return stream;
 }

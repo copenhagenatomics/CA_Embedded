@@ -16,6 +16,7 @@
 #include "HeatCtrl.c"
 #include "ADCmonitor.c"
 #include "CAProtocol.c"
+#include "CAProtocolStm.c"
 
 /* UUT */
 #include "ACBoard.c"
@@ -65,4 +66,6 @@ TEST_F(ACBoard, userInputs)
 
     userInput("fan wrong");
     EXPECT_FALSE(isFanForceOn);
+
+    /* TODO: read from file */
 }

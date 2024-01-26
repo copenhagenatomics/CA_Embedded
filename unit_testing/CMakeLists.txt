@@ -45,7 +45,7 @@ target_include_directories(heatCtrl_test PRIVATE fakes ${LIB}/Util/Inc ${SRC}/AC
 target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
 gtest_discover_tests(heatCtrl_test)
 
-add_executable(ac_test AC/AC_tests.cpp fakes/fake_systemInfo.cpp fakes/fake_USBprint.cpp ${LIB}/Util/Src/time32.c fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.cpp fakes/fake_CAProtocolStm.cpp)
+add_executable(ac_test AC/AC_tests.cpp stubs/stub_jumpToBootloader.cpp fakes/fake_systemInfo.cpp fakes/fake_USBprint.cpp ${LIB}/Util/Src/time32.c fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.cpp fakes/fake_HAL_otp.cpp)
 target_include_directories(ac_test PRIVATE fakes ${SRC}/AC/Core/Src ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc)
 target_link_libraries(ac_test GTest::gtest_main gmock_main)
 gtest_discover_tests(ac_test)

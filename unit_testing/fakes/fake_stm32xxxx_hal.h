@@ -20,6 +20,7 @@ extern "C" {
 ** DEFINES
 ***************************************************************************************************/
 
+/* GPIO module */
 #define GPIOA (uint32_t*)(0)
 #define GPIOB (uint32_t*)(0)
 #define GPIOC (uint32_t*)(0)
@@ -45,6 +46,27 @@ extern "C" {
 #define GPIO_PIN_15  0x8000
 #define GPIO_PIN_All 0xFFFF
 
+/* Watchdog module */
+#define RCC_FLAG_HSIRDY                  ((uint8_t)0x21)
+#define RCC_FLAG_HSERDY                  ((uint8_t)0x31)
+#define RCC_FLAG_PLLRDY                  ((uint8_t)0x39)
+#define RCC_FLAG_PLLI2SRDY               ((uint8_t)0x3B)
+#define RCC_FLAG_LSERDY                  ((uint8_t)0x41)
+#define RCC_FLAG_LSIRDY                  ((uint8_t)0x61)
+#define RCC_FLAG_BORRST                  ((uint8_t)0x79)
+#define RCC_FLAG_PINRST                  ((uint8_t)0x7A)
+#define RCC_FLAG_PORRST                  ((uint8_t)0x7B)
+#define RCC_FLAG_SFTRST                  ((uint8_t)0x7C)
+#define RCC_FLAG_IWDGRST                 ((uint8_t)0x7D)
+#define RCC_FLAG_WWDGRST                 ((uint8_t)0x7E)
+#define RCC_FLAG_LPWRRST                 ((uint8_t)0x7F)
+
+#define __HAL_RCC_WWDG_CLK_DISABLE()  0
+#define __HAL_RCC_CLEAR_RESET_FLAGS() 0
+#define __HAL_RCC_GET_FLAG(x)         0
+
+#define RCC (&RCC_obj)
+
 /***************************************************************************************************
 ** PUBLIC TYPEDEFS
 ***************************************************************************************************/
@@ -56,22 +78,37 @@ typedef struct ADC_HandleTypeDef
     } Init;
 } ADC_HandleTypeDef;
 
+typedef struct
+{
+    uint32_t CSR;            /*!< RCC clock control register,                                  Address offset: 0x00 */
+} RCC_TypeDef;
+
 typedef uint32_t WWDG_HandleTypeDef;
 typedef uint32_t GPIO_TypeDef;
 typedef uint32_t WWDG_HandleTypeDef;
 typedef uint32_t HAL_StatusTypeDef;
 
 /***************************************************************************************************
+** PUBLIC OBJECTS
+***************************************************************************************************/
+
+extern RCC_TypeDef RCC_obj;
+
+/***************************************************************************************************
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
+/* ADC */
 HAL_StatusTypeDef HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length);
 
+/* Watchdog */
 HAL_StatusTypeDef HAL_WWDG_Refresh(WWDG_HandleTypeDef *hwwdg);
 
+/* HAL */
 void forceTick(uint32_t next_val);
 void autoIncTick(uint32_t next_val, bool disable=false);
 uint32_t HAL_GetTick(void);
+void HAL_Delay(uint32_t Delay);
 
 #ifdef __cplusplus
 }
