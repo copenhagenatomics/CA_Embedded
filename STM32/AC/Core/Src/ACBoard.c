@@ -179,7 +179,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         }
         return;
     }
-    port_close_time == 0
+    port_close_time == 0;
 
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
@@ -370,7 +370,7 @@ static void updateBoardStatus()
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
     setFirmwareBoardType(AC_Board);
-    setFirmwareBoardVersion((pcbVersion){6, 0});
+    setFirmwareBoardVersion((pcbVersion_t){6, 0});
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usb_cdc_rx);
@@ -382,7 +382,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     }
 
     // Pin out has changed from PCB V6.0 - older versions need other software.
-    pcbVersion ver;
+    pcbVersion_t ver;
     if (getPcbVersion(&ver) || ver.major < 6)
     {
         bsSetError(BS_VERSION_ERROR_Msk);
