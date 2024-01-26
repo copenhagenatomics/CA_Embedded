@@ -45,7 +45,7 @@ typedef struct ActuationInfo {
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-static void CAallOn(bool isOn, int duration_ms);
+static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
 static void userInput(const char *input);
 static void printAcStatus();
@@ -162,7 +162,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
 
-    // if (!isComPortOpen()) return;
+    if (!isComPortOpen()) return;
 
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
@@ -240,17 +240,19 @@ static void actuatePins(ActuationInfo actuationInfo)
     }
 }
 
-static void CAallOn(bool isOn, int duration_ms)
+static void CAallOn(bool isOn, int duration)
 {
     if (isOn)
     {
-        if(duration_ms < 0) 
+        if(duration <= 0) 
         {
-            HALundefined("all on <duration>");
+            char buf[20] = {0};
+            snprintf(buf, 20, "all on %d", duration);
+            HALundefined(buf);
         }
         else
         {
-            allOn(duration_ms);
+            allOn(duration);
         }
     }
     else
@@ -266,7 +268,16 @@ static void CAportState(int port, bool state, int percent, int duration)
     if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
         return;
 
-    actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
+    if(duration <= 0) 
+    {
+        char buf[20] = {0};
+        snprintf(buf, 20, "p%d on %d", port, duration);
+        HALundefined(buf);
+    }
+    else 
+    {
+        actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
+    }
 }
 
 /*!
