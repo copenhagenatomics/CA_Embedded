@@ -10,6 +10,7 @@
 /* Fakes */
 #include "fake_StmGpio.h"
 #include "fake_stm32xxxx_hal.h"
+#include "fake_USBprint.h"
 
 /* Real supporting units */
 #include "HeatCtrl.c"
@@ -50,7 +51,18 @@ class ACBoard: public ::testing::Test
 /*!
 ** @brief 
 */
-TEST_F(ACBoard, build_test) 
+TEST_F(ACBoard, userInputs) 
 {
-    ASSERT_TRUE(false) << "Hello world!";
+    GpioInit();
+    
+    EXPECT_FALSE(isFanForceOn);
+
+    userInput("fan on");
+    EXPECT_TRUE(isFanForceOn);
+
+    userInput("fan off");
+    EXPECT_FALSE(isFanForceOn);
+
+    userInput("fan wrong");
+    EXPECT_FALSE(isFanForceOn);
 }
