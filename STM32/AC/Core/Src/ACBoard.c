@@ -370,7 +370,7 @@ static void updateBoardStatus()
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
     setFirmwareBoardType(AC_Board);
-    setFirmwareBoardVersion((pcbVersion_t){6, 0});
+    setFirmwareBoardVersion((pcbVersion){6, 0});
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usb_cdc_rx);
@@ -382,7 +382,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     }
 
     // Pin out has changed from PCB V6.0 - older versions need other software.
-    pcbVersion_t ver;
+    pcbVersion ver;
     if (getPcbVersion(&ver) || ver.major < 6)
     {
         bsSetError(BS_VERSION_ERROR_Msk);
