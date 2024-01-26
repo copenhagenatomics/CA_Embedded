@@ -178,7 +178,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         }
         return;
     }
-    port_close_time == 0;
+    port_close_time = 0;
 
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
