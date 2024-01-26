@@ -30,6 +30,8 @@
 
 #define MAX_TEMPERATURE 70
 
+#define USB_COMMS_TIMEOUT_MS 5000
+
 /***************************************************************************************************
 ** PRIVATE TYPEDEFS
 ***************************************************************************************************/
@@ -161,8 +163,23 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     // Make calibration static since this should be done only once.
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
+    static uint32_t port_close_time = 0;
 
-    if (!isComPortOpen()) return;
+    /* If the USB port is not open, no messages should be printed. Also if the USB port has been 
+    ** closed for more than a timeout, everything should be turned off as a safety measure */
+    if (!isComPortOpen()) 
+    {
+        if (port_close_time == 0)
+        {
+            port_close_time = HAL_GetTick();
+        }
+        else if((HAL_GetTick() - port_close_time) > USB_COMMS_TIMEOUT_MS)
+        {
+            allOff();
+        }
+        return;
+    }
+    port_close_time == 0
 
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
