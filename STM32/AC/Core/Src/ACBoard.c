@@ -3,21 +3,20 @@
  */
 
 #include <math.h>
-#include "string.h"
+#include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <float.h>
 
-#include "usb_cdc_fops.h"
+#include "main.h"
 #include "HeatCtrl.h"
 #include "ADCMonitor.h"
 #include "systemInfo.h"
 #include "USBprint.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "HAL_otp.h"
 #include "StmGpio.h"
 #include "ACBoard.h"
 
@@ -162,7 +161,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
 
-    // if (!isComPortOpen()) return;
+    if (!isUsbPortOpen()) return;
 
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
@@ -345,7 +344,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     setFirmwareBoardVersion((pcbVersion){6, 0});
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
-    initCAProtocol(&caProto, usb_cdc_rx);
+    initCAProtocol(&caProto, usbRx);
 
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != AC_Board)

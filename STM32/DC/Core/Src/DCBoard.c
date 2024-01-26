@@ -14,7 +14,6 @@
 #include "si7051.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "HAL_otp.h"
 #include "time32.h"
 
 #define ADC_CHANNELS    6

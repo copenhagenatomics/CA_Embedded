@@ -7,8 +7,14 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-// #include "fake_StmGpio.h"
-// #include "fake_stm32xxxx_hal.h"
+/* Fakes */
+#include "fake_StmGpio.h"
+#include "fake_stm32xxxx_hal.h"
+
+/* Real supporting units */
+#include "HeatCtrl.c"
+#include "ADCmonitor.c"
+#include "CAProtocol.c"
 
 /* UUT */
 #include "ACBoard.c"
@@ -46,5 +52,5 @@ class ACBoard: public ::testing::Test
 */
 TEST_F(ACBoard, build_test) 
 {
-    ASSERT_TRUE(false) << "Hello world!"
+    ASSERT_TRUE(false) << "Hello world!";
 }

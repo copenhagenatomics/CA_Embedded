@@ -16,6 +16,16 @@ static uint32_t next_tick = 0;
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
+HAL_StatusTypeDef HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length)
+{
+    /* Do nothing */
+}
+
+HAL_StatusTypeDef HAL_WWDG_Refresh(WWDG_HandleTypeDef *hwwdg)
+{
+    /* Do nothing */
+}
+
 void forceTick(uint32_t next_val)
 {
     force_tick = true;
