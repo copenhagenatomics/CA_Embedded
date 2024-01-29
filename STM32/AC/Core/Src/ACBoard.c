@@ -119,8 +119,8 @@ static void GpioInit()
 static double ADCtoCurrent(double adc_val)
 {
     // TODO: change method for calibration?
-    static float current_scalar = 0.0125;
-    static float current_bias = -0.1187; //-0.058;
+    static float current_scalar = 0.012207;
+    static float current_bias = -0.01; //-0.058;
 
     return current_scalar * adc_val + current_bias;
 }
@@ -171,7 +171,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     }
 
     heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 0));
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
             ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
             ADCtoCurrent(ADCrms(pData, 4)), 
             heatSinkTemperature,
