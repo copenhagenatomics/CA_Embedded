@@ -7,9 +7,10 @@
 #ifndef FAKE_USBPRINT_H_
 #define FAKE_USBPRINT_H_
 
-#include <sstream>
+#include <vector>
+#include <string>
 
 void hostUSBprintf(const char * format, ...);
-std::stringstream hostUSBread();
+std::vector<std::string>* hostUSBread(bool flush=false);
 
 #endif /* FAKE_USBPRINT_H_ */

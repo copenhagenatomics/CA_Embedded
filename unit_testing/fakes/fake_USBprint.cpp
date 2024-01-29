@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cstdio>
 #include <cstdarg>
+#include <vector>
 #include <sstream>
 
 #include "USBprint.h"
@@ -29,17 +30,16 @@ using namespace std;
 ***************************************************************************************************/
 
 static ofstream test_out;
+static stringstream test_ss;
+static size_t v_idx = 0;
 static char     RX_buffer[TX_RX_BUFFER_LENGTH];
 static size_t   RX_offset = 0;
-
 
 /* TODO: Make this Log transmissions to a "log_stdout" file, and "receive" transmissions from a 
 ** "stdin" file. Writing to a the output log file is pretty easy, but input in a way that mimics 
 ** the USB link for the CDC will be harder. Perhaps make a new thread that continually checks an 
 ** input file, then copies the input to the buffer (supplied by usb_cdc_rx) and then calls 
 ** usb_cdc_tx_available */
-
-
 
 int USBnprintf(const char * format, ... )
 {
@@ -63,6 +63,11 @@ ssize_t writeUSB(const void *buf, size_t count)
     }
 
     test_out.write((const char *)buf, count);
+    test_out.flush();
+
+    /* Also write the string to the internal copy buffer */
+    test_ss.clear();
+    test_ss << string((const char *)buf, count);
     
     return count;
 }
@@ -117,15 +122,24 @@ void usbFlush()
     RX_offset = 0;
 }
 
-stringstream hostUSBread()
+/*!
+** @brief Acts as the read function for the host (to allow checking what the device sent)
+*/
+vector<string>* hostUSBread(bool flush)
 {
-    test_out.flush();
-    ifstream test_in(TEST_OUT_FILENAME);
-    
-    stringstream stream;
-    stream << test_in.rdbuf();
+    vector<string>* result = new vector<string>;
+    string str;
+    while(getline(test_ss, str)) {
+        result->push_back(str);
+    }
 
-    test_in.close();
+    if(!flush) {
+        /* Put everything back into the stream */
+        test_ss.clear();
+        for(vector<string>::iterator it = result->begin(); it != result->end(); it++) {
+            test_ss << *it;
+        }
+    }
 
-    return stream;
+    return result;
 }
