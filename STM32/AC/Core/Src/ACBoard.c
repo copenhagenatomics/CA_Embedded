@@ -119,7 +119,7 @@ static void GpioInit()
 static double ADCtoCurrent(double adc_val)
 {
     // TODO: change method for calibration?
-    static float current_scalar = 0.012207;
+    static float current_scalar = 0.013138;
     static float current_bias = -0.01; //-0.058;
 
     return current_scalar * adc_val + current_bias;
