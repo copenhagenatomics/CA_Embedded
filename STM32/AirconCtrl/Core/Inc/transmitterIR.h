@@ -120,6 +120,6 @@ void turnOnLED();
 void turnOffLED();
 void turnOffAC();
 void pwmGPIO();
-void initTransmitterIR(TIM_HandleTypeDef *timFreqCarrier_, TIM_HandleTypeDef *timSignal_);
+void initTransmitterIR(TIM_HandleTypeDef *timFreqCarrier1_, TIM_HandleTypeDef *timFreqCarrier2_, TIM_HandleTypeDef *timSignal_);
 
 #endif /* INC_TRANSMITTERIR_H_ */
