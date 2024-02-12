@@ -11,14 +11,17 @@
 #include "systemInfo.h"
 #include "DCBoard.h"
 #include "ADCMonitor.h"
-#include "si7051.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "HAL_otp.h"
 #include "time32.h"
 
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
 #define ADC_CHANNELS    6
-#define ACTUATIONPORTS 4
+#define ACTUATIONPORTS 6
 #define ADC_CHANNEL_BUF_SIZE    400
 
 // PWM control
@@ -26,9 +29,13 @@
 #define TURNOFFPWM 0
 #define MAX_PWM TURNONPWM
 
-// Private static function declarations.
+/***************************************************************************************************
+** PRIVATE FUNCTION DECLARATIONS
+***************************************************************************************************/
+
 static void CAallOn(bool isOn);
 static void CAportState(int port, bool state, int percent, int duration);
+static volatile uint32_t* getTimerCCR(int pinNumber);
 
 // Local variables.
 static CAProtocolCtx caProto =
@@ -51,8 +58,9 @@ static uint32_t actuationStart[ACTUATIONPORTS] = { 0 };
 static bool port_state[ACTUATIONPORTS] = { 0 };
 static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 
-// Temperature handling
-static I2C_HandleTypeDef *hi2c = NULL;
+/***************************************************************************************************
+** PRIVATE FUNCTION DEFINITIONS
+***************************************************************************************************/
 
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
@@ -72,71 +80,38 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 	if (!isComPortOpen())
 		return;
 
-    float temp;
-    if (si7051Temp(hi2c, &temp) != HAL_OK) temp = 10000;
-
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d",
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
-            meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3), temp,
-            ADCrms(pBuffer, 5), ADCmax(pBuffer, 5));
+            meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
+            meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5));
 }
 
 static void setPWMPin(int pinNumber, int pwmState, int duration)
 {
-
-    if (pinNumber == 0)
-    {
-        TIM5->CCR1 = pwmState;
-    }
-    else if (pinNumber == 1)
-    {
-        TIM5->CCR2 = pwmState;
-    }
-    else if (pinNumber == 2)
-    {
-        TIM5->CCR3 = pwmState;
-    }
-    else if (pinNumber == 3)
-    {
-        TIM5->CCR4 = pwmState;
-    }
+    volatile uint32_t* ccr = getTimerCCR(pinNumber);
+    *ccr = pwmState;
 
     actuationStart[pinNumber] = HAL_GetTick();
     actuationDuration[pinNumber] = duration;
-    ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+    ccr_states[pinNumber] = *ccr;
     port_state[pinNumber] = 1;
 }
 
 static void pinWrite(int pinNumber, bool turnOn)
 {
     // Normal turn off is done by choosing min PWM value i.e. pin always low.
-    if (pinNumber == 0)
-    {
-        TIM5->CCR1 = (turnOn) ? TURNONPWM : TURNOFFPWM;
-    }
-    else if (pinNumber == 1)
-    {
-        TIM5->CCR2 = (turnOn) ? TURNONPWM : TURNOFFPWM;
-    }
-    else if (pinNumber == 2)
-    {
-        TIM5->CCR3 = (turnOn) ? TURNONPWM : TURNOFFPWM;
-    }
-    else if (pinNumber == 3)
-    {
-        TIM5->CCR4 = (turnOn) ? TURNONPWM : TURNOFFPWM;
-    }
+    *(getTimerCCR(pinNumber)) = (turnOn) ? TURNONPWM : TURNOFFPWM;
 }
 
 // Turn on all pins.
 static void allOn()
 {
-    for (int pinNumber = 0; pinNumber < 4; pinNumber++)
+    for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++)
     {
         pinWrite(pinNumber, SET);
         actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
         port_state[pinNumber] = 1;
-        ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+        ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
     }
 }
 
@@ -145,7 +120,7 @@ static void turnOnPin(int pinNumber)
     pinWrite(pinNumber, SET);
     actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
     port_state[pinNumber] = 1;
-    ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+    ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
 }
 
 static void turnOnPinDuration(int pinNumber, int duration)
@@ -154,18 +129,18 @@ static void turnOnPinDuration(int pinNumber, int duration)
     actuationStart[pinNumber] = HAL_GetTick();
     actuationDuration[pinNumber] = duration;
     port_state[pinNumber] = 1;
-    ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+    ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
 }
 
 // Shuts off all pins.
 static void allOff()
 {
-    for (int pinNumber = 0; pinNumber < 4; pinNumber++)
+    for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++)
     {
         pinWrite(pinNumber, RESET);
         actuationDuration[pinNumber] = 0;
         port_state[pinNumber] = 0;
-        ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+        ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
     }
 }
 
@@ -174,7 +149,7 @@ static void turnOffPin(int pinNumber)
     pinWrite(pinNumber, RESET);
     actuationDuration[pinNumber] = 0;
     port_state[pinNumber] = 0;
-    ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+    ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
 }
 
 typedef struct ActuationInfo
@@ -235,7 +210,7 @@ static void autoOff()
 {
     uint32_t now = HAL_GetTick();
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < ACTUATIONPORTS; i++)
     {
         if (tdiff_u32(now, actuationStart[i]) > actuationDuration[i] && actuationDuration[i] != 0)
         {
@@ -246,12 +221,13 @@ static void autoOff()
 
 static void handleButtonPress()
 {
-    // Button ports
-    GPIO_TypeDef *button_ports[] = { Btn_2_GPIO_Port, Btn_1_GPIO_Port,
-            Btn_4_GPIO_Port, Btn_3_GPIO_Port };
-    const uint16_t buttonPins[] = { Btn_2_Pin, Btn_1_Pin, Btn_4_Pin, Btn_3_Pin };
+    // Button ports - Button 1 and 2 position is swapped because... insert reason here?
+    GPIO_TypeDef *button_ports[] = { Btn_2_GPIO_Port, Btn_1_GPIO_Port, Btn_4_GPIO_Port, 
+                                     Btn_3_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
+    const uint16_t buttonPins[] = { Btn_2_Pin, Btn_1_Pin, Btn_4_Pin, 
+                                    Btn_3_Pin, Btn_5_Pin, Btn_6_Pin };
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < ACTUATIONPORTS; i++)
     {
         if (HAL_GPIO_ReadPin(button_ports[i], buttonPins[i]) == 0)
         {
@@ -285,8 +261,32 @@ static void checkButtonPress()
     }
 }
 
-// Public member functions.
-void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c, WWDG_HandleTypeDef* hwwdg)
+/*!
+** @brief Returns a pointer to the correct CCR register
+**
+** @param[in] pinNumber Number of DC port to get corresponding timer for
+**
+** @return Address of CCR register, or 0 if an incorrect pinNumber is given
+*/
+static volatile uint32_t* getTimerCCR(int pinNumber)
+{
+    switch (pinNumber)
+    {
+        case 0: return &(TIM4->CCR1);
+        case 1: return &(TIM4->CCR2);
+        case 2: return &(TIM5->CCR1);
+        case 3: return &(TIM5->CCR2);
+        case 4: return &(TIM5->CCR3);
+        case 5: return &(TIM5->CCR4);
+        default: return (uint32_t*)0x00000000;
+    }
+}
+
+/***************************************************************************************************
+** PUBLIC FUNCTION DEFINITIONS
+***************************************************************************************************/
+
+void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 {
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != DC_Board)
@@ -296,7 +296,6 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c, WWDG_Handle
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
     initCAProtocol(&caProto, usb_cdc_rx);
-    hi2c = _hi2c;
     hwwdg_ = hwwdg;
 }
 
@@ -309,4 +308,3 @@ void DCBoardLoop(const char* bootMsg)
     autoOff();
     checkButtonPress();
 }
-
