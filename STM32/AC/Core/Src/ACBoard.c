@@ -268,7 +268,7 @@ static void CAallOn(bool isOn, int duration)
         }
         else
         {
-            allOn(duration);
+            allOn(1000*duration);
         }
     }
     else
@@ -284,7 +284,7 @@ static void CAportState(int port, bool state, int percent, int duration)
     if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
         return;
 
-    if(duration <= 0) 
+    if((duration <= 0) && (percent != 0)) 
     {
         char buf[20] = {0};
         snprintf(buf, 20, "p%d on %d", port, duration);
