@@ -65,8 +65,8 @@ static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
     // ADC to current calibration values
-    const float current_scalar = -0.011;
-    const float current_bias = 23.43; // Offset calibrated to USB hubs.
+    const float current_scalar = ((3.3 / 4096.0) / 0.264); // From ACS725LLCTR-05AB datasheet
+    const float current_bias   = - 6.25;                        // Offset calibrated to USB hubs.
 
     return current_scalar * ADCMean(pData, channel) + current_bias;
 }
@@ -272,12 +272,12 @@ static volatile uint32_t* getTimerCCR(int pinNumber)
 {
     switch (pinNumber)
     {
-        case 0: return &(TIM4->CCR1);
-        case 1: return &(TIM4->CCR2);
+        case 0: return &(TIM4->CCR2);
+        case 1: return &(TIM4->CCR1);
         case 2: return &(TIM5->CCR1);
         case 3: return &(TIM5->CCR2);
-        case 4: return &(TIM5->CCR3);
-        case 5: return &(TIM5->CCR4);
+        case 4: return &(TIM5->CCR4);
+        case 5: return &(TIM5->CCR3);
         default: return (uint32_t*)0x00000000;
     }
 }
