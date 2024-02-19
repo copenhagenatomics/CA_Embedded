@@ -9,6 +9,21 @@
 #define TYPE_K_DELTA	0.000041276
 #define TYPE_K_CJ_DELTA	0.00004073
 
+// ---- Temperature board status register definitions ----
+
+/* There are 5 ADS1120 chips on the temperature board which measure
+ * the temperature on the 10 ports. The ADS1120 make up the main potential
+ * source of hardware problems. 
+ * Each ADS1120 has two bits of space allocated for status codes.
+ * Hence, the mask points to two bits at the time, but the bit shifting
+ * changes depending on which chip is of relevance.   
+ */
+#define TEMP_ADS1120_x_Error_Msk(x)  (0x03 << (2*(x)))
+
+// Mask to check whether there are currently any errors on the board 
+#define TEMP_No_Error_Msk            0x7FFFFFFF
+
+
 void initSensorCalibration();
 void setSensorCalibration(int pinNumber, char type);
 bool isCalibrationInputValid(const char *inputBuffer);

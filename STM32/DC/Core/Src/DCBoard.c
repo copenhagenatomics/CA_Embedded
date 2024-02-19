@@ -36,12 +36,18 @@
 static void CAallOn(bool isOn);
 static void CAportState(int port, bool state, int percent, int duration);
 static volatile uint32_t* getTimerCCR(int pinNumber);
+static void printDcStatus();
+static void updateBoardStatus();
 
-// Local variables.
+/***************************************************************************************************
+** PRIVATE OBJECTS
+***************************************************************************************************/
+
 static CAProtocolCtx caProto =
 {
         .undefined = HALundefined,
         .printHeader = CAPrintHeader,
+        .printStatus = printDcStatus,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -62,6 +68,41 @@ static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 ** PRIVATE FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
+/*!
+** @brief Verbose print of the DC board status
+*/
+static void printDcStatus()
+{
+    static char buf[600] = { 0 };
+    int len = 0;
+
+    for (int i = 0; i < ACTUATIONPORTS; i++)
+    {
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %u\r\n", 
+                        i, (int)port_state[i], (unsigned int) *(getTimerCCR(i)));
+    }
+
+    writeUSB(buf, len);
+}
+
+/*!
+** @brief Updates the global error/status object.
+**
+** Adds the port status bits into the error field, and clears the error bit if there are no
+** more errors.
+*/
+static void updateBoardStatus() 
+{
+    for(int i = 0; i < ACTUATIONPORTS; i++)
+    {
+        port_state[i] ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i)) : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
+    }
+
+    /* Clear the error mask if there are no error bits set any more. This logic could be done when
+    ** the (other) error bits are cleared, but doing here means it only needs to be done once */
+    bsClearError(DC_BOARD_No_Error_Msk);
+}
+
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
     // ADC to current calibration values
@@ -74,16 +115,26 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
 WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
-	// Watch dog refresh. Triggers reset if reset after <90ms or >110ms.
-	// Ensures ADC sampling is performed with correct timing.
-	HAL_WWDG_Refresh(hwwdg_);
-	if (!isComPortOpen())
-		return;
+    // Watch dog refresh. Triggers reset if reset after <90ms or >110ms.
+    // Ensures ADC sampling is performed with correct timing.
+    HAL_WWDG_Refresh(hwwdg_);
+    if (!isComPortOpen())
+    {
+        return;
+    }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f",
+    /* If the version is incorrect, there is no point printing data or doing maths */
+    if (bsGetStatus() & BS_VERSION_ERROR_Msk)
+    {
+        USBnprintf("0x%x", bsGetStatus());
+        return;
+    }
+
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
             meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
-            meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5));
+            meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5),
+            bsGetStatus());
 }
 
 static void setPWMPin(int pinNumber, int pwmState, int duration)
@@ -166,7 +217,7 @@ static void actuatePins(ActuationInfo actuationInfo)
         return;
     }
 
-    if (actuationInfo.timeOn == -1 && (actuationInfo.percent == 100 || actuationInfo.percent == 0))
+    if (actuationInfo.timeOn == -1000 && (actuationInfo.percent == 100 || actuationInfo.percent == 0))
     {
         // pX on or pX off (timeOn == -1 means indefinite)
         if (actuationInfo.percent == 0)
@@ -178,18 +229,18 @@ static void actuatePins(ActuationInfo actuationInfo)
             turnOnPin(actuationInfo.pin);
         }
     }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.percent == 100)
+    else if (actuationInfo.timeOn != -1000 && actuationInfo.percent == 100)
     {
         // pX on YY
         turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
     }
-    else if (actuationInfo.timeOn == -1 && actuationInfo.percent != 0 && actuationInfo.percent != 100)
+    else if (actuationInfo.timeOn == -1000 && actuationInfo.percent != 0 && actuationInfo.percent != 100)
     {
         // pX on ZZZ%
         int pwmState = (actuationInfo.percent * MAX_PWM) / 100;
         setPWMPin(actuationInfo.pin, pwmState, 0);
     }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.percent != 100)
+    else if (actuationInfo.timeOn != -1000 && actuationInfo.percent != 100)
     {
         // pX on YY ZZZ%
         int pwmState = (actuationInfo.percent * MAX_PWM) / 100;
@@ -288,20 +339,42 @@ static volatile uint32_t* getTimerCCR(int pinNumber)
 
 void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 {
-    BoardType board;
-    if (getBoardInfo(&board, NULL) || board != DC_Board)
-        return;
+    setFirmwareBoardType(DC_Board);
+    setFirmwareBoardVersion((pcbVersion){3, 0});
 
+    /* Always allow for DFU also if programmed on non-matching board or PCB version. */
+    initCAProtocol(&caProto, usb_cdc_rx);
+    
+    BoardType board;
+    if (getBoardInfo(&board, NULL) || board != DC_Board) 
+    {
+        bsSetError(BS_VERSION_ERROR_Msk);
+    }
+
+    // Pin out has changed from PCB V3.0 - older versions need other software.
+    pcbVersion ver;
+    if (getPcbVersion(&ver) || ver.major < 3)
+    {
+        bsSetError(BS_VERSION_ERROR_Msk);
+    }
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
-    initCAProtocol(&caProto, usb_cdc_rx);
     hwwdg_ = hwwdg;
 }
 
+/*!
+** @brief Loop function called repeatedly throughout
+** 
+** * Responds to user input
+** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
+**   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
+*/
 void DCBoardLoop(const char* bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
+    updateBoardStatus();
+
     ADCMonitorLoop(printResult);
 
     // Turn off pins if they have run for requested time
