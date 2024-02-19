@@ -10,6 +10,23 @@
 
 #include "stm32f4xx_hal.h"
 
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
+/* DC board status register definitions */
+
+/* Each of the 5 ports (1x Fan + 4x AC) can be on or off */
+#define DC_BOARD_PORT_x_STATUS_Msk(x)  (1U << (x))
+#define DC_BOARD_PORTS_STATUS_Msk     ((1U << 5U) - 1U)
+
+/* Define showing which bits are "errors" and which are only for information */
+#define DC_BOARD_No_Error_Msk         (BS_SYSTEM_ERRORS_Msk)
+
+/***************************************************************************************************
+** PUBLIC FUNCTIONS
+***************************************************************************************************/
+
 void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c, WWDG_HandleTypeDef* _hwwdg);
 void DCBoardLoop(const char* bootMsg);
 
