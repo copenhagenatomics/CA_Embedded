@@ -140,8 +140,8 @@ static void GpioInit()
 static double ADCtoCurrent(double adc_val)
 {
     // TODO: change method for calibration?
-    static float current_scalar = 0.0125;
-    static float current_bias = -0.1187; //-0.058;
+    static float current_scalar = 0.013138;
+    static float current_bias = -0.01; //-0.058;
 
     return current_scalar * adc_val + current_bias;
 }
@@ -207,7 +207,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     }
 
     heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 0));
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
             ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
             ADCtoCurrent(ADCrms(pData, 4)), 
             heatSinkTemperature,
@@ -370,7 +370,7 @@ static void updateBoardStatus()
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
     setFirmwareBoardType(AC_Board);
-    setFirmwareBoardVersion((pcbVersion){6, 0});
+    setFirmwareBoardVersion((pcbVersion){6, 4});
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usb_cdc_rx);
@@ -381,9 +381,9 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
         bsSetError(BS_VERSION_ERROR_Msk);
     }
 
-    // Pin out has changed from PCB V6.0 - older versions need other software.
+    // Pin out has changed from PCB V6.4 - older versions need other software.
     pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major < 6)
+    if (getPcbVersion(&ver) || ver.major < 6 || ver.minor < 4)
     {
         bsSetError(BS_VERSION_ERROR_Msk);
     }
