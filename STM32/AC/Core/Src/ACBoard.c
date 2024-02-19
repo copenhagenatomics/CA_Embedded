@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <float.h>
+
 #include "usb_cdc_fops.h"
 #include "HeatCtrl.h"
 #include "ADCMonitor.h"
@@ -18,30 +19,42 @@
 #include "CAProtocolStm.h"
 #include "HAL_otp.h"
 #include "StmGpio.h"
+#include "ACBoard.h"
 
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
 
 #define MAX_TEMPERATURE 70
 
+/***************************************************************************************************
+** PRIVATE FUNCTION DECLARATIONS
+***************************************************************************************************/
+
+static void CAallOn(bool isOn);
+static void CAportState(int port, bool state, int percent, int duration);
+static void userInput(const char *input);
+static void printAcStatus();
+static void updateBoardStatus();
+
+/***************************************************************************************************
+** PRIVATE OBJECTS
+***************************************************************************************************/
+
 /* GPIO settings. */
 static struct
 {
     StmGpio heater;
     StmGpio button;
-} heaterPorts[4];
+} heaterPorts[AC_BOARD_NUM_PORTS];
 static StmGpio fanCtrl;
 static double heatSinkTemperature = 0; // Heat Sink temperature
 static bool isFanForceOn = false;
 
-// Forward declare functions.
-static void CAallOn(bool isOn);
-static void CAportState(int port, bool state, int percent, int duration);
-static void userInput(const char *input);
 static CAProtocolCtx caProto =
 {
         .undefined = userInput,
         .printHeader = CAPrintHeader,
+        .printStatus = printAcStatus,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, // TODO: change method for calibration?
         .calibrationRW = NULL,
@@ -52,23 +65,45 @@ static CAProtocolCtx caProto =
         .portState = CAportState,
 };
 
+/***************************************************************************************************
+** PRIVATE FUNCTIONS
+***************************************************************************************************/
+
+/*!
+** @brief Verbose print of the AC board status
+*/
+static void printAcStatus()
+{
+    static char buf[600] = { 0 };
+    int len = 0;
+
+    len += snprintf(&buf[len], sizeof(buf) - len, "Fan     On: %d\r\n", stmGetGpio(fanCtrl));
+    for (int i = 0; i < AC_BOARD_NUM_PORTS; i++)
+    {
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", 
+                        i, stmGetGpio(heaterPorts[i].heater), getPWMPinPercent(i));
+    }
+
+    writeUSB(buf, len);
+}
+
 static void userInput(const char *input)
 {
-	if (strncmp(input, "fan on", 6) == 0)
-	{
-		isFanForceOn = true;
-		stmSetGpio(fanCtrl, true);
-	}
-	else if (strncmp(input, "fan off", 7) == 0)
-	{
-		isFanForceOn = false;
-		stmSetGpio(fanCtrl, false);
-	}
+    if (strncmp(input, "fan on", 6) == 0)
+    {
+        isFanForceOn = true;
+        stmSetGpio(fanCtrl, true);
+    }
+    else if (strncmp(input, "fan off", 7) == 0)
+    {
+        isFanForceOn = false;
+        stmSetGpio(fanCtrl, false);
+    }
 }
 
 static void GpioInit()
 {
-    const int noPorts = 4;
+    const int noPorts = AC_BOARD_NUM_PORTS;
     static GPIO_TypeDef *const pinsBlk[] = { ctrl1_GPIO_Port, ctrl2_GPIO_Port, ctrl3_GPIO_Port, ctrl4_GPIO_Port };
     static const uint16_t pins[] = { ctrl1_Pin, ctrl2_Pin, ctrl3_Pin, ctrl4_Pin };
 
@@ -101,14 +136,21 @@ static double ADCtoTemperature(double adc_val)
 WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
-	// Update window watchdog. Will trigger reset outside window: <90ms && >110ms.
-	HAL_WWDG_Refresh(hwwdg_);
+    // Update window watchdog. Will trigger reset outside window: <90ms && >110ms.
+    HAL_WWDG_Refresh(hwwdg_);
 
     // Make calibration static since this should be done only once.
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
 
     if (!isComPortOpen()) return;
+
+    /* If the version is incorrect, there is no point printing data or doing maths */
+    if (bsGetStatus() & BS_VERSION_ERROR_Msk)
+    {
+        USBnprintf("0x%x", bsGetStatus());
+        return;
+    }
 
     if (!isCalibrationDone)
     {
@@ -129,10 +171,11 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     }
 
     heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 0));
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f", ADCtoCurrent(ADCrms(pData, 1)),
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
             ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
-            ADCtoCurrent(ADCrms(pData, 4)),
-            heatSinkTemperature);
+            ADCtoCurrent(ADCrms(pData, 4)), 
+            heatSinkTemperature,
+            bsGetStatus());
 }
 
 typedef struct ActuationInfo {
@@ -188,63 +231,127 @@ static void CAallOn(bool isOn)
 }
 static void CAportState(int port, bool state, int percent, int duration)
 {
-	uint8_t pwmPercent = getPWMPinPercent(port-1);
-	// If heat sink has reached the maximum allowed temperature and user
-	// tries to heat the system further up then disregard the input command
-	if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
-		return;
+    uint8_t pwmPercent = getPWMPinPercent(port-1);
+    // If heat sink has reached the maximum allowed temperature and user
+    // tries to heat the system further up then disregard the input command
+    if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
+        return;
 
     actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
 }
 
+/*!
+** @brief Loop for controlling board temperature.
+**
+** Loops keeping the board cool using the attached fan. If the board gets too hot, starts to reduce
+** the power on all ports by reducing the PWM
+*/
 static void heatSinkLoop()
 {
-	static unsigned long previous = 0;
+    static unsigned long previous = 0;
     // Turn on fan if temp > 55 and turn of when temp < 50.
-    if (heatSinkTemperature < 50 && !isFanForceOn)
+    if (heatSinkTemperature <= MAX_TEMPERATURE)
     {
-		stmSetGpio(fanCtrl, false);
+        if (heatSinkTemperature < 50 && !isFanForceOn)
+        {
+            stmSetGpio(fanCtrl, false);
+        }
+        else if (heatSinkTemperature > 55)
+        {
+            stmSetGpio(fanCtrl, true);
+        }
+
+        bsClearField(BS_OVER_TEMPERATURE_Msk);
     }
-    else if (heatSinkTemperature > 55)
+    else // Safety mode to avoid overheating of the board
     {
-    	stmSetGpio(fanCtrl, true);
+        stmSetGpio(fanCtrl, true);
+        
+        unsigned long now = HAL_GetTick();
+        if (now - previous > 2000)  // 2000ms. Should be aligned with the control period of heater.
+        {
+            previous = now;
+            adjustPWMDown();
+        }
+
+        bsSetError(BS_OVER_TEMPERATURE_Msk);
     }
-    else if (heatSinkTemperature > MAX_TEMPERATURE) // Safety mode to avoid overheating of the board
-    {
-    	unsigned long now = HAL_GetTick();
-    	if (now - previous > 2000)	// 2000ms. Should be aligned with the control period of heater.
-    	{
-    		previous = now;
-    		adjustPWMDown();
-    	}
-    }
+
+    setBoardTemp(heatSinkTemperature);
 }
 
+/*!
+** @brief Updates the global error/status object.
+**
+** Adds the port and fan status bits into the error field, and clears the error bit if there are no
+** more errors.
+*/
+static void updateBoardStatus() 
+{
+    stmGetGpio(fanCtrl) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(0)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(0));
+    for(int i = 0; i < AC_BOARD_NUM_PORTS; i++)
+    {
+        stmGetGpio(heaterPorts[i].heater) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(i+1)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(i+1));
+    }
+
+    /* Clear the error mask if there are no error bits set any more. This logic could be done when
+    ** the (other) error bits are cleared, but doing here means it only needs to be done once */
+    bsClearError(AC_BOARD_No_Error_Msk);
+}
+
+/***************************************************************************************************
+** PUBLIC FUNCTIONS
+***************************************************************************************************/
+
+/*!
+** @brief Setup function called at startup
+**
+** Checks the hardware matches this FW version, starts the USB communication and starts the ADC. 
+** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
+** link
+*/
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
-	// Always allow for DFU also if programmed on non-matching board or PCB version.
-	initCAProtocol(&caProto, usb_cdc_rx);
+    setFirmwareBoardType(AC_Board);
+    setFirmwareBoardVersion((pcbVersion){6, 0});
+
+    // Always allow for DFU also if programmed on non-matching board or PCB version.
+    initCAProtocol(&caProto, usb_cdc_rx);
 
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != AC_Board)
-        return;
+    {
+        bsSetError(BS_VERSION_ERROR_Msk);
+    }
 
     // Pin out has changed from PCB V6.0 - older versions need other software.
     pcbVersion ver;
     if (getPcbVersion(&ver) || ver.major < 6)
-        return;
+    {
+        bsSetError(BS_VERSION_ERROR_Msk);
+    }
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
     GpioInit();
 
-	hwwdg_=hwwdg;
+    hwwdg_=hwwdg;
 }
 
+/*!
+** @brief Loop function called repeatedly throughout
+** 
+** * Responds to user input
+** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
+**   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
+** * Runs the closed loop control system for board temperature and PWMs the heaters as per user 
+**   input
+*/
 void ACBoardLoop(const char *bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
+    updateBoardStatus();
     ADCMonitorLoop(printCurrentArray);
     heatSinkLoop();
 
