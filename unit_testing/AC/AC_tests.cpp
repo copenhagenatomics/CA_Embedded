@@ -139,3 +139,8 @@ TEST_F(ACBoard, GpioInit)
     expectStmNotNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNotNull(&heaterPorts[i].heater);
 }
+
+TEST_F(ACBoard, WrongBoardParams)
+{
+    
+}
