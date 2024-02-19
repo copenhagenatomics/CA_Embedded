@@ -21,16 +21,33 @@
 #include "StmGpio.h"
 #include "ACBoard.h"
 
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
 #define ADC_CHANNELS	5
 #define ADC_CHANNEL_BUF_SIZE	400
 
 #define MAX_TEMPERATURE 70
 
+#define USB_COMMS_TIMEOUT_MS 5000
+
+/***************************************************************************************************
+** PRIVATE TYPEDEFS
+***************************************************************************************************/
+
+typedef struct ActuationInfo {
+    int pin; // pins 0-3 are interpreted as single ports - pin '-1' is interpreted as all
+    int pwmDutyCycle;
+    int timeOn; // time on is in seconds
+    bool isInputValid;
+} ActuationInfo;
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-static void CAallOn(bool isOn);
+static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
 static void userInput(const char *input);
 static void printAcStatus();
@@ -99,6 +116,10 @@ static void userInput(const char *input)
         isFanForceOn = false;
         stmSetGpio(fanCtrl, false);
     }
+    else 
+    {
+        HALundefined(input);
+    }
 }
 
 static void GpioInit()
@@ -142,8 +163,23 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     // Make calibration static since this should be done only once.
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
+    static uint32_t port_close_time = 0;
 
-    if (!isComPortOpen()) return;
+    /* If the USB port is not open, no messages should be printed. Also if the USB port has been 
+    ** closed for more than a timeout, everything should be turned off as a safety measure */
+    if (!isComPortOpen()) 
+    {
+        if (port_close_time == 0)
+        {
+            port_close_time = HAL_GetTick();
+        }
+        else if((HAL_GetTick() - port_close_time) > USB_COMMS_TIMEOUT_MS)
+        {
+            allOff();
+        }
+        return;
+    }
+    port_close_time = 0;
 
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
@@ -178,56 +214,68 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
             bsGetStatus());
 }
 
-typedef struct ActuationInfo {
-    int pin; // pins 0-3 are interpreted as single ports - pin '-1' is interpreted as all
-    int pwmDutyCycle;
-    int timeOn; // time on is in seconds - timeOn '-1' is interpreted as indefinitely
-    bool isInputValid;
-} ActuationInfo;
+/*!
+** @brief Calls appropriate backend function based on inputs
+**
+** Depending on the inputs (which are received from communication link), chooses the appropriate 
+** backend function and calls it.
+*/
 static void actuatePins(ActuationInfo actuationInfo)
 {
-    if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 0)
+    /* All pins functions */
+    if (actuationInfo.pin == -1)
     {
-        // all off (pin == -1 means all pins)
-        allOff();
-    }
-    else if (actuationInfo.pin == -1 && actuationInfo.pwmDutyCycle == 100)
-    {
-        // all on (pin == -1 means all pins)
-        allOn();
-    }
-    else if (actuationInfo.timeOn == -1 && (actuationInfo.pwmDutyCycle == 100 || actuationInfo.pwmDutyCycle == 0))
-    {
-        // pX on or pX off (timeOn == -1 means indefinite)
         if (actuationInfo.pwmDutyCycle == 0)
         {
+            // all off (pin == -1 means all pins)
+            allOff();
+        }
+        else if (actuationInfo.pwmDutyCycle == 100)
+        {
+            // all on (pin == -1 means all pins)
+            allOn(actuationInfo.timeOn);
+        }
+        /* It doesn't really make sense to allow setting all pins to the same PWM */
+    } 
+    else
+    {
+        if (actuationInfo.pwmDutyCycle == 0)
+        {
+            // pX off
             turnOffPin(actuationInfo.pin);
+        }
+        else if (actuationInfo.pwmDutyCycle == 100)
+        {
+            // pX on YY
+            turnOnPin(actuationInfo.pin, actuationInfo.timeOn);
         }
         else
         {
-            turnOnPin(actuationInfo.pin);
+            // pX on ZZZ%
+            setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
         }
-    }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle == 100)
-    {
-        // pX on YY
-        turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
-    }
-    else if (actuationInfo.timeOn == -1 && actuationInfo.pwmDutyCycle != 0 && actuationInfo.pwmDutyCycle != 100)
-    {
-        // pX on ZZZ%
-        setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
-    }
-    else if (actuationInfo.timeOn != -1 && actuationInfo.pwmDutyCycle != 100)
-    {
-        // pX on YY ZZZ%
-        setPWMPin(actuationInfo.pin, actuationInfo.pwmDutyCycle, actuationInfo.timeOn);
     }
 }
 
-static void CAallOn(bool isOn)
+static void CAallOn(bool isOn, int duration)
 {
-    (isOn) ? allOn() : allOff();
+    if (isOn)
+    {
+        if(duration <= 0) 
+        {
+            char buf[20] = {0};
+            snprintf(buf, 20, "all on %d", duration);
+            HALundefined(buf);
+        }
+        else
+        {
+            allOn(1000*duration);
+        }
+    }
+    else
+    {
+        allOff();
+    }
 }
 static void CAportState(int port, bool state, int percent, int duration)
 {
@@ -237,7 +285,16 @@ static void CAportState(int port, bool state, int percent, int duration)
     if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
         return;
 
-    actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
+    if((duration <= 0) && (percent != 0)) 
+    {
+        char buf[20] = {0};
+        snprintf(buf, 20, "p%d on %d", port, duration);
+        HALundefined(buf);
+    }
+    else 
+    {
+        actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
+    }
 }
 
 /*!

@@ -35,7 +35,7 @@ enable_testing()
 include(GoogleTest)
 
 # AC tests
-add_executable(ac_test AC/AC_tests.cpp ${LIB}/Util/Src/time32.c fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.c)
-target_include_directories(ac_test PRIVATE fakes ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src)
-target_link_libraries(ac_test GTest::gtest_main gmock_main)
-gtest_discover_tests(ac_test)
+add_executable(heatCtrl_test AC/heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.c)
+target_include_directories(heatCtrl_test PRIVATE fakes ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src)
+target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
+gtest_discover_tests(heatCtrl_test)

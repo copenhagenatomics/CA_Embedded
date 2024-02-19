@@ -34,7 +34,8 @@
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-static void CAallOn(bool isOn);
+// Private static function declarations.
+static void CAallOn(bool isOn, int duration_ms);
 static void CAportState(int port, bool state, int percent, int duration);
 static void printDcStatus();
 static void updateBoardStatus();
@@ -303,8 +304,11 @@ static void actuatePins(ActuationInfo actuationInfo)
     }
 }
 
-static void CAallOn(bool isOn)
+static void CAallOn(bool isOn, int duration_ms)
 {
+    /* Unused argument required for compatibility with AC board */
+    (void) duration_ms;
+
     (isOn) ? allOn() : allOff();
 }
 static void CAportState(int port, bool state, int percent, int duration)
