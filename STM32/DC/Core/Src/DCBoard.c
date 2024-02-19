@@ -321,6 +321,7 @@ static void checkButtonPress()
 */
 static volatile uint32_t* getTimerCCR(int pinNumber)
 {
+    /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.0 board */
     switch (pinNumber)
     {
         case 0: return &(TIM4->CCR2);
