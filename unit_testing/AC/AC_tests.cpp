@@ -87,6 +87,30 @@ class ACBoard: public ::testing::Test
             ACBoardLoop(bootMsg);
         }
 
+        void simTick(int numTicks = 1)
+        {
+            for(int i = tickCounter + 1; i <= tickCounter + numTicks; i++) 
+            {
+                forceTick(i);
+                if(i != 0 && (i % 100 == 0)) {
+                    if(i % 200 == 0) {
+                        HAL_ADC_ConvCpltCallback(&hadc);
+                    }
+                    else {
+                        HAL_ADC_ConvHalfCpltCallback(&hadc);
+                    }
+                }
+                ACBoardLoop(bootMsg);
+            }
+            tickCounter = tickCounter + numTicks;
+        }
+
+        void goToTick(int tickDest) {
+            while(tickCounter < tickDest) {
+                simTick();
+            }
+        }
+
         /*******************************************************************************************
         ** MEMBERS
         *******************************************************************************************/
@@ -94,6 +118,7 @@ class ACBoard: public ::testing::Test
         ADC_HandleTypeDef hadc;
         WWDG_HandleTypeDef hwwdg;
         const char * bootMsg = "Boot Unit Test";
+        int tickCounter = 0;
 };
 
 /***************************************************************************************************
@@ -227,7 +252,6 @@ TEST_F(ACBoard, GpioInit)
     expectStmNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNull(&heaterPorts[i].heater);
 
-    forceTick(0);
     ACBoardInit(&hadc, &hwwdg);
 
     expectStmNotNull(&fanCtrl);
@@ -246,35 +270,30 @@ TEST_F(ACBoard, GpioInit)
     EXPECT_FALSE(stmGetGpio(heaterPorts[1].heater));
     
     /* Check PWM starts at beginning of next cycle */
-    forceTick(1000);
-    ACBoardLoop(bootMsg);
+    goToTick(1000);
     EXPECT_TRUE(stmGetGpio(heaterPorts[1].heater));
 
     /* Still on all the way to 50%? */
-    forceTick(1499);
-    ACBoardLoop(bootMsg);
+    goToTick(1499);
     EXPECT_TRUE(stmGetGpio(heaterPorts[1].heater));
 
     /* Turns off at 50% */
-    forceTick(1500);
-    ACBoardLoop(bootMsg);
+    goToTick(1500);
     EXPECT_FALSE(stmGetGpio(heaterPorts[1].heater));
 
     /* Doesn't turn on again (duration set to 2 secs at t=0) */
-    forceTick(2000);
-    ACBoardLoop(bootMsg);
+    goToTick(2000);
     EXPECT_FALSE(stmGetGpio(heaterPorts[1].heater));
 
     /* Quick test "next cycle turn on" works elsewhere within PWM period */
-    forceTick(2750);
+    goToTick(2750);
     EXPECT_FALSE(stmGetGpio(heaterPorts[2].heater));
     writeAcMessage("p3 on 3 25%\n");
     EXPECT_FALSE(stmGetGpio(heaterPorts[2].heater));
-    forceTick(2999);
-    ACBoardLoop(bootMsg);
+    goToTick(2999);
+
     EXPECT_FALSE(stmGetGpio(heaterPorts[2].heater));
-    forceTick(3000);
-    ACBoardLoop(bootMsg);
+    goToTick(3000);
     EXPECT_TRUE(stmGetGpio(heaterPorts[2].heater));
 }
 
@@ -326,16 +345,7 @@ TEST_F(ACBoard, UsbTimeout)
             hostUSBDisconnect();
         }
 
-        forceTick(i * 10);
-        if(!toggle) {
-            HAL_ADC_ConvHalfCpltCallback(&hadc);
-            toggle = true;
-        }
-        else {
-            HAL_ADC_ConvCpltCallback(&hadc);
-            toggle = false;
-        }
-        ACBoardLoop(bootMsg);
+        goToTick(i * 10);
 
         if(i < (0.25 * TEST_LENGTH_MS / 10 + TIMEOUT_LENGTH_MS / 10)) {
             ASSERT_TRUE(stmGetGpio(heaterPorts[0].heater)) << i;
