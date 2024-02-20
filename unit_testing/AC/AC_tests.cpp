@@ -25,7 +25,20 @@ using ::testing::AnyOf;
 using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 using namespace std;
+
+#define READ_USB(x) { \
+    vector<string>* ss = hostUSBread(); \
+    EXPECT_THAT(*ss, x); \
+    delete ss; \
+}
+
+#define READ_USB_FLUSH(x) { \
+    vector<string>* ss = hostUSBread(true); \
+    EXPECT_THAT(*ss, x); \
+    delete ss; \
+}
 
 /***************************************************************************************************
 ** TEST FIXTURES
@@ -39,84 +52,156 @@ class ACBoard: public ::testing::Test
         *******************************************************************************************/
         ACBoard()
         {
+            hadc.Init.NbrOfConversion = 5;
 
+            /* OTP code to allow initialisation of the board to pass */
+            /* TODO: Make this use a define for the board release, so that tests fail if the someone
+            ** forgets to update the version numbers */
+            BoardInfo bi = {
+                .v2 = {
+                    .otpVersion = OTP_VERSION_2,
+                    .boardType  = AC_Board,
+                    .subBoardType = 0,
+                    .reserved = {0},
+                    .pcbVersion = {
+                        .major = 6,
+                        .minor = 4
+                    },
+                    .productionDate = 0
+                }
+            };
+            HAL_otpWrite(&bi);
         }
 
-        void EXPECT_USB_CONTAINS(const char * search)
+        void writeAcMessage(const char * msg)
         {
-            vector<string>* ss = hostUSBread();
-            EXPECT_THAT(*ss, Contains(std::string(search)));
-            delete ss;
+            hostUSBprintf(msg);
+            ACBoardLoop(bootMsg);
         }
 
         /*******************************************************************************************
         ** MEMBERS
         *******************************************************************************************/
-
+        
+        ADC_HandleTypeDef hadc;
+        WWDG_HandleTypeDef hwwdg;
+        const char * bootMsg = "Boot Unit Test";
 };
 
 /***************************************************************************************************
 ** TESTS
 ***************************************************************************************************/
 
+TEST_F(ACBoard, CorrectBoardParams)
+{
+    ACBoardInit(&hadc, &hwwdg);
+
+    /* Basic test, was everything OK?  */
+    EXPECT_FALSE(bsGetStatus() && BS_VERSION_ERROR_Msk);
+
+    /* This should force a print on the USB bus */
+    ACBoardLoop(bootMsg);
+    HAL_ADC_ConvHalfCpltCallback(&hadc);
+    ACBoardLoop(bootMsg);
+
+    /* Check the printout is correct */
+    READ_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 0.00, 0x0"));
+}
+
 TEST_F(ACBoard, printStatus) 
 {
-    GpioInit();
+    ACBoardInit(&hadc, &hwwdg);
+    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
+    ** printing anything */
+    ACBoardLoop(bootMsg);
+    writeAcMessage("Status\n");
+    
 
-    printAcStatus();
-    vector<string>* ss = hostUSBread(true);
-    EXPECT_THAT(*ss, ElementsAre(
-        "Fan     On: 0\r",
-        "Port 0: On: 0, PWM percent: 0\r",
-        "Port 1: On: 0, PWM percent: 0\r",
-        "Port 2: On: 0, PWM percent: 0\r",
-        "Port 3: On: 0, PWM percent: 0\r"
+    READ_USB_FLUSH(ElementsAre(
+        "\r", 
+        "Boot Unit Test\r", 
+        "Board Status:\r", 
+        "The board is operating normally.\r", 
+        "Fan     On: 0\r", 
+        "Port 0: On: 0, PWM percent: 0\r", 
+        "Port 1: On: 0, PWM percent: 0\r", 
+        "Port 2: On: 0, PWM percent: 0\r", 
+        "Port 3: On: 0, PWM percent: 0\r", 
+        "\r", 
+        "End of board status. \r"
     ));
-    delete ss;
-
-
-    stmSetGpio(fanCtrl, true);
-    stmSetGpio(heaterPorts[1].heater, true);
-    stmSetGpio(heaterPorts[3].heater, true);
-    printAcStatus();
-    ss = hostUSBread(true);
-    EXPECT_THAT(*ss, ElementsAre(
+    
+    writeAcMessage("fan on\n");
+    writeAcMessage("p2 on 1\n");
+    writeAcMessage("p4 on 1\n");
+    writeAcMessage("Status\n");
+    
+    READ_USB_FLUSH(ElementsAre( 
+        "\r", 
+        "Board Status:\r", 
+        "The board is operating normally.\r", 
         "Fan     On: 1\r",
         "Port 0: On: 0, PWM percent: 0\r",
-        "Port 1: On: 1, PWM percent: 0\r",
+        "Port 1: On: 1, PWM percent: 100\r",
         "Port 2: On: 0, PWM percent: 0\r",
-        "Port 3: On: 1, PWM percent: 0\r"
+        "Port 3: On: 1, PWM percent: 100\r",
+        "\r", 
+        "End of board status. \r"
     ));
-    delete ss;
 
     /* It would be nice to be easily able to test PWM too, but this would require mocking/faking 
     ** heatCtrl module */
 }
 
+TEST_F(ACBoard, printSerial) 
+{
+    ACBoardInit(&hadc, &hwwdg);
+    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
+    ** printing anything */
+    ACBoardLoop(bootMsg);
+    writeAcMessage("Serial\n");
+    
+    READ_USB_FLUSH(ElementsAre(
+        "\r", 
+        "Boot Unit Test\r", 
+        "Serial Number: 000\r", 
+        "Product Type: AC Board\r", 
+        "Sub Product Type: 0\r", 
+        "MCU Family: Unknown 0x  0 Rev 0\r", 
+        "Software Version: (null)\r", 
+        "Compile Date: (null)\r", 
+        "Git SHA: (null)\r", 
+        "PCB Version: 6.4\r"
+    ));
+}
+
+/* Note: this test uses some knowledge of internals of ACBoard.c (e.g. white box), which isn't 
+** perfect */
 TEST_F(ACBoard, fanInput) 
 {
-    GpioInit();
+    ACBoardInit(&hadc, &hwwdg);
+    ACBoardLoop(bootMsg);
 
     EXPECT_FALSE(isFanForceOn);
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
-    userInput("fan on");
+    writeAcMessage("fan on\n");
     EXPECT_TRUE(isFanForceOn);
     EXPECT_TRUE(stmGetGpio(fanCtrl));
 
-    userInput("fan off");
+    writeAcMessage("fan off\n");
     EXPECT_FALSE(isFanForceOn);
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
-    userInput("fan wrong");
+    writeAcMessage("fan wrong\n");
     EXPECT_FALSE(isFanForceOn);
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
-    vector<string>* ss = hostUSBread();
-    EXPECT_THAT(*ss, Contains(std::string("MISREAD: fan wrong")));
-    delete ss;
+    READ_USB(Contains("MISREAD: fan wrong"));
 }
 
+/* Note: this test uses some knowledge of internals of ACBoard.c (e.g. white box), which isn't 
+** perfect */
 TEST_F(ACBoard, GpioInit) 
 {
     auto expectStmNull = [](StmGpio* stm) {
@@ -133,14 +218,85 @@ TEST_F(ACBoard, GpioInit)
 
     expectStmNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNull(&heaterPorts[i].heater);
-    
-    GpioInit();
+
+    forceTick(0);
+    ACBoardInit(&hadc, &hwwdg);
 
     expectStmNotNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNotNull(&heaterPorts[i].heater);
+
+    /* The GPIO should turn on immediately if a normal message is sent */
+    EXPECT_FALSE(stmGetGpio(heaterPorts[0].heater));
+
+    ACBoardLoop(bootMsg);
+    writeAcMessage("p1 on 1\n");
+    EXPECT_TRUE(stmGetGpio(heaterPorts[0].heater));
+
+    /* The GPIO should turn on at the next PWM cycle if a % message is sent */
+    EXPECT_FALSE(stmGetGpio(heaterPorts[1].heater));
+    writeAcMessage("p2 on 2 50%\n");
+    EXPECT_FALSE(stmGetGpio(heaterPorts[1].heater));
+    
+    /* Check PWM starts at beginning of next cycle */
+    forceTick(1000);
+    ACBoardLoop(bootMsg);
+    EXPECT_TRUE(stmGetGpio(heaterPorts[1].heater));
+
+    /* Still on all the way to 50%? */
+    forceTick(1499);
+    ACBoardLoop(bootMsg);
+    EXPECT_TRUE(stmGetGpio(heaterPorts[1].heater));
+
+    /* Turns off at 50% */
+    forceTick(1500);
+    ACBoardLoop(bootMsg);
+    EXPECT_FALSE(stmGetGpio(heaterPorts[1].heater));
+
+    /* Doesn't turn on again (duration set to 2 secs at t=0) */
+    forceTick(2000);
+    ACBoardLoop(bootMsg);
+    EXPECT_FALSE(stmGetGpio(heaterPorts[1].heater));
+
+    /* Quick test "next cycle turn on" works elsewhere within PWM period */
+    forceTick(2750);
+    EXPECT_FALSE(stmGetGpio(heaterPorts[2].heater));
+    writeAcMessage("p3 on 3 25%\n");
+    EXPECT_FALSE(stmGetGpio(heaterPorts[2].heater));
+    forceTick(2999);
+    ACBoardLoop(bootMsg);
+    EXPECT_FALSE(stmGetGpio(heaterPorts[2].heater));
+    forceTick(3000);
+    ACBoardLoop(bootMsg);
+    EXPECT_TRUE(stmGetGpio(heaterPorts[2].heater));
 }
 
-TEST_F(ACBoard, WrongBoardParams)
+/* Stacked switching basically checked in heatCtrl tests */
+
+TEST_F(ACBoard, InvalidCommands)
 {
-    
+    ACBoardInit(&hadc, &hwwdg);
+    ACBoardLoop(bootMsg);
+    hostUSBread(true); /* Flush USB buffer */
+
+    /* OK messages */
+    writeAcMessage("p1 on 1\n");
+    READ_USB(IsEmpty());
+    writeAcMessage("p2 on 1\n");
+    READ_USB(IsEmpty());
+    writeAcMessage("p3 on 1\n");
+    READ_USB(IsEmpty());
+    writeAcMessage("p4 on 1\n");
+    READ_USB(IsEmpty());
+
+    /* Fail messages */
+    writeAcMessage("p1 on\n");
+    READ_USB_FLUSH(Contains("MISREAD: p1 on -1"));
+    writeAcMessage("p2 on -1\n");
+    READ_USB_FLUSH(Contains("MISREAD: p2 on -1"));
+    writeAcMessage("p3 on 10%\n");
+    READ_USB_FLUSH(Contains("MISREAD: p3 on -1"));
+    writeAcMessage("p4 on 80%\n");
+    READ_USB_FLUSH(Contains("MISREAD: p4 on -1"));
+    writeAcMessage("all on\n");
+    READ_USB_FLUSH(Contains("MISREAD: all on -1"));
 }

@@ -149,7 +149,7 @@ TEST_F(ACHeaterCtrl, turnOnPinDuration)
 
         for(int j = 0; j < MAX_NO_HEATERS; j++)
         {
-            ASSERT_EQ(heaterGpios[j].state == PIN_SET, i <= durations[j]) << "Heater " << j << " at time " << i;
+            ASSERT_EQ(heaterGpios[j].state == PIN_SET, i < durations[j]) << "Heater " << j << " at time " << i;
         }
     }
 }

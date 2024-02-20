@@ -29,11 +29,11 @@ using namespace std;
 ** PRIVATE OBJECTS
 ***************************************************************************************************/
 
-static ofstream test_out;
+static ofstream test_out, test_in;
 static stringstream test_ss;
 static size_t v_idx = 0;
-static char     RX_buffer[TX_RX_BUFFER_LENGTH];
-static size_t   RX_offset = 0;
+static char     RX_buffer[TX_RX_BUFFER_LENGTH] = {0};
+static size_t   rx_len = 0, rx_off = 0;
 
 /* TODO: Make this Log transmissions to a "log_stdout" file, and "receive" transmissions from a 
 ** "stdin" file. Writing to a the output log file is pretty easy, but input in a way that mimics 
@@ -47,7 +47,8 @@ int USBnprintf(const char * format, ... )
     va_start(argptr, format);
 
     char buf[TX_RX_BUFFER_LENGTH] = {0};
-    size_t len = vsnprintf(&buf[0], TX_RX_BUFFER_LENGTH, format, argptr);
+    size_t len = snprintf(buf, 3, "\r\n");
+    len += vsnprintf(&buf[len], TX_RX_BUFFER_LENGTH, format, argptr);
 
     len = writeUSB(buf, len);
 
@@ -74,7 +75,7 @@ ssize_t writeUSB(const void *buf, size_t count)
 
 size_t txAvailable()
 {
-    return RX_offset;
+    return rx_len;
 }
 
 /*!
@@ -90,13 +91,15 @@ bool isUsbPortOpen()
 */
 int usbRx(uint8_t* buf)
 {
-    for(int i = 0; i < RX_offset; i++) {
-        buf[i] = RX_buffer[i];
-    }
-    size_t tmp = RX_offset;
-    RX_offset = 0;
+    if(rx_len != 0) {
+        *buf = RX_buffer[rx_off++];
+        rx_len--;
 
-    return tmp;
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }
 
 /*!
@@ -107,9 +110,16 @@ void hostUSBprintf(const char * format, ...)
     va_list argptr;
     va_start(argptr, format);
 
-    size_t len = vsnprintf(&RX_buffer[RX_offset], TX_RX_BUFFER_LENGTH - RX_offset, format, argptr);
+    if(!test_in.is_open()) {
+        test_in.open("test_in.txt");
+    }
 
-    RX_offset += len;
+    size_t temp = rx_off + rx_len;
+    size_t len = vsnprintf(&RX_buffer[temp], TX_RX_BUFFER_LENGTH - temp, format, argptr);
+
+    test_in.write((const char *)&RX_buffer[temp], len);
+    test_in.flush();
+    rx_len += len;
     
     va_end(argptr);
 }
@@ -119,7 +129,8 @@ void hostUSBprintf(const char * format, ...)
 */
 void usbFlush()
 {
-    RX_offset = 0;
+    rx_off = 0;
+    rx_len = 0;
 }
 
 /*!
