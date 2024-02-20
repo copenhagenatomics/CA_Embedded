@@ -13,4 +13,7 @@
 void hostUSBprintf(const char * format, ...);
 std::vector<std::string>* hostUSBread(bool flush=false);
 
+void hostUSBConnect();
+void hostUSBDisconnect();
+
 #endif /* FAKE_USBPRINT_H_ */

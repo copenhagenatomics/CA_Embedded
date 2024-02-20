@@ -28,15 +28,21 @@ using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using namespace std;
 
-#define READ_USB(x) { \
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
+/* Allow a range of single line container tests */
+#define EXPECT_READ_USB(x) { \
     vector<string>* ss = hostUSBread(); \
-    EXPECT_THAT(*ss, x); \
+    EXPECT_THAT(*ss, (x)); \
     delete ss; \
 }
 
-#define READ_USB_FLUSH(x) { \
+/* Allow a range of single line container tests */
+#define EXPECT_FLUSH_USB(x) { \
     vector<string>* ss = hostUSBread(true); \
-    EXPECT_THAT(*ss, x); \
+    EXPECT_THAT(*ss, (x)); \
     delete ss; \
 }
 
@@ -71,6 +77,8 @@ class ACBoard: public ::testing::Test
                 }
             };
             HAL_otpWrite(&bi);
+            forceTick(0);
+            hostUSBConnect();
         }
 
         void writeAcMessage(const char * msg)
@@ -105,7 +113,7 @@ TEST_F(ACBoard, CorrectBoardParams)
     ACBoardLoop(bootMsg);
 
     /* Check the printout is correct */
-    READ_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 0.00, 0x0"));
+    EXPECT_READ_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 0.00, 0x0"));
 }
 
 TEST_F(ACBoard, printStatus) 
@@ -117,7 +125,7 @@ TEST_F(ACBoard, printStatus)
     writeAcMessage("Status\n");
     
 
-    READ_USB_FLUSH(ElementsAre(
+    EXPECT_FLUSH_USB(ElementsAre(
         "\r", 
         "Boot Unit Test\r", 
         "Board Status:\r", 
@@ -136,7 +144,7 @@ TEST_F(ACBoard, printStatus)
     writeAcMessage("p4 on 1\n");
     writeAcMessage("Status\n");
     
-    READ_USB_FLUSH(ElementsAre( 
+    EXPECT_FLUSH_USB(ElementsAre( 
         "\r", 
         "Board Status:\r", 
         "The board is operating normally.\r", 
@@ -161,7 +169,7 @@ TEST_F(ACBoard, printSerial)
     ACBoardLoop(bootMsg);
     writeAcMessage("Serial\n");
     
-    READ_USB_FLUSH(ElementsAre(
+    EXPECT_FLUSH_USB(ElementsAre(
         "\r", 
         "Boot Unit Test\r", 
         "Serial Number: 000\r", 
@@ -197,7 +205,7 @@ TEST_F(ACBoard, fanInput)
     EXPECT_FALSE(isFanForceOn);
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
-    READ_USB(Contains("MISREAD: fan wrong"));
+    EXPECT_READ_USB(Contains("MISREAD: fan wrong"));
 }
 
 /* Note: this test uses some knowledge of internals of ACBoard.c (e.g. white box), which isn't 
@@ -280,23 +288,66 @@ TEST_F(ACBoard, InvalidCommands)
 
     /* OK messages */
     writeAcMessage("p1 on 1\n");
-    READ_USB(IsEmpty());
+    EXPECT_READ_USB(IsEmpty());
     writeAcMessage("p2 on 1\n");
-    READ_USB(IsEmpty());
+    EXPECT_READ_USB(IsEmpty());
     writeAcMessage("p3 on 1\n");
-    READ_USB(IsEmpty());
+    EXPECT_READ_USB(IsEmpty());
     writeAcMessage("p4 on 1\n");
-    READ_USB(IsEmpty());
+    EXPECT_READ_USB(IsEmpty());
 
     /* Fail messages */
     writeAcMessage("p1 on\n");
-    READ_USB_FLUSH(Contains("MISREAD: p1 on -1"));
+    EXPECT_FLUSH_USB(Contains("MISREAD: p1 on -1"));
     writeAcMessage("p2 on -1\n");
-    READ_USB_FLUSH(Contains("MISREAD: p2 on -1"));
+    EXPECT_FLUSH_USB(Contains("MISREAD: p2 on -1"));
     writeAcMessage("p3 on 10%\n");
-    READ_USB_FLUSH(Contains("MISREAD: p3 on -1"));
+    EXPECT_FLUSH_USB(Contains("MISREAD: p3 on -1"));
     writeAcMessage("p4 on 80%\n");
-    READ_USB_FLUSH(Contains("MISREAD: p4 on -1"));
+    EXPECT_FLUSH_USB(Contains("MISREAD: p4 on -1"));
     writeAcMessage("all on\n");
-    READ_USB_FLUSH(Contains("MISREAD: all on -1"));
+    EXPECT_FLUSH_USB(Contains("MISREAD: all on -1"));
+}
+
+/* TODO: Can't help but think there is a better way to simulate AC steps */
+TEST_F(ACBoard, UsbTimeout)
+{
+    static const int TEST_LENGTH_MS = 10000;
+    static const int TIMEOUT_LENGTH_MS = 5000;
+
+    ACBoardInit(&hadc, &hwwdg);
+    ACBoardLoop(bootMsg);
+    writeAcMessage("all on 60\n");
+
+    bool toggle = false;
+    for(int i = 0; i < TEST_LENGTH_MS / 10; i++)
+    {
+        if(i == 0.25 * TEST_LENGTH_MS / 10) {
+            hostUSBDisconnect();
+        }
+
+        forceTick(i * 10);
+        if(!toggle) {
+            HAL_ADC_ConvHalfCpltCallback(&hadc);
+            toggle = true;
+        }
+        else {
+            HAL_ADC_ConvCpltCallback(&hadc);
+            toggle = false;
+        }
+        ACBoardLoop(bootMsg);
+
+        if(i < (0.25 * TEST_LENGTH_MS / 10 + TIMEOUT_LENGTH_MS / 10)) {
+            ASSERT_TRUE(stmGetGpio(heaterPorts[0].heater)) << i;
+            ASSERT_TRUE(stmGetGpio(heaterPorts[1].heater)) << i;
+            ASSERT_TRUE(stmGetGpio(heaterPorts[2].heater)) << i;
+            ASSERT_TRUE(stmGetGpio(heaterPorts[3].heater)) << i;
+        }
+        else {
+            ASSERT_FALSE(stmGetGpio(heaterPorts[0].heater)) << i;
+            ASSERT_FALSE(stmGetGpio(heaterPorts[1].heater)) << i;
+            ASSERT_FALSE(stmGetGpio(heaterPorts[2].heater)) << i;
+            ASSERT_FALSE(stmGetGpio(heaterPorts[3].heater)) << i;
+        }
+    }
 }

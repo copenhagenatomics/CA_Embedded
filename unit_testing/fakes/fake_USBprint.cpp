@@ -34,6 +34,7 @@ static stringstream test_ss;
 static size_t v_idx = 0;
 static char     RX_buffer[TX_RX_BUFFER_LENGTH] = {0};
 static size_t   rx_len = 0, rx_off = 0;
+static bool     connected = false;
 
 /* TODO: Make this Log transmissions to a "log_stdout" file, and "receive" transmissions from a 
 ** "stdin" file. Writing to a the output log file is pretty easy, but input in a way that mimics 
@@ -83,7 +84,7 @@ size_t txAvailable()
 */
 bool isUsbPortOpen()
 {
-    return true;
+    return connected;
 }
 
 /*!
@@ -153,4 +154,20 @@ vector<string>* hostUSBread(bool flush)
     }
 
     return result;
+}
+
+/*!
+** @brief "Connects" the USB cable
+*/
+void hostUSBConnect()
+{
+    connected = true;
+}
+
+/*!
+** @brief "Disconnects" the USB cable
+*/
+void hostUSBDisconnect()
+{
+    connected = false;
 }

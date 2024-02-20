@@ -172,7 +172,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         {
             port_close_time = HAL_GetTick();
         }
-        else if((HAL_GetTick() - port_close_time) > USB_COMMS_TIMEOUT_MS)
+        else if((HAL_GetTick() - port_close_time) >= USB_COMMS_TIMEOUT_MS)
         {
             allOff();
         }
