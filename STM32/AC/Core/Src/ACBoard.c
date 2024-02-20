@@ -383,7 +383,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 
     // Pin out has changed from PCB V6.0 - older versions need other software.
     pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major < 6)
+    if (getPcbVersion(&ver) || ver.major != 5 || ver.minor != 9)
     {
         bsSetError(BS_VERSION_ERROR_Msk);
     }
