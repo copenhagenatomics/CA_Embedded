@@ -89,7 +89,6 @@ typedef struct
 
 typedef uint32_t WWDG_HandleTypeDef;
 typedef uint32_t GPIO_TypeDef;
-typedef uint32_t WWDG_HandleTypeDef;
 typedef uint32_t HAL_StatusTypeDef;
 
 /***************************************************************************************************
