@@ -25,6 +25,8 @@ static uint32_t next_tick = 0;
 HAL_StatusTypeDef HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length)
 {
     /* Do nothing */
+    hadc->dma_address = pData;
+    hadc->dma_length  = Length;
     return 0;
 }
 

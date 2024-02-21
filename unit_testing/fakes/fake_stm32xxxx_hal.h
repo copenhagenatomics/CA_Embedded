@@ -76,6 +76,10 @@ typedef struct ADC_HandleTypeDef
     struct {
         uint32_t NbrOfConversion;
     } Init;
+
+    /* For imitating DMA samples */
+    uint32_t* dma_address;
+    uint32_t  dma_length;
 } ADC_HandleTypeDef;
 
 typedef struct
