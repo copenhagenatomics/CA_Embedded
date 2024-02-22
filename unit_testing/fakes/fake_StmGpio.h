@@ -10,6 +10,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "fake_stm32xxxx_hal.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,7 +54,7 @@ typedef struct StmGpio
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-void stmGpioInit(StmGpio *ctx, StmGpioMode_t type);
+void stmGpioInit(StmGpio *ctx, GPIO_TypeDef* blk, uint16_t pin, StmGpioMode_t type);
 
 #ifdef __cplusplus
 }

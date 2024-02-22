@@ -81,7 +81,7 @@ void heaterLoop()
     for(HeatCtrl *pCtrl = heaters; pCtrl < &heaters[noOfHeaters]; pCtrl++)
     {
         uint32_t tdiff = tdiff_u32(now, pCtrl->periodBegin);
-        if (tdiff > pCtrl->periodDuration)
+        if (tdiff >= pCtrl->periodDuration)
         {
             // Turn off heater since duration is done.
             setPwmPercent(pCtrl, 0);

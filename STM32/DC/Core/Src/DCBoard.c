@@ -14,7 +14,6 @@
 #include "si7051.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "HAL_otp.h"
 #include "time32.h"
 
 /***************************************************************************************************
@@ -34,7 +33,6 @@
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-// Private static function declarations.
 static void CAallOn(bool isOn, int duration_ms);
 static void CAportState(int port, bool state, int percent, int duration);
 static void printDcStatus();

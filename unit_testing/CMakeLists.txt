@@ -25,6 +25,11 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../STM32)
 set(LIB ../CA_Embedded_Libraries/STM32)
+set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Filtering/Inc 
+            ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
+            ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc 
+            ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
+set(DRIV ../STM32/AC/Drivers/STM32F4xx_HAL_Driver)
 
 ####################################################################################################
 ## List of tests to run
@@ -35,7 +40,13 @@ enable_testing()
 include(GoogleTest)
 
 # AC tests
-add_executable(heatCtrl_test AC/heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.c)
+add_executable(heatCtrl_test AC/heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.cpp)
 target_include_directories(heatCtrl_test PRIVATE fakes ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src)
 target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
 gtest_discover_tests(heatCtrl_test)
+
+add_executable(ac_test AC/AC_tests.cpp stubs/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c fakes/fake_USBprint.cpp ${LIB}/Util/Src/time32.c fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.cpp fakes/fake_HAL_otp.cpp)
+target_include_directories(ac_test PRIVATE fakes ${SRC}/AC/Core/Src ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc)
+target_link_libraries(ac_test GTest::gtest_main gmock_main)
+target_compile_definitions(ac_test PUBLIC UNIT_TESTING)
+gtest_discover_tests(ac_test)

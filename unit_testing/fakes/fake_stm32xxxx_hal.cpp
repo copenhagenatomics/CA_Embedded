@@ -5,6 +5,12 @@
 using namespace std::chrono;
 
 /***************************************************************************************************
+** PUBLIC OBJECTS
+***************************************************************************************************/
+
+RCC_TypeDef RCC_obj;
+
+/***************************************************************************************************
 ** PRIVATE MEMBERS
 ***************************************************************************************************/
 
@@ -15,6 +21,20 @@ static uint32_t next_tick = 0;
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
+
+HAL_StatusTypeDef HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, uint32_t Length)
+{
+    /* Do nothing */
+    hadc->dma_address = pData;
+    hadc->dma_length  = Length;
+    return 0;
+}
+
+HAL_StatusTypeDef HAL_WWDG_Refresh(WWDG_HandleTypeDef *hwwdg)
+{
+    /* Do nothing */
+    return 0;
+}
 
 void forceTick(uint32_t next_val)
 {
@@ -47,4 +67,9 @@ uint32_t HAL_GetTick(void)
         uint32_t ret_val = auto_tick ? next_tick++ : next_tick;
         return ret_val;
     }
+}
+
+void HAL_Delay(uint32_t Delay)
+{
+
 }

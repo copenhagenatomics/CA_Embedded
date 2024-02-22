@@ -7,8 +7,8 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "fake_StmGpio.h"
 #include "fake_stm32xxxx_hal.h"
+#include "fake_StmGpio.h"
 
 /* UUT */
 #include "HeatCtrl.c"
@@ -31,7 +31,7 @@ class ACHeaterCtrl: public ::testing::Test
             /* Create a full set of heaters */
             for(int i = 0; i < MAX_NO_HEATERS; i++) 
             {
-                stmGpioInit(&heaterGpios[i], STM_GPIO_OUTPUT);
+                stmGpioInit(&heaterGpios[i], (uint32_t*)0, 0, STM_GPIO_OUTPUT);
                 EXPECT_NE(heatCtrlAdd(&heaterGpios[i], &heaterButtons[i]), nullptr);
             }
 
@@ -149,7 +149,7 @@ TEST_F(ACHeaterCtrl, turnOnPinDuration)
 
         for(int j = 0; j < MAX_NO_HEATERS; j++)
         {
-            ASSERT_EQ(heaterGpios[j].state == PIN_SET, i <= durations[j]) << "Heater " << j << " at time " << i;
+            ASSERT_EQ(heaterGpios[j].state == PIN_SET, i < durations[j]) << "Heater " << j << " at time " << i;
         }
     }
 }
