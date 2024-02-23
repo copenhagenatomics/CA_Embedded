@@ -3,21 +3,20 @@
  */
 
 #include <math.h>
-#include "string.h"
+#include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <float.h>
 
-#include "usb_cdc_fops.h"
+#include "main.h"
 #include "HeatCtrl.h"
 #include "ADCMonitor.h"
 #include "systemInfo.h"
 #include "USBprint.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "HAL_otp.h"
 #include "StmGpio.h"
 #include "ACBoard.h"
 
@@ -167,13 +166,13 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 
     /* If the USB port is not open, no messages should be printed. Also if the USB port has been 
     ** closed for more than a timeout, everything should be turned off as a safety measure */
-    if (!isComPortOpen()) 
+    if (!isUsbPortOpen()) 
     {
         if (port_close_time == 0)
         {
             port_close_time = HAL_GetTick();
         }
-        else if((HAL_GetTick() - port_close_time) > USB_COMMS_TIMEOUT_MS)
+        else if((HAL_GetTick() - port_close_time) >= USB_COMMS_TIMEOUT_MS)
         {
             allOff();
         }
@@ -207,7 +206,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     }
 
     heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 0));
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
             ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
             ADCtoCurrent(ADCrms(pData, 4)), 
             heatSinkTemperature,
@@ -370,10 +369,10 @@ static void updateBoardStatus()
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
     setFirmwareBoardType(AC_Board);
-    setFirmwareBoardVersion((pcbVersion){6, 0});
+    setFirmwareBoardVersion((pcbVersion){5, 9});
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
-    initCAProtocol(&caProto, usb_cdc_rx);
+    initCAProtocol(&caProto, usbRx);
 
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != AC_Board)
@@ -381,7 +380,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
         bsSetError(BS_VERSION_ERROR_Msk);
     }
 
-    // Pin out has changed from PCB V6.0 - older versions need other software.
+    // This build is specifically for V5.9
     pcbVersion ver;
     if (getPcbVersion(&ver) || ver.major != 5 || ver.minor != 9)
     {

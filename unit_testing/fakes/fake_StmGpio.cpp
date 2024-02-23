@@ -32,7 +32,7 @@ static void togglePin(struct StmGpio* ctx)
     }
 }
 
-void stmGpioInit(StmGpio *ctx, StmGpioMode_t gpioMode)
+void stmGpioInit(StmGpio *ctx, GPIO_TypeDef* blk, uint16_t pin, StmGpioMode_t gpioMode)
 {
     ctx->set = writePin;
     ctx->get = readPin;
