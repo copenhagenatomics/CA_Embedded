@@ -2,7 +2,7 @@ name: C/C++ stm32 build for the open-source embedded software
 
 on:
   push:
-    branches: [ 'main' ]
+    branches: [ 'main', "feature/ac-5.9-patch" ]
     paths: ['STM32/**', '.github/workflows/stm32build.yml']
   pull_request:
     branches: [ 'main' ]
