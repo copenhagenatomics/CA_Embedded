@@ -107,7 +107,7 @@ jobs:
       - name: Tag Filter
         id: tagfilter
         # Checks if the file pcbversion exists and that the first line is configured as a version number with v<number>.number and returns the first line, otherwise it returns v0.0.
-        run: echo "version=$(echo "${{ steps.release-on-push-1.outputs.tag_name }}" | cut -d'-' -f2)" >> $GITHUB_OUTPUT
+        run: echo "version=$(echo "1.8.0" | cut -d'-' -f2)" >> $GITHUB_OUTPUT
       # Build the upload artifacts
       - run: make
         working-directory: "STM32/${{ matrix.package }}/"
@@ -123,7 +123,7 @@ jobs:
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-2
         # tag only pushes to the main branch
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' }}
         with:
           bump_version_scheme: minor
           use_github_release_notes: true
@@ -142,14 +142,14 @@ jobs:
         run: echo "breaking=$(if test -f STM32/${{ matrix.package }}/pcbversion && sed -n '2p' STM32/${{ matrix.package }}/pcbversion | grep -Eq "^v[0-9]+\.[0-9]+$"; then echo $(sed -n '2p' STM32/${{ matrix.package }}/pcbversion); else if test -f STM32/${{ matrix.package }}/pcbversion; then echo $(head -n 1 STM32/${{ matrix.package }}/pcbversion); else echo "v0.0"; fi; fi)" >> $GITHUB_OUTPUT
 
       - name: Release
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+        if: ${{ github.event_name == 'push' }} # upload only pushes to the main branch
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
             **/*.elf
             **/*.bin
-          tag_name: ${{ steps.release-on-push-2.outputs.tag_name }}
-          name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.version }}"
+          tag_name: "AC-1.8.0-PCBv5.9"
+          name: "AC-1.8.0-PCBv5.9"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare zip file for Azure blob
@@ -166,7 +166,7 @@ jobs:
           PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # File only updated on merge into main (not on pull-request)
+        if: ${{ github.event_name == 'push' }} # File only updated on merge into main (not on pull-request)
         run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
         env :
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
