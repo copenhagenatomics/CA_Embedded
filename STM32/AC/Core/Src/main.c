@@ -221,7 +221,7 @@ static void MX_ADC1_Init(void)
   }
   /** Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time.
   */
-  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = 3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
@@ -383,13 +383,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, ctrl1_Pin|ctrl2_Pin|ctrl3_Pin|ctrl4_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, ctrl4_Pin|ctrl3_Pin|ctrl2_Pin|ctrl1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, powerCut_Pin|test1_Pin|test2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : ctrl1_Pin ctrl2_Pin ctrl3_Pin ctrl4_Pin */
-  GPIO_InitStruct.Pin = ctrl1_Pin|ctrl2_Pin|ctrl3_Pin|ctrl4_Pin;
+  /*Configure GPIO pins : ctrl4_Pin ctrl3_Pin ctrl2_Pin ctrl1_Pin */
+  GPIO_InitStruct.Pin = ctrl4_Pin|ctrl3_Pin|ctrl2_Pin|ctrl1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
