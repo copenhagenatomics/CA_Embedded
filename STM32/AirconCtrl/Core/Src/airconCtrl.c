@@ -147,14 +147,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_, WWDG_HandleTypeDef *hwwdg)
 {
+    initCAProtocol(&caProto, usb_cdc_rx);
+
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != AirCondition)
         return;
 
     hwwdg_ = hwwdg;
     loopTimer = loopTimer_;
-
-	initCAProtocol(&caProto, usb_cdc_rx);
 
     timerCtx = ctx;
     HAL_TIM_Base_Start(timerCtx);
