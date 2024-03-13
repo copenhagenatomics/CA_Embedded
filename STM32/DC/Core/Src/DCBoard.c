@@ -354,7 +354,7 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 
     // Pin out has changed from PCB V3.0 - older versions need other software.
     pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major < 3)
+    if (getPcbVersion(&ver) || ver.major < 3 || ver.minor < 1)
     {
         bsSetError(BS_VERSION_ERROR_Msk);
     }
