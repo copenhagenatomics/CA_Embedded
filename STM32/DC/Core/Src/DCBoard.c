@@ -11,7 +11,6 @@
 #include "systemInfo.h"
 #include "DCBoard.h"
 #include "ADCMonitor.h"
-#include "si7051.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "time32.h"
@@ -21,7 +20,7 @@
 ***************************************************************************************************/
 
 #define ADC_CHANNELS    6
-#define ACTUATIONPORTS 4
+#define ACTUATIONPORTS 6
 #define ADC_CHANNEL_BUF_SIZE    400
 
 // PWM control
@@ -35,9 +34,8 @@
 
 static void CAallOn(bool isOn, int duration_ms);
 static void CAportState(int port, bool state, int percent, int duration);
+static volatile uint32_t* getTimerCCR(int pinNumber);
 static void printDcStatus();
-static void updateBoardStatus();
-static int  getPwmPinPercent(int i);
 static void updateBoardStatus();
 
 /***************************************************************************************************
@@ -65,28 +63,9 @@ static uint32_t actuationStart[ACTUATIONPORTS] = { 0 };
 static bool port_state[ACTUATIONPORTS] = { 0 };
 static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 
-// Temperature handling
-static I2C_HandleTypeDef *hi2c = NULL;
-
 /***************************************************************************************************
-** PRIVATE FUNCTIONS
+** PRIVATE FUNCTION DEFINITIONS
 ***************************************************************************************************/
-
-/*!
-** @brief Gets the PWM value assigned to a DC port
-*/
-static int getPwmPinPercent(int i)
-{
-    switch(i)
-    {
-        case 0: return TIM5->CCR1;
-        case 1: return TIM5->CCR2;
-        case 2: return TIM5->CCR3;
-        case 3: return TIM5->CCR4;
-    }
-
-    return 0;
-}
 
 /*!
 ** @brief Verbose print of the DC board status
@@ -98,8 +77,8 @@ static void printDcStatus()
 
     for (int i = 0; i < ACTUATIONPORTS; i++)
     {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", 
-                        i, (int)port_state[i], getPwmPinPercent(i));
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %u\r\n", 
+                        i, (int)port_state[i], (unsigned int) *(getTimerCCR(i)));
     }
 
     writeUSB(buf, len);
@@ -126,8 +105,8 @@ static void updateBoardStatus()
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
     // ADC to current calibration values
-    const float current_scalar = -0.011;
-    const float current_bias = 23.43; // Offset calibrated to USB hubs.
+    const float current_scalar = ((3.3 / 4096.0) / 0.264); // From ACS725LLCTR-05AB datasheet
+    const float current_bias   = - 6.25;                        // Offset calibrated to USB hubs.
 
     return current_scalar * ADCMean(pData, channel) + current_bias;
 }
@@ -150,62 +129,28 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
         return;
     }
 
-    float temp;
-    if (si7051Temp(hi2c, &temp) != HAL_OK) temp = 10000;
-    setBoardTemp(temp);
-
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %d, 0x%x",
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
-            meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3), temp,
-            ADCrms(pBuffer, 5), ADCmax(pBuffer, 5),
+            meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
+            meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5),
             bsGetStatus());
 }
 
 static void setPWMPin(int pinNumber, int pwmState, int duration)
 {
-
-    if (pinNumber == 0)
-    {
-        TIM5->CCR1 = pwmState;
-    }
-    else if (pinNumber == 1)
-    {
-        TIM5->CCR2 = pwmState;
-    }
-    else if (pinNumber == 2)
-    {
-        TIM5->CCR3 = pwmState;
-    }
-    else if (pinNumber == 3)
-    {
-        TIM5->CCR4 = pwmState;
-    }
+    volatile uint32_t* ccr = getTimerCCR(pinNumber);
+    *ccr = pwmState;
 
     actuationStart[pinNumber] = HAL_GetTick();
     actuationDuration[pinNumber] = duration;
-    ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+    ccr_states[pinNumber] = *ccr;
     port_state[pinNumber] = 1;
 }
 
 static void pinWrite(int pinNumber, bool turnOn)
 {
     // Normal turn off is done by choosing min PWM value i.e. pin always low.
-    if (pinNumber == 0)
-    {
-        TIM5->CCR1 = (turnOn) ? TURNONPWM : TURNOFFPWM;
-    }
-    else if (pinNumber == 1)
-    {
-        TIM5->CCR2 = (turnOn) ? TURNONPWM : TURNOFFPWM;
-    }
-    else if (pinNumber == 2)
-    {
-        TIM5->CCR3 = (turnOn) ? TURNONPWM : TURNOFFPWM;
-    }
-    else if (pinNumber == 3)
-    {
-        TIM5->CCR4 = (turnOn) ? TURNONPWM : TURNOFFPWM;
-    }
+    *(getTimerCCR(pinNumber)) = (turnOn) ? TURNONPWM : TURNOFFPWM;
 }
 
 // Turn on all pins.
@@ -216,7 +161,7 @@ static void allOn()
         pinWrite(pinNumber, SET);
         actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
         port_state[pinNumber] = 1;
-        ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+        ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
     }
 }
 
@@ -225,7 +170,7 @@ static void turnOnPin(int pinNumber)
     pinWrite(pinNumber, SET);
     actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
     port_state[pinNumber] = 1;
-    ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+    ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
 }
 
 static void turnOnPinDuration(int pinNumber, int duration)
@@ -234,7 +179,7 @@ static void turnOnPinDuration(int pinNumber, int duration)
     actuationStart[pinNumber] = HAL_GetTick();
     actuationDuration[pinNumber] = duration;
     port_state[pinNumber] = 1;
-    ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+    ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
 }
 
 // Shuts off all pins.
@@ -245,7 +190,7 @@ static void allOff()
         pinWrite(pinNumber, RESET);
         actuationDuration[pinNumber] = 0;
         port_state[pinNumber] = 0;
-        ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+        ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
     }
 }
 
@@ -254,7 +199,7 @@ static void turnOffPin(int pinNumber)
     pinWrite(pinNumber, RESET);
     actuationDuration[pinNumber] = 0;
     port_state[pinNumber] = 0;
-    ccr_states[pinNumber] = *(&TIM5->CCR1 + pinNumber);
+    ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
 }
 
 typedef struct ActuationInfo
@@ -329,10 +274,11 @@ static void autoOff()
 
 static void handleButtonPress()
 {
-    // Button ports
-    GPIO_TypeDef *button_ports[] = { Btn_2_GPIO_Port, Btn_1_GPIO_Port,
-            Btn_4_GPIO_Port, Btn_3_GPIO_Port };
-    const uint16_t buttonPins[] = { Btn_2_Pin, Btn_1_Pin, Btn_4_Pin, Btn_3_Pin };
+    // Button ports - Button 1 and 2 position is swapped because... insert reason here?
+    GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port, 
+                                     Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
+    const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
+                                    Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
 
     for (int i = 0; i < ACTUATIONPORTS; i++)
     {
@@ -368,21 +314,36 @@ static void checkButtonPress()
     }
 }
 
+/*!
+** @brief Returns a pointer to the correct CCR register
+**
+** @param[in] pinNumber Number of DC port to get corresponding timer for
+**
+** @return Address of CCR register, or 0 if an incorrect pinNumber is given
+*/
+static volatile uint32_t* getTimerCCR(int pinNumber)
+{
+    /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.0 board */
+    switch (pinNumber)
+    {
+        case 0: return &(TIM4->CCR2);
+        case 1: return &(TIM4->CCR1);
+        case 2: return &(TIM5->CCR1);
+        case 3: return &(TIM5->CCR2);
+        case 4: return &(TIM5->CCR4);
+        case 5: return &(TIM5->CCR3);
+        default: return (uint32_t*)0x00000000;
+    }
+}
+
 /***************************************************************************************************
-** PUBLIC FUNCTIONS
+** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-/*!
-** @brief Setup function called at startup
-**
-** Checks the hardware matches this FW version, starts the USB communication and starts the ADC. 
-** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
-** link
-*/
-void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c, WWDG_HandleTypeDef* hwwdg)
+void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 {
     setFirmwareBoardType(DC_Board);
-    setFirmwareBoardVersion((pcbVersion){2, 2});
+    setFirmwareBoardVersion((pcbVersion){3, 1});
 
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
     initCAProtocol(&caProto, usb_cdc_rx);
@@ -393,9 +354,15 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, I2C_HandleTypeDef *_hi2c, WWDG_Handle
         bsSetError(BS_VERSION_ERROR_Msk);
     }
 
+    // Pin out has changed from PCB V3.0 - older versions need other software.
+    pcbVersion ver;
+    if (getPcbVersion(&ver) || ver.major < 3 || ver.minor < 1)
+    {
+        bsSetError(BS_VERSION_ERROR_Msk);
+    }
+
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
-    hi2c = _hi2c;
     hwwdg_ = hwwdg;
 }
 
@@ -417,4 +384,3 @@ void DCBoardLoop(const char* bootMsg)
     autoOff();
     checkButtonPress();
 }
-
