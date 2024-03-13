@@ -273,10 +273,10 @@ static void autoOff()
 static void handleButtonPress()
 {
     // Button ports - Button 1 and 2 position is swapped because... insert reason here?
-    GPIO_TypeDef *button_ports[] = { Btn_2_GPIO_Port, Btn_1_GPIO_Port, Btn_4_GPIO_Port, 
-                                     Btn_3_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
-    const uint16_t buttonPins[] = { Btn_2_Pin, Btn_1_Pin, Btn_4_Pin, 
-                                    Btn_3_Pin, Btn_5_Pin, Btn_6_Pin };
+    GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port, 
+                                     Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
+    const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
+                                    Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
 
     for (int i = 0; i < ACTUATIONPORTS; i++)
     {
