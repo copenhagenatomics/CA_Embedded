@@ -341,7 +341,7 @@ static volatile uint32_t* getTimerCCR(int pinNumber)
 void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 {
     setFirmwareBoardType(DC_Board);
-    setFirmwareBoardVersion((pcbVersion){3, 0});
+    setFirmwareBoardVersion((pcbVersion){3, 1});
 
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
     initCAProtocol(&caProto, usb_cdc_rx);
