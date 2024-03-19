@@ -10,7 +10,6 @@
 #include "CAProtocolStm.h"
 #include "systemInfo.h"
 #include "USBprint.h"
-#include "usb_cdc_fops.h"
 #include <stdbool.h>
 #include <time.h>
 #include <stdlib.h>
@@ -24,11 +23,13 @@
 static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
 
 static void controlLEDStrip(const char *input);
+static void LightControllerStatus();
 
 static CAProtocolCtx caProto =
 {
         .undefined = controlLEDStrip,
         .printHeader = CAPrintHeader,
+		.printStatus = LightControllerStatus,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -37,7 +38,20 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-bool isInputValid(const char *input, int *channel, unsigned int *rgb)
+static void LightControllerStatus()
+{
+ 	static char buf[600] = { 0 };
+    int len = 0;
+
+    for (int i = 0; i < LED_CHANNELS; i++)
+    {
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d\r\n", 
+                        i+1, (bsGetStatus() & LIGHT_PORT_STATUS_Msk(i)) >> i);
+    }
+    writeUSB(buf, len);
+}
+
+static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 {
 	if (sscanf(input, "p%d %x", channel, rgb) != 2)
 	{
@@ -76,7 +90,7 @@ bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 	return true;
 }
 
-int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue)
+static int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue)
 {
 	*red = (rgb >> 16) & 0xFF;
 	*green = (rgb >> 8) & 0xFF;
@@ -130,9 +144,15 @@ static void controlLEDStrip(const char *input)
 	for (int i = 1; i <= LED_CHANNELS; i++)
 	{
 		if (i == channel)
+		{
 			(ret == 0) ? updateLED(i, red, green, blue) : updateLED(i, 0, 0, 0);
+			(ret == 0) ? bsSetField(LIGHT_PORT_STATUS_Msk(i)) : bsClearField(LIGHT_PORT_STATUS_Msk(i));
+		}
 		else
+		{
 			(ret == 0) ? updateLED(i, 0, 0, 0) : updateLED(i, red, 0, 0);
+			(ret == 0) ? bsClearField(LIGHT_PORT_STATUS_Msk(i)) : bsSetField(LIGHT_PORT_STATUS_Msk(i));
+		}
 	}
 
 	rgbs[channel-1] = rgb;
@@ -140,10 +160,10 @@ static void controlLEDStrip(const char *input)
 
 static void printStates()
 {
-	if (!isComPortOpen())
+	if (!isUsbPortOpen())
 		return;
 
-	USBnprintf("%x, %x, %x", rgbs[0], rgbs[1], rgbs[2]);
+	USBnprintf("%x, %x, %x, 0x%x", rgbs[0], rgbs[1], rgbs[2], bsGetStatus());
 }
 
 // Initialise PWM group
@@ -170,7 +190,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 // Initialize board
 void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3, TIM_HandleTypeDef *htim4, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg)
 {
-	initCAProtocol(&caProto, usb_cdc_rx);
+	initCAProtocol(&caProto, usbRx);
 
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != LightController)
@@ -191,9 +211,6 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3, TIM
 	loopTimer = htim5;
 
 	hwwdg_ = hwwdg;
-
-	// Initialize random number generator
-	srand(time(NULL));
 }
 
 // Main loop - Board only reacts on user inputs
