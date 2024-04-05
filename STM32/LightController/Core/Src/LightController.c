@@ -45,7 +45,7 @@ static void LightControllerStatus()
 
     for (int i = 0; i < LED_CHANNELS; i++)
     {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d\r\n", 
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %lu\r\n", 
                         i+1, (bsGetStatus() & LIGHT_PORT_STATUS_Msk(i)) >> i);
     }
     writeUSB(buf, len);
