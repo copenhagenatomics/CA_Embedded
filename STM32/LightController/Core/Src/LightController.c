@@ -10,6 +10,7 @@
 #include "CAProtocolStm.h"
 #include "systemInfo.h"
 #include "USBprint.h"
+#include "StmGpio.h"
 #include <stdbool.h>
 #include <time.h>
 #include <stdlib.h>
@@ -19,8 +20,29 @@
 #include <stdint.h>
 #include <ctype.h>
 
+static StmGpio Ch1_R;
+static StmGpio Ch1_G;
+static StmGpio Ch1_B;
+static StmGpio Ch1_W;
+static StmGpio Ch2_R;
+static StmGpio Ch2_G;
+static StmGpio Ch2_B;
+static StmGpio Ch2_W;
+static StmGpio Ch3_R;
+static StmGpio Ch3_G;
+static StmGpio Ch3_B;
+static StmGpio Ch3_W;
 
+static StmGpio* ChCtrl[12] = {&Ch1_R, &Ch1_G, &Ch1_B, &Ch1_W,
+							  &Ch2_R, &Ch2_G, &Ch2_B, &Ch2_W,
+							  &Ch3_R, &Ch3_G, &Ch3_B, &Ch3_W};
+
+static unsigned int rgbwControl[LED_CHANNELS*4] = {0};
 static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
+
+static TIM_HandleTypeDef* loopTimer = NULL;
+static TIM_HandleTypeDef* ledUpdateTimer = NULL;
+static WWDG_HandleTypeDef* hwwdg_ = NULL;
 
 static void controlLEDStrip(const char *input);
 static void LightControllerStatus();
@@ -90,7 +112,7 @@ static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 	return true;
 }
 
-static int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue)
+static int handleInput(unsigned int rgb, uint8_t *red, uint8_t *green, uint8_t *blue)
 {
 	*red = (rgb >> 16) & 0xFF;
 	*green = (rgb >> 8) & 0xFF;
@@ -98,64 +120,60 @@ static int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *gr
 	return (rgb == 0xFFFFFF) ? 1 : 0; // If 0xFFFFFF turn on the white in other ports
 }
 
-TIM_HandleTypeDef * htim2_ = NULL;
-TIM_HandleTypeDef * htim3_ = NULL;
-TIM_HandleTypeDef * htim4_ = NULL;
-static void updateLED(int channel, unsigned int red, unsigned int green, unsigned int blue)
+
+static void updateLEDCtrl(int channel, unsigned int red, unsigned int green, unsigned int blue, int whiteOn)
 {
-	TIM_HandleTypeDef * portHandle = NULL;
-	switch (channel)
+	if (whiteOn)
 	{
-		case 1:
-		portHandle = htim2_;
-		break;
-
-		case 2:
-		portHandle = htim3_;
-		break;
-
-		case 3:
-		portHandle = htim4_;
-		break;
+		rgbwControl[channel*NO_COLORS] 	   = 0;
+		rgbwControl[channel*NO_COLORS + 1] = 0;
+		rgbwControl[channel*NO_COLORS + 2] = 0;
+		rgbwControl[channel*NO_COLORS + 3] = 256; 
+		return;
 	}
 
-	portHandle->Instance->CCR1 = red;
-	portHandle->Instance->CCR2 = green;
-	portHandle->Instance->CCR3 = blue;
+	rgbwControl[channel*NO_COLORS] 	   = red;
+	rgbwControl[channel*NO_COLORS + 1] = green;
+	rgbwControl[channel*NO_COLORS + 2] = blue;
+	rgbwControl[channel*NO_COLORS + 3] = 0; 
 }
 
 // Update LED strip with user input colors
 static void controlLEDStrip(const char *input)
 {
-	int channel = 1;
+	int port = 1;
 	unsigned int rgb = 0x000000;
 
-	if (!isInputValid(input, &channel, &rgb))
+	if (!isInputValid(input, &port, &rgb))
 	{
 		HALundefined(input);
 		return;
 	}
 
+	int channel = port - 1;
 	uint8_t red, green, blue;
-	int ret = handleInput(rgb, &channel, &red, &green, &blue);
+	int ret = handleInput(rgb, &red, &green, &blue);
+	
+	updateLEDCtrl(channel, red, green, blue, ret);
+	(rgb != 0x0) ? bsSetField(LIGHT_PORT_STATUS_Msk(channel)) : bsClearField(LIGHT_PORT_STATUS_Msk(channel));
+	rgbs[channel] = rgb;
+}
 
-	// If the user specifies white then turn on white pin separately and turn off
-	// other LED lights
-	for (int i = 1; i <= LED_CHANNELS; i++)
+static void updateLEDs()
+{
+	// Interrupt speed of ledUpdateTimer is 20kHz.
+	// For each 10kHz update the counter incremented until 256 and reset
+	// Hence, the update speed of the led channels are 20kHz/256 ~= 80Hz.
+	static int count = 0;
+	for (int i = 0; i < 12; i++)
 	{
-		if (i == channel)
-		{
-			(ret == 0) ? updateLED(i, red, green, blue) : updateLED(i, 0, 0, 0);
-			(ret == 0) ? bsSetField(LIGHT_PORT_STATUS_Msk(i)) : bsClearField(LIGHT_PORT_STATUS_Msk(i));
-		}
-		else
-		{
-			(ret == 0) ? updateLED(i, 0, 0, 0) : updateLED(i, red, 0, 0);
-			(ret == 0) ? bsClearField(LIGHT_PORT_STATUS_Msk(i)) : bsSetField(LIGHT_PORT_STATUS_Msk(i));
-		}
+		bool turnOn = (count < rgbwControl[i]);
+		stmSetGpio(*ChCtrl[i], turnOn);
 	}
 
-	rgbs[channel-1] = rgb;
+	count++;
+	if (count >= 256)
+		count = 0;
 }
 
 static void printStates()
@@ -166,29 +184,49 @@ static void printStates()
 	USBnprintf("%x, %x, %x, 0x%x", rgbs[0], rgbs[1], rgbs[2], bsGetStatus());
 }
 
-// Initialise PWM group
-static void pwmInit(TIM_HandleTypeDef * htim)
+static void initGpio()
 {
-	HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_1);
-	HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_2);
-	HAL_TIM_PWM_Start_IT(htim, TIM_CHANNEL_3);
+	stmGpioInit(&Ch1_R, Ch1_Ctrl_R_GPIO_Port, Ch1_Ctrl_R_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch1_G, Ch1_Ctrl_G_GPIO_Port, Ch1_Ctrl_G_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch1_B, Ch1_Ctrl_B_GPIO_Port, Ch1_Ctrl_B_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch1_W, Ch1_Ctrl_W_GPIO_Port, Ch1_Ctrl_W_Pin, STM_GPIO_OUTPUT);
+
+	stmGpioInit(&Ch2_R, Ch2_Ctrl_R_GPIO_Port, Ch2_Ctrl_R_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch2_G, Ch2_Ctrl_G_GPIO_Port, Ch2_Ctrl_G_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch2_B, Ch2_Ctrl_B_GPIO_Port, Ch2_Ctrl_B_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch2_W, Ch2_Ctrl_W_GPIO_Port, Ch2_Ctrl_W_Pin, STM_GPIO_OUTPUT);
+
+	stmGpioInit(&Ch3_R, Ch3_Ctrl_R_GPIO_Port, Ch3_Ctrl_R_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch3_G, Ch3_Ctrl_G_GPIO_Port, Ch3_Ctrl_G_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch3_B, Ch3_Ctrl_B_GPIO_Port, Ch3_Ctrl_B_Pin, STM_GPIO_OUTPUT);
+	stmGpioInit(&Ch3_W, Ch3_Ctrl_W_GPIO_Port, Ch3_Ctrl_W_Pin, STM_GPIO_OUTPUT);
+
+	for (int i = 0; i < 12; i++)
+	{
+		stmSetGpio(*ChCtrl[i], false);
+	}
 }
 
 // Callback: timer has rolled over
-static TIM_HandleTypeDef* loopTimer = NULL;
-static WWDG_HandleTypeDef* hwwdg_ = NULL;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	if (htim == ledUpdateTimer)
+	{
+		updateLEDs();
+		return;
+	}
+
     // loopTimer corresponds to htim5 which triggers with a frequency of 10Hz
     if (htim == loopTimer)
     {
     	HAL_WWDG_Refresh(hwwdg_);
         printStates();
+		return;
     }
 }
 
 // Initialize board
-void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3, TIM_HandleTypeDef *htim4, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg)
+void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg)
 {
 	initCAProtocol(&caProto, usbRx);
 
@@ -198,16 +236,18 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3, TIM
         return;
     }
 
-	// Start LED PWM counters
-	pwmInit(htim2);
-	pwmInit(htim3);
-	pwmInit(htim4);
+	pcbVersion ver;
+	if (getPcbVersion(&ver) || ver.major != 1 || ver.minor < 1)
+	{
+		return;
+	}
 
+	initGpio();
+
+    HAL_TIM_Base_Start_IT(htim2);
     HAL_TIM_Base_Start_IT(htim5);
 
-	htim2_ = htim2;
-	htim3_ = htim3;
-	htim4_ = htim4;
+	ledUpdateTimer = htim2;
 	loopTimer = htim5;
 
 	hwwdg_ = hwwdg;
