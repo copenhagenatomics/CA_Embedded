@@ -261,13 +261,6 @@ TEST_F(LightControllerTest, InputHandler)
         "abab10, 0, 0, 0x1"
     ));
 
-    // writeLightControllerMessage("p1 0xABAB11\n");
-    // HAL_TIM_PeriodElapsedCallback(&htim5);
-    // EXPECT_FLUSH_USB(ElementsAre(
-    //     "\r",
-    //     "abab11, 0, 0, 0x1"
-    // ));
-
     writeLightControllerMessage("p2 105020\n");
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
