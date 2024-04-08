@@ -167,19 +167,22 @@ static void updateLEDs()
 	static int count = 0;
 	for (int i = 0; i < 12; i++)
 	{
-		bool turnOn = (count < rgbwControl[i]);
-		stmSetGpio(*ChCtrl[i], turnOn);
+		stmSetGpio(*ChCtrl[i], (count < rgbwControl[i]));
 	}
 
-	count++;
-	if (count >= 256)
-		count = 0;
+	count = (count + 1 < 256) ? count + 1 : 0;
 }
 
 static void printStates()
 {
 	if (!isUsbPortOpen())
 		return;
+
+	if (bsGetField(BS_VERSION_ERROR_Msk))
+	{
+		USBnprintf("0x%x", bsGetStatus());
+		return;
+	}
 
 	USBnprintf("%x, %x, %x, 0x%x", rgbs[0], rgbs[1], rgbs[2], bsGetStatus());
 }
@@ -233,12 +236,14 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWD
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != LightController)
     {
+		bsSetError(BS_VERSION_ERROR_Msk);
         return;
     }
 
 	pcbVersion ver;
 	if (getPcbVersion(&ver) || ver.major != 1 || ver.minor < 1)
 	{
+		bsSetError(BS_VERSION_ERROR_Msk);
 		return;
 	}
 
