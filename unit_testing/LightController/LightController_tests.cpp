@@ -239,9 +239,9 @@ TEST_F(LightControllerTest, GpioInit)
     };
 
     auto expectStmNotNull = [](StmGpio* stm) {
-        EXPECT_NE(stm->set,    nullptr);
-        EXPECT_NE(stm->get,    nullptr);
-        EXPECT_NE(stm->toggle, nullptr);
+        ASSERT_NE(stm->set,    nullptr);
+        ASSERT_NE(stm->get,    nullptr);
+        ASSERT_NE(stm->toggle, nullptr);
     };
 
     /* The GPIOs should be null prior to init function */

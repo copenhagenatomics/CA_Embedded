@@ -17,7 +17,7 @@
 
 #define LED_CHANNELS 3
 #define NO_COLORS 4
-#define MAX_PWM 256
+#define MAX_PWM 255
 
 /* LightController board status register definitions */
 #define LIGHT_PORT_STATUS_Msk(x)    (1U << (x))
