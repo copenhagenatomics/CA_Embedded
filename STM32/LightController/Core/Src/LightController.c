@@ -5,12 +5,6 @@
  *      Author: matias
  */
 
-#include "LightController.h"
-#include "CAProtocol.h"
-#include "CAProtocolStm.h"
-#include "systemInfo.h"
-#include "USBprint.h"
-#include "StmGpio.h"
 #include <stdbool.h>
 #include <time.h>
 #include <stdlib.h>
@@ -19,6 +13,14 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
+
+#include "LightController.h"
+#include "CAProtocol.h"
+#include "CAProtocolStm.h"
+#include "systemInfo.h"
+#include "USBprint.h"
+#include "StmGpio.h"
+
 
 static StmGpio Ch1_R;
 static StmGpio Ch1_G;
@@ -73,7 +75,7 @@ static void LightControllerStatus()
     writeUSB(buf, len);
 }
 
-static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
+bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 {
 	if (sscanf(input, "p%d %x", channel, rgb) != 2)
 	{
@@ -84,7 +86,7 @@ static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 		return false;
 
 	// Check the RGB format is exactly 6 hex characters long
-    char* idx = index(input, ' ');
+    char* idx = index((char*)input, ' ');
 	if (strlen(&idx[1]) != 6)
 		return false;
 
@@ -233,6 +235,16 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWD
 {
 	initCAProtocol(&caProto, usbRx);
 
+	initGpio();
+
+    HAL_TIM_Base_Start_IT(htim2);
+    HAL_TIM_Base_Start_IT(htim5);
+
+	ledUpdateTimer = htim2;
+	loopTimer = htim5;
+
+	hwwdg_ = hwwdg;
+
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != LightController)
     {
@@ -246,16 +258,6 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWD
 		bsSetError(BS_VERSION_ERROR_Msk);
 		return;
 	}
-
-	initGpio();
-
-    HAL_TIM_Base_Start_IT(htim2);
-    HAL_TIM_Base_Start_IT(htim5);
-
-	ledUpdateTimer = htim2;
-	loopTimer = htim5;
-
-	hwwdg_ = hwwdg;
 }
 
 // Main loop - Board only reacts on user inputs

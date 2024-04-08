@@ -36,6 +36,12 @@ HAL_StatusTypeDef HAL_WWDG_Refresh(WWDG_HandleTypeDef *hwwdg)
     return 0;
 }
 
+HAL_StatusTypeDef HAL_TIM_Base_Start_IT(TIM_HandleTypeDef *htim)
+{
+    /* Do nothing */
+    return 0;
+}
+
 void forceTick(uint32_t next_val)
 {
     force_tick = true;

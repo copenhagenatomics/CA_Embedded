@@ -25,7 +25,7 @@
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
-
+bool isInputValid(const char *input, int *channel, unsigned int *rgb);
 void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg);
 void LightControllerLoop(const char* bootMsg);
 

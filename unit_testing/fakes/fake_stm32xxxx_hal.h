@@ -88,6 +88,7 @@ typedef struct
 } RCC_TypeDef;
 
 typedef uint32_t WWDG_HandleTypeDef;
+typedef uint32_t TIM_HandleTypeDef;
 typedef uint32_t GPIO_TypeDef;
 typedef uint32_t HAL_StatusTypeDef;
 
@@ -106,6 +107,9 @@ HAL_StatusTypeDef HAL_ADC_Start_DMA(ADC_HandleTypeDef* hadc, uint32_t* pData, ui
 
 /* Watchdog */
 HAL_StatusTypeDef HAL_WWDG_Refresh(WWDG_HandleTypeDef *hwwdg);
+
+/* TIM */
+HAL_StatusTypeDef HAL_TIM_Base_Start_IT(TIM_HandleTypeDef *htim);
 
 /* HAL */
 void forceTick(uint32_t next_val);
