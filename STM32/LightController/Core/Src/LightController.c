@@ -179,7 +179,7 @@ static void updateLEDs()
         stmSetGpio(*ChCtrl[i], (count < rgbwControl[i]));
     }
 
-    count = (count + 1 < 256) ? count + 1 : 0;
+    count = (count + 1 <= MAX_PWM) ? count + 1 : 0;
 }
 
 static void printStates()
