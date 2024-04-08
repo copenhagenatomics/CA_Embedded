@@ -77,9 +77,31 @@ static void LightControllerStatus()
 
 bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 {
-    if (sscanf(input, "p%d %x", channel, rgb) != 2)
-    {
+
+    /* --- Allow hex to be set with or without '0x' prefix --- */
+    int chan_scan1 = 0;
+    int chan_scan2 = 0;
+    unsigned int rgb_scan1 = 0;
+    unsigned int rgb_scan2 = 0;
+    int stridx = 0;
+       
+    int ret_format1 = sscanf(input, "p%d %x", &chan_scan1, &rgb_scan1);
+    int ret_format2 = sscanf(input, "p%d 0x%x\r\n", &chan_scan2, &rgb_scan2);
+ 
+    if (ret_format1 != 2 && ret_format2 != 2)
         return false;
+
+    if (ret_format1 == 2)
+    {
+        *channel = chan_scan1;
+        *rgb = rgb_scan1;
+        stridx = 1;
+    }
+    else if (ret_format2 == 2)
+    {
+        *channel = chan_scan2;
+        *rgb = rgb_scan2;
+        stridx = 3;
     }
 
     if (*channel <= 0 || *channel > LED_CHANNELS)
@@ -87,13 +109,13 @@ bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 
     // Check the RGB format is exactly 6 hex characters long
     char* idx = index((char*)input, ' ');
-    if (strlen(&idx[1]) != 6)
+    if (strlen(&idx[stridx]) != 6)
         return false;
 
     // Check input is valid hex format
     for (int i = 0; i<6; i++)
     {
-        if(!isxdigit((unsigned char)input[3+i]))
+        if(!isxdigit((unsigned char)input[2+stridx+i]))
         {
             return false;
         }

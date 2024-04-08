@@ -25,25 +25,6 @@ using ::testing::ElementsAre;
 using namespace std;
 
 /***************************************************************************************************
-** DEFINES
-***************************************************************************************************/
-
-/* Allow a range of single line container tests */
-#define EXPECT_READ_USB(x) { \
-    vector<string>* ss = hostUSBread(); \
-    EXPECT_THAT(*ss, (x)); \
-    delete ss; \
-}
-
-/* Allow a range of single line container tests */
-#define EXPECT_FLUSH_USB(x) { \
-    vector<string>* ss = hostUSBread(true); \
-    EXPECT_THAT(*ss, (x)); \
-    delete ss; \
-}
-
-
-/***************************************************************************************************
 ** TEST FIXTURES
 ***************************************************************************************************/
 
@@ -280,6 +261,13 @@ TEST_F(LightControllerTest, InputHandler)
         "abab10, 0, 0, 0x1"
     ));
 
+    // writeLightControllerMessage("p1 0xABAB11\n");
+    // HAL_TIM_PeriodElapsedCallback(&htim5);
+    // EXPECT_FLUSH_USB(ElementsAre(
+    //     "\r",
+    //     "abab11, 0, 0, 0x1"
+    // ));
+
     writeLightControllerMessage("p2 105020\n");
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
@@ -317,10 +305,10 @@ TEST_F(LightControllerTest, InputHandler)
         "MISREAD: p4 FFFFFF"
     ));
 
-    writeLightControllerMessage("p0 FFFFFF\n");
+    writeLightControllerMessage("p0 0xFFFFFF\n");
     EXPECT_FLUSH_USB(ElementsAre(
         "\r",
-        "MISREAD: p0 FFFFFF"
+        "MISREAD: p0 0xFFFFFF"
     ));
 
     // Wrong hex code (too short)
@@ -411,10 +399,10 @@ TEST_F(LightControllerTest, LEDSwitching)
     for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++) EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
 
 
-    /* --- Turn on p3 white while p2 is running --- */
-    goToTick(0);
+    /* --- Turn on p3 white while p2 is running and tick is non-zero --- */
     writeLightControllerMessage("p3 FFFFFF\n");
     LightControllerLoop(bootMsg);
+    goToTick(0);
 
     goToTick(170);
     for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++){
