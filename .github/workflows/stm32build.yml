@@ -21,11 +21,11 @@ jobs:
       packages: ${{ steps.filter.outputs.changes }}
     steps:
     # gets file environment with submodule included for libraries
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     # For pull requests it's not necessary to checkout the code
-    - uses: dorny/paths-filter@v2
+    - uses: dorny/paths-filter@v3
       id: filter
       with:
         filters: |
@@ -44,7 +44,7 @@ jobs:
         package: ${{ fromJSON(needs.changes.outputs.packages) }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3   # gets file environment with submodule included for libraries
+    - uses: actions/checkout@v4   # gets file environment with submodule included for libraries
       with:
         submodules: 'true'
     # Check whether the unittest folder exist in the modified project. If so, run unittests.
@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # gets file environment with submodule included for libraries
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
       # Setup the compiler and compile the program
