@@ -58,7 +58,7 @@ jobs:
         fi
     # Build and run unittests. If the unittest fails the line number is output.
     - name: Run unittests
-      uses: actions/setup-python@v3
+    - uses: actions/setup-python@v3
       with: 
         python-version: '3.10'
       if: env.exist == '1'
