@@ -50,3 +50,10 @@ target_include_directories(ac_test PRIVATE fakes ${SRC}/AC/Core/Src ${SRC}/AC/Co
 target_link_libraries(ac_test GTest::gtest_main gmock_main)
 target_compile_definitions(ac_test PUBLIC UNIT_TESTING)
 gtest_discover_tests(ac_test)
+
+# LightController test
+add_executable(lightcontroller_test LightController/LightController_tests.cpp stubs/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c fakes/fake_USBprint.cpp fakes/fake_stm32xxxx_hal.cpp fakes/fake_StmGpio.cpp fakes/fake_HAL_otp.cpp)
+target_include_directories(lightcontroller_test PRIVATE fakes ${SRC}/LightController/Core/Src ${SRC}/LightController/Core/Inc ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc)
+target_link_libraries(lightcontroller_test GTest::gtest_main gmock_main)
+target_compile_definitions(lightcontroller_test PUBLIC UNIT_TESTING)
+gtest_discover_tests(lightcontroller_test)

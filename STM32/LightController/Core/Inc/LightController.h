@@ -11,13 +11,22 @@
 #include <stdbool.h>
 #include "main.h"
 
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
 #define LED_CHANNELS 3
-#define MAX_PWM 256
+#define NO_COLORS 4
+#define MAX_PWM 255
 
+/* LightController board status register definitions */
+#define LIGHT_PORT_STATUS_Msk(x)    (1U << (x))
+
+/***************************************************************************************************
+** PUBLIC FUNCTIONS
+***************************************************************************************************/
 bool isInputValid(const char *input, int *channel, unsigned int *rgb);
-int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue);
-
-void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3, TIM_HandleTypeDef *htim4, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg);
+void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg);
 void LightControllerLoop(const char* bootMsg);
 
 #endif /* INC_LIGHTCONTROLLER_H_ */

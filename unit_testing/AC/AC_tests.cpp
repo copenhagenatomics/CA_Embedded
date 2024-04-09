@@ -29,24 +29,6 @@ using ::testing::IsEmpty;
 using namespace std;
 
 /***************************************************************************************************
-** DEFINES
-***************************************************************************************************/
-
-/* Allow a range of single line container tests */
-#define EXPECT_READ_USB(x) { \
-    vector<string>* ss = hostUSBread(); \
-    EXPECT_THAT(*ss, (x)); \
-    delete ss; \
-}
-
-/* Allow a range of single line container tests */
-#define EXPECT_FLUSH_USB(x) { \
-    vector<string>* ss = hostUSBread(true); \
-    EXPECT_THAT(*ss, (x)); \
-    delete ss; \
-}
-
-/***************************************************************************************************
 ** TEST FIXTURES
 ***************************************************************************************************/
 
