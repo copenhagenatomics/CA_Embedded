@@ -172,7 +172,7 @@ static void updateLEDs()
 {
     // Interrupt speed of ledUpdateTimer is 20kHz.
     // For each 10kHz update the counter incremented until 256 and reset
-    // Hence, the update speed of the led channels are 20kHz/256 ~= 80Hz.
+    // Hence, the update speed of the led channels are 25kHz/256 ~= 98Hz.
     static int count = 0;
     for (int i = 0; i < 12; i++)
     {
