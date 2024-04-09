@@ -62,7 +62,9 @@ jobs:
     # Build and run unittests. If the unittest fails the line number is output.
     - name: Run unittests
       if: env.exist == '1'
-      run: python unit_testing/unitTests.py -R ${{ matrix.package }}
+      run: |
+        cd unit_testing
+        python unit_testing/unitTests.py -R ${{ matrix.package }}
     # Run the static code analysis test.
     - name: Run static tests
       run: STM32/CommonTests/code_generation_test.sh STM32/${{ matrix.package }}
