@@ -3,6 +3,7 @@
 import argparse
 import subprocess
 import os
+import sys
 
 def run_tests_in_subdirectory(dir, regex, verbose):
     subprocess.run("cmake -S . -B build", shell=True, cwd=dir)
@@ -10,7 +11,9 @@ def run_tests_in_subdirectory(dir, regex, verbose):
 
     run_str = "cd build && ctest"
 
-    subprocess.run(run_str, shell=True, cwd=dir)
+    ret = subprocess.run(run_str, shell=True, cwd=dir)
+    return ret.returncode
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run unit tests')
@@ -29,8 +32,12 @@ if __name__ == "__main__":
 
     # Run the tests in the specified directory
     if (args.dir):
-        run_tests_in_subdirectory(f"{args.dir}", regex, verbose)
-        sys.exit()
+        sys.exit(run_tests_in_subdirectory(f"{args.dir}", regex, verbose))
 
     #If the directory is not specified then run all tests from all sub-directories
-    [run_tests_in_subdirectory(f.name, regex, verbose) for f in os.scandir(os.getcwd()) if f.is_dir()]
+    returncodes = []
+    for f in os.scandir(os.getcwd()):
+        if f.is_dir():
+            returncodes.append(run_tests_in_subdirectory(f.name, regex, verbose))
+
+    sys.exit(all(r == 0 for r in returncodes))
