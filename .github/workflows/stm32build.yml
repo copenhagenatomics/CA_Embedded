@@ -21,11 +21,11 @@ jobs:
       packages: ${{ steps.filter.outputs.changes }}
     steps:
     # gets file environment with submodule included for libraries
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: 'true'
     # For pull requests it's not necessary to checkout the code
-    - uses: dorny/paths-filter@v2
+    - uses: dorny/paths-filter@v3
       id: filter
       with:
         filters: |
@@ -44,31 +44,27 @@ jobs:
         package: ${{ fromJSON(needs.changes.outputs.packages) }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3   # gets file environment with submodule included for libraries
+    - uses: actions/checkout@v4   # gets file environment with submodule included for libraries
       with:
         submodules: 'true'
     # Check whether the unittest folder exist in the modified project. If so, run unittests.
     - name: Check if unittests exist
       id: unittests_exists
       run: |
-        if [ -d "STM32/${{ matrix.package }}/UnitTesting" ]; then
+        if [ -d "unit_testing/${{ matrix.package }}" ]; then
           echo 'exist=1' >> $GITHUB_ENV
         else
           echo 'exist=0' >> $GITHUB_ENV
         fi
+    - uses: actions/setup-python@v4
+      with: 
+        python-version: '3.10'
     # Build and run unittests. If the unittest fails the line number is output.
     - name: Run unittests
       if: env.exist == '1'
       run: |
-        cd "STM32/${{ matrix.package }}/UnitTesting"
-        cmake CMakeLists.txt
-        make
-        output=$(./CA_UnitTesting)
-        echo $output
-        if [[ $output =~ "failed" ]]; then
-          echo "Test failed"
-          exit 1
-        fi
+        cd unit_testing
+        python unitTests.py -R ${{ matrix.package }}
     # Run the static code analysis test.
     - name: Run static tests
       run: STM32/CommonTests/code_generation_test.sh STM32/${{ matrix.package }}
@@ -87,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # gets file environment with submodule included for libraries
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
       # Setup the compiler and compile the program
@@ -156,7 +152,7 @@ jobs:
         run: zip -j ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
         shell: bash
       - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Test PCB file
