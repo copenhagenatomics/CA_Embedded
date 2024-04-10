@@ -32,12 +32,12 @@ if __name__ == "__main__":
 
     # Run the tests in the specified directory
     if (args.dir):
-        sys.exit(run_tests_in_subdirectory(f"{args.dir}", regex, verbose))
+        ret = run_tests_in_subdirectory(f"{args.dir}", regex, verbose)
+        sys.exit(ret)
 
     #If the directory is not specified then run all tests from all sub-directories
     returncodes = []
     for f in os.scandir(os.getcwd()):
         if f.is_dir():
             returncodes.append(run_tests_in_subdirectory(f.name, regex, verbose))
-
-    sys.exit(all(r == 0 for r in returncodes))
+    sys.exit(any(r != 0 for r in returncodes))
