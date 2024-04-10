@@ -32,8 +32,7 @@ if __name__ == "__main__":
 
     # Run the tests in the specified directory
     if (args.dir):
-        ret = run_tests_in_subdirectory(f"{args.dir}", regex, verbose)
-        sys.exit(ret)
+        sys.exit(run_tests_in_subdirectory(f"{args.dir}", regex, verbose))
 
     #If the directory is not specified then run all tests from all sub-directories
     returncodes = []
