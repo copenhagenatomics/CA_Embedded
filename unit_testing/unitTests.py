@@ -10,6 +10,8 @@ def run_tests_in_subdirectory(dir, regex, verbose):
     subprocess.run("cmake --build build", shell=True, cwd=dir)
 
     run_str = "cd build && ctest"
+    run_str += regex
+    run_str += verbose
 
     ret = subprocess.run(run_str, shell=True, cwd=dir)
     return ret.returncode
