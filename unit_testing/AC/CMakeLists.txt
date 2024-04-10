@@ -23,16 +23,15 @@ FetchContent_MakeAvailable(googletest)
 ## Setup source code locations / include locations
 ####################################################################################################
 
-set(SRC ../STM32)
-set(LIB ../CA_Embedded_Libraries/STM32)
+set(SRC ../../STM32)
+set(LIB ../../CA_Embedded_Libraries/STM32)
 set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Filtering/Inc 
             ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
             ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc 
             ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
-set(UT_FAKES ../CA_Embedded_Libraries/unit_testing/fakes)
-set(UT_STUBS ../CA_Embedded_Libraries/unit_testing/stubs)
-
-set(DRIV ../STM32/AC/Drivers/STM32F4xx_HAL_Driver)
+set(UT_FAKES ../../CA_Embedded_Libraries/unit_testing/fakes)
+set(UT_STUBS ../../CA_Embedded_Libraries/unit_testing/stubs)
+set(DRIV ../../STM32/AC/Drivers/STM32F4xx_HAL_Driver)
 
 ####################################################################################################
 ## List of tests to run
@@ -43,20 +42,13 @@ enable_testing()
 include(GoogleTest)
 
 # AC tests
-add_executable(heatCtrl_test AC/heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp)
+add_executable(heatCtrl_test heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp)
 target_include_directories(heatCtrl_test PRIVATE ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src)
 target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
 gtest_discover_tests(heatCtrl_test)
 
-add_executable(ac_test AC/AC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp)
+add_executable(ac_test AC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp)
 target_include_directories(ac_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/AC/Core/Src ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc)
 target_link_libraries(ac_test GTest::gtest_main gmock_main)
 target_compile_definitions(ac_test PUBLIC UNIT_TESTING)
 gtest_discover_tests(ac_test)
-
-# LightController test
-add_executable(lightcontroller_test LightController/LightController_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp)
-target_include_directories(lightcontroller_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/LightController/Core/Src ${SRC}/LightController/Core/Inc ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc)
-target_link_libraries(lightcontroller_test GTest::gtest_main gmock_main)
-target_compile_definitions(lightcontroller_test PUBLIC UNIT_TESTING)
-gtest_discover_tests(lightcontroller_test)

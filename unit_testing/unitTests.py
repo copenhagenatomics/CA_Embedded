@@ -10,8 +10,9 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', action="store_true", help='Maximum output')
     args = parser.parse_args()
 
-    subprocess.run("cmake -S . -B build", shell=True)
-    subprocess.run("cmake --build build", shell=True)
+    dir=f"{args.regex}"
+    subprocess.run("cmake -S . -B build", shell=True, cwd=dir)
+    subprocess.run("cmake --build build", shell=True, cwd=dir)
 
     run_str = "cd build && ctest"
 
@@ -21,4 +22,4 @@ if __name__ == "__main__":
     if(args.verbose):
         run_str += f" --output-on-failure"
 
-    subprocess.run(run_str, shell=True)
+    subprocess.run(run_str, shell=True, cwd=dir)
