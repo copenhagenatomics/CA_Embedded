@@ -109,6 +109,7 @@ class ACBoard: public ::testing::Test
 
 TEST_F(ACBoard, CorrectBoardParams)
 {
+    ASSERT_FALSE(true);
     ACBoardInit(&hadc, &hwwdg);
 
     /* Basic test, was everything OK?  */
