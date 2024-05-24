@@ -213,7 +213,7 @@ static void initGpio()
     stmGpioInit(&Ch3_B, Ch3_Ctrl_B_GPIO_Port, Ch3_Ctrl_B_Pin, STM_GPIO_OUTPUT);
     stmGpioInit(&Ch3_W, Ch3_Ctrl_W_GPIO_Port, Ch3_Ctrl_W_Pin, STM_GPIO_OUTPUT);
 
-    for (int i = 0; i < 12; i++)
+    for (int i = 0; i < LED_CHANNELS*NO_COLORS; i++)
     {
         stmSetGpio(*ChCtrl[i], false);
     }
