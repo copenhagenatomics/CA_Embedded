@@ -39,7 +39,7 @@ class DCBoard: public ::testing::Test
         *******************************************************************************************/
         DCBoard()
         {
-            hadc.Init.NbrOfConversion = 5;
+            hadc.Init.NbrOfConversion = 6;
 
             /* OTP code to allow initialisation of the board to pass */
             /* TODO: Make this use a define for the board release, so that tests fail if the someone
@@ -51,8 +51,8 @@ class DCBoard: public ::testing::Test
                     .subBoardType = 0,
                     .reserved = {0},
                     .pcbVersion = {
-                        .major = 6,
-                        .minor = 4
+                        .major = 3,
+                        .minor = 1
                     },
                     .productionDate = 0
                 }
@@ -92,6 +92,13 @@ class DCBoard: public ::testing::Test
             }
         }
 
+        void setDcCurrentBuffer() {
+            /* According to default calibration, 2048 yields ~0 current */
+            for(int i = 0; i < hadc.dma_length; i++) {
+                *((int16_t*)hadc.dma_address + i) = 2048;
+            }
+        }
+
         /*******************************************************************************************
         ** MEMBERS
         *******************************************************************************************/
@@ -109,6 +116,7 @@ class DCBoard: public ::testing::Test
 TEST_F(DCBoard, CorrectBoardParams)
 {
     DCBoardInit(&hadc, &hwwdg);
+    setDcCurrentBuffer();
 
     /* Basic test, was everything OK?  */
     EXPECT_FALSE(bsGetStatus() && BS_VERSION_ERROR_Msk);
@@ -119,5 +127,71 @@ TEST_F(DCBoard, CorrectBoardParams)
     DCBoardLoop(bootMsg);
 
     /* Check the printout is correct */
-    EXPECT_READ_USB(Contains("-6.25, -6.25, -6.25, -6.25, -6.25, -6.25, 0x0"));
+    EXPECT_READ_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0"));
+}
+
+TEST_F(DCBoard, printSerial) 
+{
+    DCBoardInit(&hadc, &hwwdg);
+    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
+    ** printing anything */
+    DCBoardLoop(bootMsg);
+    writeDcMessage("Serial\n");
+    
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r", 
+        "Boot Unit Test\r", 
+        "Serial Number: 000\r", 
+        "Product Type: DC Board\r", 
+        "Sub Product Type: 0\r", 
+        "MCU Family: Unknown 0x  0 Rev 0\r", 
+        "Software Version: 0\r", 
+        "Compile Date: 0\r", 
+        "Git SHA: 0\r", 
+        "PCB Version: 3.1\r"
+    ));
+}
+
+TEST_F(DCBoard, printStatus) 
+{
+    DCBoardInit(&hadc, &hwwdg);
+    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
+    ** printing anything */
+    DCBoardLoop(bootMsg);
+    writeDcMessage("Status\n");
+    
+
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r", 
+        "Boot Unit Test\r", 
+        "Board Status:\r", 
+        "The board is operating normally.\r", 
+        "Port 0: On: 0, PWM percent: 0\r", 
+        "Port 1: On: 0, PWM percent: 0\r", 
+        "Port 2: On: 0, PWM percent: 0\r", 
+        "Port 3: On: 0, PWM percent: 0\r", 
+        "Port 4: On: 0, PWM percent: 0\r", 
+        "Port 5: On: 0, PWM percent: 0\r", 
+        "\r", 
+        "End of board status. \r"
+    ));
+    
+    writeDcMessage("p2 on\n");
+    writeDcMessage("p4 on\n");
+    writeDcMessage("p6 on\n");
+    writeDcMessage("Status\n");
+    
+    EXPECT_FLUSH_USB(ElementsAre( 
+        "\r", 
+        "Board Status:\r", 
+        "The board is operating normally.\r", 
+        "Port 0: On: 0, PWM percent: 0\r",
+        "Port 1: On: 1, PWM percent: 999\r",
+        "Port 2: On: 0, PWM percent: 0\r",
+        "Port 3: On: 1, PWM percent: 999\r",
+        "Port 4: On: 0, PWM percent: 0\r",
+        "Port 5: On: 1, PWM percent: 999\r",
+        "\r", 
+        "End of board status. \r"
+    ));
 }
