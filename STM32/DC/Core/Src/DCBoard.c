@@ -2,18 +2,19 @@
  * DCBoard.c
  */
 
-#include "main.h"
 #include <stdint.h>
 #include <stdbool.h>
+
+#include "main.h"
 #include "circular_buffer.h"
 #include "USBprint.h"
-#include "usb_cdc_fops.h"
 #include "systemInfo.h"
 #include "DCBoard.h"
 #include "ADCMonitor.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "time32.h"
+#include "StmGpio.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -63,6 +64,14 @@ static uint32_t actuationStart[ACTUATIONPORTS] = { 0 };
 static bool port_state[ACTUATIONPORTS] = { 0 };
 static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 
+// Button ports - Button 1 and 2 position is swapped because... insert reason here?
+GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port, 
+                                 Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
+const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
+                                Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
+
+static StmGpio buttonGpio[6] = {0};
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
 ***************************************************************************************************/
@@ -94,7 +103,7 @@ static void updateBoardStatus()
 {
     for(int i = 0; i < ACTUATIONPORTS; i++)
     {
-        port_state[i] ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i)) : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
+        *getTimerCCR(i) != TURNOFFPWM ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i)) : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
     }
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
@@ -117,7 +126,7 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
     // Watch dog refresh. Triggers reset if reset after <90ms or >110ms.
     // Ensures ADC sampling is performed with correct timing.
     HAL_WWDG_Refresh(hwwdg_);
-    if (!isComPortOpen())
+    if (!isUsbPortOpen())
     {
         return;
     }
@@ -158,7 +167,7 @@ static void allOn()
 {
     for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++)
     {
-        pinWrite(pinNumber, SET);
+        pinWrite(pinNumber, true);
         actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
         port_state[pinNumber] = 1;
         ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
@@ -167,7 +176,7 @@ static void allOn()
 
 static void turnOnPin(int pinNumber)
 {
-    pinWrite(pinNumber, SET);
+    pinWrite(pinNumber, true);
     actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
     port_state[pinNumber] = 1;
     ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
@@ -175,7 +184,7 @@ static void turnOnPin(int pinNumber)
 
 static void turnOnPinDuration(int pinNumber, int duration)
 {
-    pinWrite(pinNumber, SET);
+    pinWrite(pinNumber, true);
     actuationStart[pinNumber] = HAL_GetTick();
     actuationDuration[pinNumber] = duration;
     port_state[pinNumber] = 1;
@@ -187,7 +196,7 @@ static void allOff()
 {
     for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++)
     {
-        pinWrite(pinNumber, RESET);
+        pinWrite(pinNumber, false);
         actuationDuration[pinNumber] = 0;
         port_state[pinNumber] = 0;
         ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
@@ -196,7 +205,7 @@ static void allOff()
 
 static void turnOffPin(int pinNumber)
 {
-    pinWrite(pinNumber, RESET);
+    pinWrite(pinNumber, false);
     actuationDuration[pinNumber] = 0;
     port_state[pinNumber] = 0;
     ccr_states[pinNumber] = *(getTimerCCR(pinNumber));
@@ -274,19 +283,13 @@ static void autoOff()
 
 static void handleButtonPress()
 {
-    // Button ports - Button 1 and 2 position is swapped because... insert reason here?
-    GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port, 
-                                     Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
-    const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
-                                    Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
-
     for (int i = 0; i < ACTUATIONPORTS; i++)
     {
-        if (HAL_GPIO_ReadPin(button_ports[i], buttonPins[i]) == 0)
+        if (stmGetGpio(buttonGpio[i]) == 0)
         {
-            pinWrite(i, SET);
+            pinWrite(i, true);
         }
-        else if (HAL_GPIO_ReadPin(button_ports[i], buttonPins[i]) == 1)
+        else if (stmGetGpio(buttonGpio[i]) == 1)
         {
             if (port_state[i] == 1)
             {
@@ -296,7 +299,7 @@ static void handleButtonPress()
             }
             else
             {
-                pinWrite(i, RESET);
+                pinWrite(i, false);
             }
         }
     }
@@ -346,7 +349,7 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
     setFirmwareBoardVersion((pcbVersion){3, 1});
 
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
-    initCAProtocol(&caProto, usb_cdc_rx);
+    initCAProtocol(&caProto, usbRx);
     
     BoardType board;
     if (getBoardInfo(&board, NULL) || board != DC_Board) 
@@ -359,6 +362,10 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
     if (getPcbVersion(&ver) || ver.major < 3 || ver.minor < 1)
     {
         bsSetError(BS_VERSION_ERROR_Msk);
+    }
+
+    for(int i = 0; i < 6; i++) {
+        stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT);
     }
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
