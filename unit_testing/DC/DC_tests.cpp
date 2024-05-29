@@ -116,6 +116,9 @@ class DCBoard: public ::testing::Test
 TEST_F(DCBoard, CorrectBoardParams)
 {
     DCBoardInit(&hadc, &hwwdg);
+        
+    /* Enable 24V power and fill the current buffer with a sensible value */
+    stmSetGpio(sense24v, true);
     setDcCurrentBuffer();
 
     /* Basic test, was everything OK?  */
@@ -133,6 +136,11 @@ TEST_F(DCBoard, CorrectBoardParams)
 TEST_F(DCBoard, printSerial) 
 {
     DCBoardInit(&hadc, &hwwdg);
+
+    /* Enable 24V power and fill the current buffer with a sensible value */
+    stmSetGpio(sense24v, true);
+    setDcCurrentBuffer();
+
     /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
     ** printing anything */
     DCBoardLoop(bootMsg);
@@ -155,6 +163,11 @@ TEST_F(DCBoard, printSerial)
 TEST_F(DCBoard, printStatus) 
 {
     DCBoardInit(&hadc, &hwwdg);
+
+    /* Enable 24V power and fill the current buffer with a sensible value */
+    stmSetGpio(sense24v, true);
+    setDcCurrentBuffer();
+
     /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
     ** printing anything */
     DCBoardLoop(bootMsg);
