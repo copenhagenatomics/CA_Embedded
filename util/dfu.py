@@ -13,6 +13,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--dfu', action="store_true", help='Use instead of -p if the board is in DFU mode')
     parser.add_argument('-R', '--remote', help='The hostname for the port (e.g. loop name)')
     parser.add_argument('-P', '--password', help='The password for the host')
+    parser.add_argument('-j', '--threads', type=int, help='Number of threads to use for make')
     parser.add_argument('-r', '--reset', action="store_true", help='Reset a board in DFU mode back to normal mode')
     args = parser.parse_args()
 
@@ -29,7 +30,12 @@ if __name__ == "__main__":
             os.chdir(f"STM32/{args.board}")
             
             # If make has an error, raise an exception
-            subprocess.run(f"make -j8", shell=True, check=True)
+            command = "make"
+            if args.threads:
+                command += f" -j{args.threads}"
+
+            subprocess.run(command, shell=True, check=True)
+
 
             if args.port or args.dfu:
                 if args.remote:
