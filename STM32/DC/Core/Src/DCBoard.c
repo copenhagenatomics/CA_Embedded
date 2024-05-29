@@ -38,6 +38,7 @@ static void CAportState(int port, bool state, int percent, int duration);
 static volatile uint32_t* getTimerCCR(int pinNumber);
 static void printDcStatus();
 static void updateBoardStatus();
+static void gpioInit ();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -64,13 +65,13 @@ static uint32_t actuationStart[ACTUATIONPORTS] = { 0 };
 static bool port_state[ACTUATIONPORTS] = { 0 };
 static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
 
-// Button ports - Button 1 and 2 position is swapped because... insert reason here?
-GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port, 
-                                 Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
-const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
-                                Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
-
+/* Button ports */
+static GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port, 
+                                        Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
+static const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
+                                       Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
 static StmGpio buttonGpio[6] = {0};
+static StmGpio sense24v;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -101,9 +102,18 @@ static void printDcStatus()
 */
 static void updateBoardStatus() 
 {
+    /* If a port is turned on or not */
     for(int i = 0; i < ACTUATIONPORTS; i++)
     {
         *getTimerCCR(i) != TURNOFFPWM ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i)) : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
+    }
+
+    /* If 24V is not present */
+    if(!stmGetGpio(sense24v)) {
+        bsSetError(BS_UNDER_VOLTAGE_Msk);
+    }
+    else {
+        bsClearField(BS_UNDER_VOLTAGE_Msk);
     }
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
@@ -339,6 +349,16 @@ static volatile uint32_t* getTimerCCR(int pinNumber)
     }
 }
 
+/*!
+** @brief Initialises GPIO in the system
+*/
+static void gpioInit () {
+    for(int i = 0; i < 6; i++) {
+        stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT);
+    }
+    stmGpioInit(&sense24v, SENSE_24V_GPIO_Port, SENSE_24V_Pin, STM_GPIO_INPUT);
+}
+
 /***************************************************************************************************
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
@@ -364,9 +384,7 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
         bsSetError(BS_VERSION_ERROR_Msk);
     }
 
-    for(int i = 0; i < 6; i++) {
-        stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT);
-    }
+    gpioInit();
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));

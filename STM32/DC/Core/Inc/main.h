@@ -100,6 +100,7 @@ void Error_Handler(void);
 #define Btn_5_GPIO_Port GPIOB
 #define Btn_6_Pin GPIO_PIN_9
 #define Btn_6_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
