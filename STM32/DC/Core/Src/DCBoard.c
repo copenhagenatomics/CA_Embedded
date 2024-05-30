@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #include "main.h"
 #include "circular_buffer.h"
@@ -70,7 +71,7 @@ static GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_
                                         Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
 static const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
                                        Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
-static StmGpio buttonGpio[6] = {0};
+static StmGpio buttonGpio[ACTUATIONPORTS] = {0};
 static StmGpio sense24v;
 
 /***************************************************************************************************
@@ -85,10 +86,9 @@ static void printDcStatus()
     static char buf[600] = { 0 };
     int len = 0;
 
-    for (int i = 0; i < ACTUATIONPORTS; i++)
-    {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %u\r\n", 
-                        i, (int)port_state[i], (unsigned int) *(getTimerCCR(i)));
+    for (int i = 0; i < ACTUATIONPORTS; i++) {
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %" PRIu32 "\r\n", 
+                        i, (int)port_state[i], *getTimerCCR(i));
     }
 
     writeUSB(buf, len);
@@ -148,7 +148,7 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
         return;
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x",
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
             meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
             meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5),
@@ -159,7 +159,6 @@ static void setPWMPin(int pinNumber, int pwmState, int duration)
 {
     volatile uint32_t* ccr = getTimerCCR(pinNumber);
     *ccr = pwmState;
-
     actuationStart[pinNumber] = HAL_GetTick();
     actuationDuration[pinNumber] = duration;
     ccr_states[pinNumber] = *ccr;
@@ -234,18 +233,16 @@ static void actuatePins(ActuationInfo actuationInfo)
     {
         return;
     }
+    else if (actuationInfo.pin < 0 || actuationInfo.pin >= ACTUATIONPORTS) {
+        return;
+    }
 
-    if (actuationInfo.timeOn == -1000 && (actuationInfo.percent == 100 || actuationInfo.percent == 0))
-    {
-        // pX on or pX off (timeOn == -1 means indefinite)
-        if (actuationInfo.percent == 0)
-        {
-            turnOffPin(actuationInfo.pin);
-        }
-        else
-        {
-            turnOnPin(actuationInfo.pin);
-        }
+    // pX on or pX off (timeOn == -1 means indefinite)
+    if (actuationInfo.timeOn == -1000 && actuationInfo.percent == 100) {
+        turnOnPin(actuationInfo.pin);
+    }
+    else if (actuationInfo.timeOn == -1000 && actuationInfo.percent == 0) {
+        turnOffPin(actuationInfo.pin);
     }
     else if (actuationInfo.timeOn != -1000 && actuationInfo.percent == 100)
     {

@@ -99,6 +99,20 @@ class DCBoard: public ::testing::Test
             }
         }
 
+        /* Normal board setup */
+        void dcSetup() {
+            DCBoardInit(&hadc, &hwwdg);
+        
+            /* Enable 24V power and fill the current buffer with a sensible value */
+            stmSetGpio(sense24v, true);
+            setDcCurrentBuffer();
+
+            /* All buttons automatically in "off" position */
+            for(int i = 0; i < ACTUATIONPORTS; i++) {
+                stmSetGpio(buttonGpio[i], true);
+            }
+        }
+
         /*******************************************************************************************
         ** MEMBERS
         *******************************************************************************************/
@@ -115,31 +129,21 @@ class DCBoard: public ::testing::Test
 
 TEST_F(DCBoard, CorrectBoardParams)
 {
-    DCBoardInit(&hadc, &hwwdg);
-        
-    /* Enable 24V power and fill the current buffer with a sensible value */
-    stmSetGpio(sense24v, true);
-    setDcCurrentBuffer();
+    dcSetup();
 
     /* Basic test, was everything OK?  */
     EXPECT_FALSE(bsGetStatus() && BS_VERSION_ERROR_Msk);
 
     /* This should force a print on the USB bus */
-    DCBoardLoop(bootMsg);
-    HAL_ADC_ConvHalfCpltCallback(&hadc);
-    DCBoardLoop(bootMsg);
+    goToTick(100);
 
     /* Check the printout is correct */
-    EXPECT_READ_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0"));
+    EXPECT_READ_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
 }
 
 TEST_F(DCBoard, printSerial) 
 {
-    DCBoardInit(&hadc, &hwwdg);
-
-    /* Enable 24V power and fill the current buffer with a sensible value */
-    stmSetGpio(sense24v, true);
-    setDcCurrentBuffer();
+    dcSetup();
 
     /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
     ** printing anything */
@@ -162,11 +166,7 @@ TEST_F(DCBoard, printSerial)
 
 TEST_F(DCBoard, printStatus) 
 {
-    DCBoardInit(&hadc, &hwwdg);
-
-    /* Enable 24V power and fill the current buffer with a sensible value */
-    stmSetGpio(sense24v, true);
-    setDcCurrentBuffer();
+    dcSetup();
 
     /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
     ** printing anything */
@@ -208,3 +208,237 @@ TEST_F(DCBoard, printStatus)
         "End of board status. \r"
     ));
 }
+
+TEST_F(DCBoard, status24v) 
+{
+    dcSetup();
+    stmSetGpio(sense24v, false);
+
+    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
+    ** printing anything */
+    goToTick(100);
+    writeDcMessage("Status\n");
+    
+
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r", 
+        "Boot Unit Test\r", 
+        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000\r",
+        "Board Status:\r", 
+        "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r",
+        "Port 0: On: 0, PWM percent: 0\r", 
+        "Port 1: On: 0, PWM percent: 0\r", 
+        "Port 2: On: 0, PWM percent: 0\r", 
+        "Port 3: On: 0, PWM percent: 0\r", 
+        "Port 4: On: 0, PWM percent: 0\r", 
+        "Port 5: On: 0, PWM percent: 0\r", 
+        "\r", 
+        "End of board status. \r"
+    ));
+}
+
+/* Grey box - uses getTimerCCR() */
+TEST_F(DCBoard, portsNoTimeout) 
+{
+    dcSetup();
+
+    goToTick(1);
+    
+    char cmd[100] = {0};
+    for(int i = 0; i < 7; i++) {
+        sprintf(cmd, "p%u on\n", i);
+        writeDcMessage(cmd);
+
+        if(i == 0) {
+            for(int j = 0; j < 6; j++) {
+                ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
+            }
+        }
+        else {
+            for(int j = 1; j <= 6; j++) {
+                if(j != i) {
+                    ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j;
+                }
+                else {
+                    ASSERT_EQ(*getTimerCCR(j-1), 999) << "j = " << j;
+                }
+            }
+        }
+
+        writeDcMessage("all off\n");
+    }
+}
+
+/* Grey box - uses getTimerCCR() */
+TEST_F(DCBoard, portsPct) 
+{
+    dcSetup();
+    goToTick(1);
+    
+    char cmd[100] = {0};
+    for(int i = 0; i < 7; i++) {
+        int pct = (i+1) * 10;
+        int pct_ccr = (pct * 999) / 100;
+        sprintf(cmd, "p%u on %u%%\n", i, pct);
+        writeDcMessage(cmd);
+
+        if(i == 0) {
+            for(int j = 0; j < 6; j++) {
+                ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
+            }
+        }
+        else {
+            for(int j = 1; j <= 6; j++) {
+                if(j != i) {
+                    ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j;
+                }
+                else {
+                    ASSERT_EQ(*getTimerCCR(j-1), pct_ccr) << "j = " << j;
+                }
+            }
+        }
+
+        writeDcMessage("all off\n");
+    }
+}
+
+/* Grey box - uses getTimerCCR() */
+TEST_F(DCBoard, portsTimeout) 
+{
+    dcSetup();
+    goToTick(1);
+    
+    char cmd[100] = {0};
+    for(int i = 0; i < 7; i++) {
+        int timeout_secs = i+1;
+        int timeout_ticks = timeout_secs * 1000;
+        sprintf(cmd, "p%u on %u\n", i, timeout_secs);
+        writeDcMessage(cmd);
+
+        if(i == 0) {
+            for(int j = 0; j < 6; j++) {
+                ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j << ", tick = " << tickCounter;
+            }
+        }
+        else {
+            simTick(timeout_ticks);
+            for(int j = 1; j <= 6; j++) {
+                if(j != i) {
+                    ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j << ", tick = " << tickCounter;
+                }
+                else {
+                    ASSERT_EQ(*getTimerCCR(j-1), 999) << "j = " << j << ", tick = " << tickCounter;
+                    simTick();
+                    ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j << ", tick = " << tickCounter;
+                }
+            }
+        }
+
+        writeDcMessage("all off\n");
+    }
+}
+
+/* Grey box - uses getTimerCCR() */
+TEST_F(DCBoard, onboardButtons) 
+{
+    dcSetup();
+    goToTick(1);
+
+    for(int i = 0; i < ACTUATIONPORTS; i++) {
+        /* All ports initially off */
+        for(int j = 0; j < ACTUATIONPORTS; j++) {
+            ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
+        }
+
+        /* Press a button */
+        stmSetGpio(buttonGpio[i], false);
+        simTick(100); /* Should respond within 100 ms */
+
+        /* Only the requested port should be on */
+        for(int j = 0; j < ACTUATIONPORTS; j++) {
+            if(j != i) {
+                ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;    
+            } 
+            else {
+                ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
+            }
+        }
+
+        /* Check status bit updated correctly. Could take up to 100 ms for another print */
+        simTick(100);
+        switch(i) {
+            case 0: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000001"));
+                    break;
+            case 1: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000002"));
+                    break;
+            case 2: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000004"));
+                    break;
+            case 3: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000008"));
+                    break;
+            case 4: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000010"));
+                    break;
+            case 5: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000020"));
+                    break;
+            default: FAIL();
+        }
+
+        /* Release button */
+        stmSetGpio(buttonGpio[i], true);
+        simTick(100); /* Should respond within 100 ms */
+    }
+}   
+
+/* Grey box - uses getTimerCCR() */
+TEST_F(DCBoard, onboardButtonsOff) 
+{
+    dcSetup();
+    goToTick(1);
+    writeDcMessage("all on\n");
+
+    for(int i = 0; i < ACTUATIONPORTS; i++) {
+        /* All ports initially on */
+        for(int j = 0; j < ACTUATIONPORTS; j++) {
+            ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
+        }
+
+        /* Press a button */
+        stmSetGpio(buttonGpio[i], false);
+        simTick(100); /* Should respond within 100 ms */
+
+        /* There should be no effect */
+        for(int j = 0; j < ACTUATIONPORTS; j++) {
+            ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
+        }
+
+        simTick(100); /* Could take up to 100 ms for another print */
+        /* Check status bit updated correctly */
+        EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f"));
+
+        /* Release button */
+        stmSetGpio(buttonGpio[i], true);
+        simTick(100); /* Should respond within 100 ms */
+    }
+}   
+
+TEST_F(DCBoard, testCurrentBuffer) {
+    dcSetup();
+    goToTick(100);
+
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
+
+    for(int h = 0; h < 4096; h++) {
+        /* Fill with current */
+        for(int i = 0; i < hadc.dma_length; i++) {
+            *((int16_t*)hadc.dma_address + i) = h;
+        }  
+
+        /* Get the next printout */
+        simTick(100);
+
+        char buf[100] = {0};
+        double curr = ((h / 4096.0) * 3.3 - 1.65) / 0.264;
+        sprintf(buf, "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x00000000", 
+                curr, curr, curr, curr, curr, curr);
+        EXPECT_FLUSH_USB(Contains(buf));
+    }
+} 
