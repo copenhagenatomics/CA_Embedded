@@ -231,9 +231,13 @@ static void actuatePins(ActuationInfo actuationInfo)
 {
     if (!actuationInfo.isInputValid)
     {
+        HALundefined("Invalid input");
         return;
     }
     else if (actuationInfo.pin < 0 || actuationInfo.pin >= ACTUATIONPORTS) {
+        char buf[30] = {0};
+        snprintf(buf, 30, "Invalid Pin: %d", actuationInfo.pin + 1);
+        HALundefined(buf);
         return;
     }
 

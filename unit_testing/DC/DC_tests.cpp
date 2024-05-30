@@ -253,6 +253,8 @@ TEST_F(DCBoard, portsNoTimeout)
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
+            sprintf(cmd, "MISREAD: Invalid Pin: %d", i);
+            EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
             for(int j = 1; j <= ACTUATIONPORTS; j++) {
@@ -286,6 +288,8 @@ TEST_F(DCBoard, portsPct)
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
+            sprintf(cmd, "MISREAD: Invalid Pin: %d", i);
+            EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
             for(int j = 1; j <= ACTUATIONPORTS; j++) {
@@ -319,6 +323,8 @@ TEST_F(DCBoard, portsTimeout)
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j << ", tick = " << tickCounter;
             }
+            sprintf(cmd, "MISREAD: Invalid Pin: %d", i);
+            EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
             simTick(timeout_ticks);
