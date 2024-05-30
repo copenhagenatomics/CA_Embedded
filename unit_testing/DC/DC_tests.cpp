@@ -399,13 +399,19 @@ TEST_F(DCBoard, onboardButtonsOff)
 {
     dcSetup();
     goToTick(1);
-    writeDcMessage("all on\n");
 
     for(int i = 0; i < ACTUATIONPORTS; i++) {
         /* All ports initially on */
+        writeDcMessage("all on\n");
+
         for(int j = 0; j < ACTUATIONPORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
         }
+
+        /* Put one port on a timer */
+        char cmd[100] = {0};
+        sprintf(cmd, "p%u on %u\n", i+1, 1);
+        writeDcMessage(cmd);
 
         /* Press a button */
         stmSetGpio(buttonGpio[i], false);
@@ -418,11 +424,17 @@ TEST_F(DCBoard, onboardButtonsOff)
 
         simTick(100); /* Could take up to 100 ms for another print */
         /* Check status bit updated correctly */
-        EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f"));
+        EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f")); 
 
         /* Release button */
         stmSetGpio(buttonGpio[i], true);
         simTick(100); /* Should respond within 100 ms */
+
+        /* Timer port should turn off 1 second after the start of the test */
+        simTick(700);
+        ASSERT_EQ(*getTimerCCR(i), 999) << "i = " << i;   
+        simTick();
+        ASSERT_EQ(*getTimerCCR(i), 0) << "i = " << i;   
     }
 }   
 
