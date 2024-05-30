@@ -39,7 +39,7 @@ class DCBoard: public ::testing::Test
         *******************************************************************************************/
         DCBoard()
         {
-            hadc.Init.NbrOfConversion = 6;
+            hadc.Init.NbrOfConversion = ACTUATIONPORTS;
 
             /* OTP code to allow initialisation of the board to pass */
             /* TODO: Make this use a define for the board release, so that tests fail if the someone
@@ -245,17 +245,17 @@ TEST_F(DCBoard, portsNoTimeout)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i < 7; i++) {
+    for(int i = 0; i < 8; i++) {
         sprintf(cmd, "p%u on\n", i);
         writeDcMessage(cmd);
 
-        if(i == 0) {
-            for(int j = 0; j < 6; j++) {
+        if(i == 0 || i == 7) {
+            for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
         }
         else {
-            for(int j = 1; j <= 6; j++) {
+            for(int j = 1; j <= ACTUATIONPORTS; j++) {
                 if(j != i) {
                     ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j;
                 }
@@ -276,19 +276,19 @@ TEST_F(DCBoard, portsPct)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i < 7; i++) {
+    for(int i = 0; i < 8; i++) {
         int pct = (i+1) * 10;
         int pct_ccr = (pct * 999) / 100;
         sprintf(cmd, "p%u on %u%%\n", i, pct);
         writeDcMessage(cmd);
 
-        if(i == 0) {
-            for(int j = 0; j < 6; j++) {
+        if(i == 0 || i == 7) {
+            for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
         }
         else {
-            for(int j = 1; j <= 6; j++) {
+            for(int j = 1; j <= ACTUATIONPORTS; j++) {
                 if(j != i) {
                     ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j;
                 }
@@ -309,20 +309,20 @@ TEST_F(DCBoard, portsTimeout)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i < 7; i++) {
+    for(int i = 0; i < 8; i++) {
         int timeout_secs = i+1;
         int timeout_ticks = timeout_secs * 1000;
         sprintf(cmd, "p%u on %u\n", i, timeout_secs);
         writeDcMessage(cmd);
 
-        if(i == 0) {
-            for(int j = 0; j < 6; j++) {
+        if(i == 0 || i == 7) {
+            for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j << ", tick = " << tickCounter;
             }
         }
         else {
             simTick(timeout_ticks);
-            for(int j = 1; j <= 6; j++) {
+            for(int j = 1; j <= ACTUATIONPORTS; j++) {
                 if(j != i) {
                     ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j << ", tick = " << tickCounter;
                 }
