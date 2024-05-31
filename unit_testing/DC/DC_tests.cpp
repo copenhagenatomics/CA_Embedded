@@ -20,11 +20,8 @@
 /* UUT */
 #include "DCBoard.c"
 
-using ::testing::AnyOf;
-using ::testing::AllOf;
 using ::testing::Contains;
 using ::testing::ElementsAre;
-using ::testing::IsEmpty;
 using namespace std;
 
 /***************************************************************************************************
