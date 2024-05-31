@@ -346,7 +346,7 @@ static volatile uint32_t* getTimerCCR(int pinNumber)
 */
 static void gpioInit () {
     for(int i = 0; i < 6; i++) {
-        stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT);
+        stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT_PULLUP);
     }
     stmGpioInit(&sense24v, SENSE_24V_GPIO_Port, SENSE_24V_Pin, STM_GPIO_INPUT);
 }
