@@ -16,6 +16,7 @@
 #include "CAProtocolStm.h"
 #include "time32.h"
 #include "StmGpio.h"
+#include "pcbversion.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -149,7 +150,7 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
     {
-        USBnprintf("0x%x", bsGetStatus());
+        USBnprintf("0x%08x", bsGetStatus());
         return;
     }
 
@@ -214,19 +215,13 @@ static void turnOffPin(int pinNumber)
 
 typedef struct ActuationInfo
 {
-    int pin; // pins 0-3 are interpreted as single ports - pin '-1' is interpreted as all
+    int pin; // pins 0-5 are interpreted as single ports
     int percent;
     int timeOn; // time on is in seconds - timeOn '-1' is interpreted as indefinitely
-    bool isInputValid;
 } ActuationInfo;
 static void actuatePins(ActuationInfo actuationInfo)
 {
-    if (!actuationInfo.isInputValid)
-    {
-        HALundefined("Invalid input");
-        return;
-    }
-    else if (actuationInfo.pin < 0 || actuationInfo.pin >= ACTUATIONPORTS) {
+    if (actuationInfo.pin < 0 || actuationInfo.pin >= ACTUATIONPORTS) {
         char buf[30] = {0};
         snprintf(buf, 30, "Invalid Pin: %d", actuationInfo.pin + 1);
         HALundefined(buf);
@@ -267,9 +262,10 @@ static void CAallOn(bool isOn, int duration_ms)
 
     (isOn) ? allOn() : allOff();
 }
+
 static void CAportState(int port, bool state, int percent, int duration)
 {
-    actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
+    actuatePins((ActuationInfo) { port - 1, percent, 1000*duration});
 }
 
 static void autoOff()
@@ -289,6 +285,7 @@ static void handleButtonPress()
 {
     for (int i = 0; i < ACTUATIONPORTS; i++)
     {
+        /* Button GPIO are pulled up, so "0" is a positive input (e.g. button is pressed) */
         if (stmGetGpio(buttonGpio[i]) == 0)
         {
             port_state[i] |= PORT_STATE_ON_BTN;
@@ -328,7 +325,7 @@ static void checkButtonPress()
 */
 static volatile uint32_t* getTimerCCR(int pinNumber)
 {
-    /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.0 board */
+    /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.1 board */
     switch (pinNumber)
     {
         case 0: return &(TIM4->CCR2);
@@ -345,7 +342,7 @@ static volatile uint32_t* getTimerCCR(int pinNumber)
 ** @brief Initialises GPIO in the system
 */
 static void gpioInit () {
-    for(int i = 0; i < 6; i++) {
+    for(int i = 0; i < ACTUATIONPORTS; i++) {
         stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT_PULLUP);
     }
     stmGpioInit(&sense24v, SENSE_24V_GPIO_Port, SENSE_24V_Pin, STM_GPIO_INPUT);
@@ -355,17 +352,19 @@ static void gpioInit () {
 ** @brief Uses port_state and ccr_state variables to determine if a pin should be on or not
 */
 static void handlePorts() {
-    for(int i = 0; i < ACTUATIONPORTS; i++) {
-        if(port_state[i]) {
-            if(port_state[i] & PORT_STATE_ON_BTN) {
-                *getTimerCCR(i) = TURNONPWM;
+    if(!(bsGetStatus() & BS_VERSION_ERROR_Msk)) {
+        for(int i = 0; i < ACTUATIONPORTS; i++) {
+            if(port_state[i]) {
+                if(port_state[i] & PORT_STATE_ON_BTN) {
+                    *getTimerCCR(i) = TURNONPWM;
+                }
+                else {
+                    *getTimerCCR(i) = ccr_states[i];
+                }
             }
             else {
-                *getTimerCCR(i) = ccr_states[i];
+                *getTimerCCR(i) = 0;
             }
-        }
-        else {
-            *getTimerCCR(i) = 0;
         }
     }
 }
@@ -376,24 +375,9 @@ static void handlePorts() {
 
 void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 {
-    setFirmwareBoardType(DC_Board);
-    setFirmwareBoardVersion((pcbVersion){3, 1});
-
+    boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
     initCAProtocol(&caProto, usbRx);
-    
-    BoardType board;
-    if (getBoardInfo(&board, NULL) || board != DC_Board) 
-    {
-        bsSetError(BS_VERSION_ERROR_Msk);
-    }
-
-    // Pin out has changed from PCB V3.0 - older versions need other software.
-    pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major < 3 || ver.minor < 1)
-    {
-        bsSetError(BS_VERSION_ERROR_Msk);
-    }
 
     gpioInit();
 

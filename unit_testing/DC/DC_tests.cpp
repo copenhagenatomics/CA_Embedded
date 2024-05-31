@@ -42,21 +42,6 @@ class DCBoard: public ::testing::Test
             hadc.Init.NbrOfConversion = ACTUATIONPORTS;
 
             /* OTP code to allow initialisation of the board to pass */
-            /* TODO: Make this use a define for the board release, so that tests fail if the someone
-            ** forgets to update the version numbers */
-            BoardInfo bi = {
-                .v2 = {
-                    .otpVersion = OTP_VERSION_2,
-                    .boardType  = DC_Board,
-                    .subBoardType = 0,
-                    .reserved = {0},
-                    .pcbVersion = {
-                        .major = 3,
-                        .minor = 1
-                    },
-                    .productionDate = 0
-                }
-            };
             HAL_otpWrite(&bi);
             forceTick(0);
             hostUSBConnect();
@@ -70,6 +55,8 @@ class DCBoard: public ::testing::Test
 
         void simTick(int numTicks = 1)
         {
+            /* tickCounter indicates the current tick. forceTick(now) doesn't make any sense, so 
+            ** start from the next tick */
             for(int i = tickCounter + 1; i <= tickCounter + numTicks; i++) 
             {
                 forceTick(i);
@@ -121,6 +108,20 @@ class DCBoard: public ::testing::Test
         WWDG_HandleTypeDef hwwdg;
         const char * bootMsg = "Boot Unit Test";
         int tickCounter = 0;
+
+        BoardInfo bi = {
+            .v2 = {
+                .otpVersion = OTP_VERSION_2,
+                .boardType  = DC_Board,
+                .subBoardType = 0,
+                .reserved = {0},
+                .pcbVersion = {
+                    .major = 3,
+                    .minor = 1
+                },
+                .productionDate = 0
+            }
+        };
 };
 
 /***************************************************************************************************
@@ -139,6 +140,32 @@ TEST_F(DCBoard, CorrectBoardParams)
 
     /* Check the printout is correct */
     EXPECT_READ_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
+}
+
+TEST_F(DCBoard, incorrectBoard) {
+    /* Update OTP with incorrect board number */
+    if(BREAKING_MINOR != 0) {
+        bi.v2.pcbVersion.minor = BREAKING_MINOR - 1;
+    }
+    else if(BREAKING_MAJOR != 0) {
+        bi.v2.pcbVersion.major = BREAKING_MAJOR - 1;
+    }
+    else {
+        FAIL() << "Oldest PCB Version must be at least v0.1";
+    }
+    
+    HAL_otpWrite(&bi);
+
+    dcSetup();
+
+    /* Basic test, was everything OK?  */
+    EXPECT_TRUE(bsGetStatus() && BS_VERSION_ERROR_Msk);
+
+    /* This should force a print on the USB bus */
+    goToTick(100);
+
+    /* Check the printout is correct */
+    EXPECT_READ_USB(Contains("0x84000000"));
 }
 
 TEST_F(DCBoard, printSerial) 
@@ -245,11 +272,11 @@ TEST_F(DCBoard, portsNoTimeout)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i <= ACTUATIONPORTS + 1; i++) {
         sprintf(cmd, "p%u on\n", i);
         writeDcMessage(cmd);
 
-        if(i == 0 || i == 7) {
+        if(i == 0 || i == (ACTUATIONPORTS + 1)) {
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
@@ -278,13 +305,13 @@ TEST_F(DCBoard, portsPct)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i <= ACTUATIONPORTS + 1; i++) {
         int pct = (i+1) * 10;
         int pct_ccr = (pct * 999) / 100;
         sprintf(cmd, "p%u on %u%%\n", i, pct);
         writeDcMessage(cmd);
 
-        if(i == 0 || i == 7) {
+        if(i == 0 || i == (ACTUATIONPORTS + 1)) {
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
@@ -313,13 +340,13 @@ TEST_F(DCBoard, portsTimeout)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i < 8; i++) {
+    for(int i = 0; i <= ACTUATIONPORTS + 1; i++) {
         int timeout_secs = i+1;
         int timeout_ticks = timeout_secs * 1000;
         sprintf(cmd, "p%u on %u\n", i, timeout_secs);
         writeDcMessage(cmd);
 
-        if(i == 0 || i == 7) {
+        if(i == 0 || i == (ACTUATIONPORTS + 1)) {
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j << ", tick = " << tickCounter;
             }
@@ -439,7 +466,7 @@ TEST_F(DCBoard, onboardButtonsOff)
 }   
 
 /* Grey box - uses getTimerCCR() */
-TEST_F(DCBoard, onboardButtonsOffDuring) 
+TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod) 
 {
     dcSetup();
     goToTick(1);
