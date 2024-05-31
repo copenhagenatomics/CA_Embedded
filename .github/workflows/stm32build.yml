@@ -64,7 +64,7 @@ jobs:
       if: env.exist == '1'
       run: |
         cd unit_testing
-        python unitTests.py -R ${{ matrix.package }}
+        python unitTests.py -D ${{ matrix.package }}
     # Run the static code analysis test.
     - name: Run static tests
       run: STM32/CommonTests/code_generation_test.sh STM32/${{ matrix.package }}
@@ -102,7 +102,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Tag Filter
         id: tagfilter
-        # Checks if the file pcbversion exists and that the first line is configured as a version number with v<number>.number and returns the first line, otherwise it returns v0.0.
         run: echo "version=$(echo "${{ steps.release-on-push-1.outputs.tag_name }}" | cut -d'-' -f2)" >> $GITHUB_OUTPUT
       # Build the upload artifacts
       - run: make
@@ -130,12 +129,16 @@ jobs:
       - name: Read PCB version
         id: pcbversion
         # Checks if the file pcbversion exists and that the first line is configured as a version number with v<number>.number and returns the first line, otherwise it returns v0.0.
-        run: echo "version=$(if test -f STM32/${{ matrix.package }}/pcbversion && head -n 1 STM32/${{ matrix.package }}/pcbversion | grep -Eq "^v[0-9]+\.[0-9]+$"; then echo $(head -n 1 STM32/${{ matrix.package }}/pcbversion); else echo "v0.0"; fi)" >> $GITHUB_OUTPUT
-
-      - name: Read Breaking PCB version
-        id: breakingpcbversion
-        # Checks if the file pcbversion exists and that the second line is configured as a version number with v<number>.number and returns the second line, otherwise it returns the current pcb version if the second line does not match the structure or v0.0 if the file does not exist.
-        run: echo "breaking=$(if test -f STM32/${{ matrix.package }}/pcbversion && sed -n '2p' STM32/${{ matrix.package }}/pcbversion | grep -Eq "^v[0-9]+\.[0-9]+$"; then echo $(sed -n '2p' STM32/${{ matrix.package }}/pcbversion); else if test -f STM32/${{ matrix.package }}/pcbversion; then echo $(head -n 1 STM32/${{ matrix.package }}/pcbversion); else echo "v0.0"; fi; fi)" >> $GITHUB_OUTPUT
+        run: |
+          if [[ -e STM32/${{ matrix.package }}/Core/Inc/pcbversion.h ]]; then
+            echo "versionfile=STM32/${{ matrix.package }}/Core/Inc/pcbversion.h" >> $GITHUB_OUTPUT
+            echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h latest both") >> $GITHUB_OUTPUT
+            echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h breaking both") >> $GITHUB_OUTPUT
+          else
+            echo "versionfile=STM32/${{ matrix.package }}/pcbversion" >> $GITHUB_OUTPUT
+            echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion latest both") >> $GITHUB_OUTPUT
+            echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion breaking both") >> $GITHUB_OUTPUT
+          fi 
 
       - name: Release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
@@ -145,7 +148,7 @@ jobs:
             **/*.elf
             **/*.bin
           tag_name: ${{ steps.release-on-push-2.outputs.tag_name }}
-          name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.version }}"
+          name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.latest }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare zip file for Azure blob
@@ -156,13 +159,12 @@ jobs:
         with:
           python-version: "3.10"
       - name: Test PCB file
-        run: python release_mgmt/updatePcbVersionList.py
+        run: python release_mgmt/updatePcbVersionList.py "${{ steps.pcbversion.outputs.versionfile }}"
         env :
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
-          PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # File only updated on merge into main (not on pull-request)
-        run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
+        run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.latest }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.pcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
         env :
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}

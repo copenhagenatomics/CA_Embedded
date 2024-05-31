@@ -36,7 +36,6 @@ if __name__ == "__main__":
 
             subprocess.run(command, shell=True, check=True)
 
-
             if args.port or args.dfu:
                 if args.remote:
                     # Connect over SSH
