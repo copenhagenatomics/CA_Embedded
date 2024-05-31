@@ -2,15 +2,14 @@ import os
 import json
 import argparse
 from pcbVersion import PCBVersion
-from simpleConsole import console
+import subprocess
 from blobMgmt import getFileFromBlob, uploadFileToBlob
 
 # To use this file correctly, the following environment variables must be set:
-#   - PCB_VERSION_FILE - path to project pcbversion file (see below)
 #   - MODULE_NAME - project name (e.g. AC, DC)
 #   - AZURE_BLOB_QUERYSTRING - Query string to access blob storage
 #
-# Note: It is possible to substitute the PCB_VERSION_FILE and MODULE_NAME for command parameters.
+# Note: It is possible to substitute the MODULE_NAME for command parameters.
 #       call python updatePcbVersionList.py --help for more info.
 #
 # Running this file as a script will:
@@ -64,29 +63,20 @@ def addPcbVersionIntoFile(pcbVersion):
     
 
 def checkPCBVersionFile(file_path) -> bool:
-    with open(file_path, 'r') as file:
-        # Read the first and second lines from the file
-        lines = file.readlines()
-        if len(lines) < 2:
-            # Ensure that the file has at least two lines
-            return False
+    try:
+        h = subprocess.run(f"./util/pcbversion.py {file_path} latest both", shell=True, encoding='UTF-8', capture_output=True)
+        latest_line = h.stdout.strip()
+        h = subprocess.run(f"./util/pcbversion.py {file_path} breaking both", shell=True, encoding='UTF-8', capture_output=True)
+        breaking_line = h.stdout.strip()
 
-        # Check the format of the first line
-        first_line = lines[0].strip()
-        if not is_valid_version_format(first_line):
+        if isValidVersionFormat(latest_line) and isValidVersionFormat(breaking_line):
+            return PCBVersion(fullString=latest_line)
+        else:
             return None
-        pcbVersion = PCBVersion(fullString=first_line)
+    except:
+        return None
 
-        # Check the format of the second line
-        second_line = lines[1].strip()
-        if not is_valid_version_format(second_line):
-            return None
-
-        # Both lines have valid version formats
-        return pcbVersion
-
-
-def is_valid_version_format(version) -> bool:
+def isValidVersionFormat(version) -> bool:
     # Check if the version string follows the format v1.0 or v1.0.0
     try:
         # Remove the leading 'v' character and split the version string
@@ -119,25 +109,22 @@ def getOrMakePcbVersionsList(module):
 if __name__ == "__main__":
     # Script can be called with args or with environment variables
     parser = argparse.ArgumentParser(description='Verify format of PCB version file, and upload new PCB versions to the pcb_versions_list file on the blob')
-    parser.add_argument('-p', '--pcb_file', help='The pcb version file')
+    parser.add_argument('pcb_file', help='The pcb version file')
     parser.add_argument('-P', '--pcb_versions', nargs="*", help='Additional pcb versions to add into the file')
     parser.add_argument('-m', '--module', help='The name of the module built (1.1.1)')
     args = parser.parse_args()
 
     # Convert args to environment variables
-    if args.pcb_file: os.environ['PCB_VERSION_FILE'] = args.pcb_file
     if args.module: os.environ['MODULE_NAME'] = args.module
 
     # Basic environmental setup check
-    assert os.environ.get('PCB_VERSION_FILE') is not None, "The PCB_VERSION_FILE env param does not exist"
     assert os.environ.get('MODULE_NAME') is not None, "The MODULE_NAME env param does not exist"
     assert os.environ.get('AZURE_BLOB_QUERYSTRING') is not None, "The AZURE_BLOB_QUERYSTRING env param does not exist"
     
     # Verify the format of PCB version file is correct, and if so, extract the latest PCB version
-    pcbVersion = checkPCBVersionFile(os.environ.get('PCB_VERSION_FILE'))
+    pcbVersion = checkPCBVersionFile(args.pcb_file)
     if pcbVersion is None:
         raise AssertionError("The format of the pcbVersion file in the newest release is not correct")
-    
 
     module = os.environ.get('MODULE_NAME')
     getOrMakePcbVersionsList(module)
@@ -152,6 +139,6 @@ if __name__ == "__main__":
         raise AssertionError("Could not set the pcb on the server correctly")
     
     try:
-        console(f"rm {PCB_VERSIONS_LOCAL_FILENAME}")
+        subprocess.run(f"rm {PCB_VERSIONS_LOCAL_FILENAME}")
     except:
         pass
