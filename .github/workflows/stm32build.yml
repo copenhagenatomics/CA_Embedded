@@ -148,7 +148,7 @@ jobs:
             **/*.elf
             **/*.bin
           tag_name: ${{ steps.release-on-push-2.outputs.tag_name }}
-          name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.latest }}"
+          name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare zip file for Azure blob
