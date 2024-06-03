@@ -132,12 +132,12 @@ jobs:
         run: |
           if [[ -e STM32/${{ matrix.package }}/Core/Inc/pcbversion.h ]]; then
             echo "versionfile=STM32/${{ matrix.package }}/Core/Inc/pcbversion.h" >> $GITHUB_OUTPUT
-            echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h latest both") >> $GITHUB_OUTPUT
-            echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h breaking both") >> $GITHUB_OUTPUT
+            echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h latest both")" >> $GITHUB_OUTPUT
+            echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h breaking both")" >> $GITHUB_OUTPUT
           else
             echo "versionfile=STM32/${{ matrix.package }}/pcbversion" >> $GITHUB_OUTPUT
-            echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion latest both") >> $GITHUB_OUTPUT
-            echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion breaking both") >> $GITHUB_OUTPUT
+            echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion latest both")" >> $GITHUB_OUTPUT
+            echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion breaking both")" >> $GITHUB_OUTPUT
           fi 
 
       - name: Release
@@ -148,7 +148,7 @@ jobs:
             **/*.elf
             **/*.bin
           tag_name: ${{ steps.release-on-push-2.outputs.tag_name }}
-          name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCB${{ steps.pcbversion.outputs.latest }}"
+          name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare zip file for Azure blob
