@@ -19,6 +19,7 @@
 #include "CAProtocolStm.h"
 #include "StmGpio.h"
 #include "ACBoard.h"
+#include "faultHandlers.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -85,6 +86,11 @@ static CAProtocolCtx caProto =
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
 
+static int illegal_instruction_execution(void) {
+  int (*bad_instruction)(void) = (int (*)()) 0xE0000000;
+  return bad_instruction();
+}
+
 /*!
 ** @brief Verbose print of the AC board status
 */
@@ -92,6 +98,11 @@ static void printAcStatus()
 {
     static char buf[600] = { 0 };
     int len = 0;
+
+    /* If a serious fault occurs that requires a reset */
+    if(printFaultInfo()) {
+        clearFaultInfo();
+    }
 
     len += snprintf(&buf[len], sizeof(buf) - len, "Fan     On: %d\r\n", stmGetGpio(fanCtrl));
     for (int i = 0; i < AC_BOARD_NUM_PORTS; i++)
@@ -114,6 +125,9 @@ static void userInput(const char *input)
     {
         isFanForceOn = false;
         stmSetGpio(fanCtrl, false);
+    }
+    else if (strncmp(input, "fault", 5) == 0) {
+        illegal_instruction_execution();
     }
     else 
     {

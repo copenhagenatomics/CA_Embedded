@@ -55,6 +55,7 @@ C_SOURCES =  \
 ../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/time32.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/faultHandlers.c \
 Core/Src/main.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
