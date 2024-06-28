@@ -43,8 +43,8 @@ float portCalVal[NO_SPI_DEVICES*2][2];
 
 static void printTempHeader()
 {
-	CAPrintHeader();
-	calibrateReadWrite(false);
+    CAPrintHeader();
+    calibrateReadWrite(false);
 }
 
 static void printTempStatus()
@@ -129,7 +129,7 @@ static void monitorBoardStatus()
     {
         // Try to re-establish connection to ADS1120.
         // if the connection is broken
-    	if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0)
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0)
         {
             initConnection(&ads1120[i], i);
             // If there are no more errors left then clear the error bit.
@@ -145,9 +145,9 @@ static void getPeripheralTemperatures()
 {
     for (int i=0; i < NO_SPI_DEVICES; i++)
     {
-    	// Try to re-establish connection to ADS1120.
+        // Try to re-establish connection to ADS1120.
         // If the connection is broken
-    	if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) continue;
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) continue;
 
         // Get measurements
         float *calPtr = &portCalVal[i*2][0];
@@ -193,23 +193,12 @@ static WWDG_HandleTypeDef* hwwdg = NULL;
 static CRC_HandleTypeDef* hcrc = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
 {
+    boardSetup(Temperature, (pcbVersion){5, 2});
     initCAProtocol(&caProto, usb_cdc_rx);
 
-    BoardType board;
-    if (getBoardInfo(&board, NULL) || board != Temperature)
-        return;
-
-    pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major < 5)
-        return;
-
-    // SW versions lower than 5.2 are not supported
-    if (ver.major == 5 && ver.minor < 2)
-        return;
-
     hspi = hspi_;
-	hwwdg = hwwdg_;
-	hcrc = hcrc_;
+    hwwdg = hwwdg_;
+    hcrc = hcrc_;
 
     initSensorCalibration();
     initSpiDevices(hspi);
@@ -232,7 +221,7 @@ void LoopTemperature(const char* bootMsg)
     if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
     {
         timeStamp = HAL_GetTick();
-    	HAL_WWDG_Refresh(hwwdg);
+        HAL_WWDG_Refresh(hwwdg);
         
         if (!isComPortOpen())
         {
@@ -254,27 +243,27 @@ void LoopTemperature(const char* bootMsg)
 
 void initSensorCalibration()
 {
-	readFromFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
-	if (*((uint8_t*) portCalVal) == 0xFF)
-	{
-		// If nothing is stored in FLASH default to type K thermocouple
-		for (int i = 0; i < NO_SPI_DEVICES*2; i++)
-		{
-			portCalVal[i][0] = TYPE_K_DELTA;
-			portCalVal[i][1] = TYPE_K_CJ_DELTA;
-		}
-	}
+    readFromFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
+    if (*((uint8_t*) portCalVal) == 0xFF)
+    {
+        // If nothing is stored in FLASH default to type K thermocouple
+        for (int i = 0; i < NO_SPI_DEVICES*2; i++)
+        {
+            portCalVal[i][0] = TYPE_K_DELTA;
+            portCalVal[i][1] = TYPE_K_CJ_DELTA;
+        }
+    }
 }
 
 static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations)
 {
-	__HAL_RCC_WWDG_CLK_DISABLE();
+    __HAL_RCC_WWDG_CLK_DISABLE();
     for (int count = 0; count < noOfCalibrations; count++)
     {
         if (1 <= calibrations[count].port && calibrations[count].port <= 10)
         {
-        	portCalVal[calibrations[count].port-1][0] = calibrations[count].alpha;
-			portCalVal[calibrations[count].port-1][1] = calibrations[count].beta;
+            portCalVal[calibrations[count].port-1][0] = calibrations[count].alpha;
+            portCalVal[calibrations[count].port-1][1] = calibrations[count].beta;
         }
     }
     // Update automatically when receiving new calibration values
@@ -288,18 +277,18 @@ static void calibrateReadWrite(bool write)
         writeToFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
     else
     {
-    	char buf[512];
-    	int len = 0;
-    	for (int i = 0; i < NO_SPI_DEVICES*2; i++)
-    	{
-    		if (i == 0)
-    		{
-    			len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
-    		}
-    		len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i+1, portCalVal[i][0], portCalVal[i][1]);
-    	}
-    	len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
-		writeUSB(buf, len);
+        char buf[512];
+        int len = 0;
+        for (int i = 0; i < NO_SPI_DEVICES*2; i++)
+        {
+            if (i == 0)
+            {
+                len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
+            }
+            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i+1, portCalVal[i][0], portCalVal[i][1]);
+        }
+        len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
+        writeUSB(buf, len);
     }
 }
 
