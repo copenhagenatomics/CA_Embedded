@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <inttypes.h>
 
 #include "LightController.h"
 #include "CAProtocol.h"
@@ -69,7 +70,7 @@ static void LightControllerStatus()
 
     for (int i = 0; i < LED_CHANNELS; i++)
     {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %lu\r\n", 
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %" PRIu32 "\r\n", 
                         i+1, (bsGetStatus() & LIGHT_PORT_STATUS_Msk(i)) >> i);
     }
     writeUSB(buf, len);
@@ -240,6 +241,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 // Initialize board
 void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg)
 {
+    boardSetup(LightController, (pcbVersion){1, 1});
     initCAProtocol(&caProto, usbRx);
 
     initGpio();
@@ -251,20 +253,6 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWD
     loopTimer = htim5;
 
     hwwdg_ = hwwdg;
-
-    BoardType board;
-    if (getBoardInfo(&board, NULL) || board != LightController)
-    {
-        bsSetError(BS_VERSION_ERROR_Msk);
-        return;
-    }
-
-    pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major != 1 || ver.minor < 1)
-    {
-        bsSetError(BS_VERSION_ERROR_Msk);
-        return;
-    }
 }
 
 // Main loop - Board only reacts on user inputs

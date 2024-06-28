@@ -180,9 +180,9 @@ TEST_F(LightControllerTest, printSerial)
         "Product Type: LightController\r", 
         "Sub Product Type: 0\r", 
         "MCU Family: Unknown 0x  0 Rev 0\r", 
-        "Software Version: (null)\r", 
-        "Compile Date: (null)\r", 
-        "Git SHA: (null)\r", 
+        "Software Version: 0\r", 
+        "Compile Date: 0\r", 
+        "Git SHA: 0\r", 
         "PCB Version: 1.1\r"
     ));
 }
@@ -198,7 +198,7 @@ TEST_F(LightControllerTest, printStatus)
     EXPECT_FLUSH_USB(ElementsAre(
         "\r",
         "Boot Unit Test\r",
-        "Board Status:\r",
+        "Start of board status:\r",
         "The board is operating normally.\r",  
         "Port 1: On: 0\r",
         "Port 2: On: 0\r",

@@ -21,6 +21,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -245,4 +246,3 @@ void HAL_WWDG_MspInit(WWDG_HandleTypeDef* hwwdg)
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
-

@@ -84,6 +84,7 @@ void Error_Handler(void);
 #define CS5_GPIO_Port GPIOB
 #define DRDY5_Pin GPIO_PIN_9
 #define DRDY5_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

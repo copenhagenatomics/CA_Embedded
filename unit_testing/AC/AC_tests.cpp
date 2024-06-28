@@ -135,7 +135,7 @@ TEST_F(ACBoard, printStatus)
     EXPECT_FLUSH_USB(ElementsAre(
         "\r", 
         "Boot Unit Test\r", 
-        "Board Status:\r", 
+        "Start of board status:\r", 
         "The board is operating normally.\r", 
         "Fan     On: 0\r", 
         "Port 0: On: 0, PWM percent: 0\r", 
@@ -153,7 +153,7 @@ TEST_F(ACBoard, printStatus)
     
     EXPECT_FLUSH_USB(ElementsAre( 
         "\r", 
-        "Board Status:\r", 
+        "Start of board status:\r", 
         "The board is operating normally.\r", 
         "Fan     On: 1\r",
         "Port 0: On: 0, PWM percent: 0\r",
@@ -183,9 +183,9 @@ TEST_F(ACBoard, printSerial)
         "Product Type: AC Board\r", 
         "Sub Product Type: 0\r", 
         "MCU Family: Unknown 0x  0 Rev 0\r", 
-        "Software Version: (null)\r", 
-        "Compile Date: (null)\r", 
-        "Git SHA: (null)\r", 
+        "Software Version: 0\r", 
+        "Compile Date: 0\r", 
+        "Git SHA: 0\r", 
         "PCB Version: 6.4\r"
     ));
 }

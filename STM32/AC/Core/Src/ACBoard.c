@@ -19,6 +19,7 @@
 #include "CAProtocolStm.h"
 #include "StmGpio.h"
 #include "ACBoard.h"
+#include "faultHandlers.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -51,6 +52,7 @@ static void CAportState(int port, bool state, int percent, int duration);
 static void userInput(const char *input);
 static void printAcStatus();
 static void updateBoardStatus();
+static void printAcHeader();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -69,7 +71,7 @@ static bool isFanForceOn = false;
 static CAProtocolCtx caProto =
 {
         .undefined = userInput,
-        .printHeader = CAPrintHeader,
+        .printHeader = printAcHeader,
         .printStatus = printAcStatus,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, // TODO: change method for calibration?
@@ -84,6 +86,21 @@ static CAProtocolCtx caProto =
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
+
+static void printAcHeader()
+{
+    CAPrintHeader();
+
+    /* If a serious fault occurs that requires a reset */
+    if(printFaultInfo()) {
+        clearFaultInfo();
+    }
+}
+
+static int illegal_instruction_execution(void) {
+  int (*bad_instruction)(void) = (int (*)()) 0xE0000000;
+  return bad_instruction();
+}
 
 /*!
 ** @brief Verbose print of the AC board status
@@ -114,6 +131,9 @@ static void userInput(const char *input)
     {
         isFanForceOn = false;
         stmSetGpio(fanCtrl, false);
+    }
+    else if (strncmp(input, "fault", 5) == 0) {
+        illegal_instruction_execution();
     }
     else 
     {
@@ -157,7 +177,7 @@ WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
     // Update window watchdog. Will trigger reset outside window: <90ms && >110ms.
-    HAL_WWDG_Refresh(hwwdg_);
+    //HAL_WWDG_Refresh(hwwdg_);
 
     // Make calibration static since this should be done only once.
     static bool isCalibrationDone = false;
@@ -368,24 +388,11 @@ static void updateBoardStatus()
 */
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
-    setFirmwareBoardType(AC_Board);
-    setFirmwareBoardVersion((pcbVersion){6, 4});
+    // Pin out has changed from PCB V6.4 - older versions need other software.
+    boardSetup(AC_Board, (pcbVersion){6, 4});
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usbRx);
-
-    BoardType board;
-    if (getBoardInfo(&board, NULL) || board != AC_Board)
-    {
-        bsSetError(BS_VERSION_ERROR_Msk);
-    }
-
-    // Pin out has changed from PCB V6.4 - older versions need other software.
-    pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major < 6 || ver.minor < 4)
-    {
-        bsSetError(BS_VERSION_ERROR_Msk);
-    }
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
 

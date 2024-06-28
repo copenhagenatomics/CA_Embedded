@@ -82,6 +82,7 @@ void Error_Handler(void);
 #define test1_GPIO_Port GPIOB
 #define test2_Pin GPIO_PIN_7
 #define test2_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
