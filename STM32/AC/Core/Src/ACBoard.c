@@ -52,6 +52,7 @@ static void CAportState(int port, bool state, int percent, int duration);
 static void userInput(const char *input);
 static void printAcStatus();
 static void updateBoardStatus();
+static void printAcHeader();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -70,7 +71,7 @@ static bool isFanForceOn = false;
 static CAProtocolCtx caProto =
 {
         .undefined = userInput,
-        .printHeader = CAPrintHeader,
+        .printHeader = printAcHeader,
         .printStatus = printAcStatus,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, // TODO: change method for calibration?
@@ -86,6 +87,16 @@ static CAProtocolCtx caProto =
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
 
+static void printAcHeader()
+{
+    CAPrintHeader();
+
+    /* If a serious fault occurs that requires a reset */
+    if(printFaultInfo()) {
+        clearFaultInfo();
+    }
+}
+
 static int illegal_instruction_execution(void) {
   int (*bad_instruction)(void) = (int (*)()) 0xE0000000;
   return bad_instruction();
@@ -98,11 +109,6 @@ static void printAcStatus()
 {
     static char buf[600] = { 0 };
     int len = 0;
-
-    /* If a serious fault occurs that requires a reset */
-    if(printFaultInfo()) {
-        clearFaultInfo();
-    }
 
     len += snprintf(&buf[len], sizeof(buf) - len, "Fan     On: %d\r\n", stmGetGpio(fanCtrl));
     for (int i = 0; i < AC_BOARD_NUM_PORTS; i++)
@@ -171,7 +177,7 @@ WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
     // Update window watchdog. Will trigger reset outside window: <90ms && >110ms.
-    HAL_WWDG_Refresh(hwwdg_);
+    //HAL_WWDG_Refresh(hwwdg_);
 
     // Make calibration static since this should be done only once.
     static bool isCalibrationDone = false;

@@ -96,8 +96,8 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_ADC1_Init();
   MX_TIM2_Init();
-  MX_WWDG_Init();
-  MX_IWDG_Init();
+  //MX_WWDG_Init();
+  //MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
   // Initialization of timers takes time which will force a wwdg reset,
   // hence disable timers momentarily during setup.
@@ -111,7 +111,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        HAL_IWDG_Refresh(&hiwdg);
+        //HAL_IWDG_Refresh(&hiwdg);
         ACBoardLoop(bootMsg);
     /* USER CODE END WHILE */
 
