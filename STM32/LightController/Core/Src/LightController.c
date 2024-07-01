@@ -50,6 +50,22 @@ static WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void controlLEDStrip(const char *input);
 static void LightControllerStatus();
 
+// variables for keeping track of the time elapsed to control the LED test
+int timerstart = 0;
+int time_now = 0;
+// states
+typedef enum {
+    OFF,
+    RED,
+    GREEN,
+    BLUE,
+    WHITE
+}state;
+
+bool teststate = false;
+state partystate = OFF;
+
+
 static CAProtocolCtx caProto =
 {
         .undefined = controlLEDStrip,
@@ -76,9 +92,47 @@ static void LightControllerStatus()
     writeUSB(buf, len);
 }
 
+static void updateLEDCtrl(int channel, unsigned int red, unsigned int green, unsigned int blue, int whiteOn)
+{
+    if (whiteOn)
+    {
+        rgbwControl[channel*NO_COLORS] 	   = 0;
+        rgbwControl[channel*NO_COLORS + 1] = 0;
+        rgbwControl[channel*NO_COLORS + 2] = 0;
+        rgbwControl[channel*NO_COLORS + 3] = MAX_PWM; 
+        return;
+    }
+
+    rgbwControl[channel*NO_COLORS] 	   = red;
+    rgbwControl[channel*NO_COLORS + 1] = green;
+    rgbwControl[channel*NO_COLORS + 2] = blue;
+    rgbwControl[channel*NO_COLORS + 3] = 0; 
+}
+
 bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 {
-   
+    // If PARTY command is entered start the colour test
+    // If any other input is entered stop it again
+    if (strcmp(input, "PARTY") == 0) {
+        teststate = true;
+        return true;
+    }
+    else{
+        // Reset the colours when disabling teststate
+        if(teststate=true){
+        int red = 0;
+        int green = 0;
+        int blue = 0;
+        int whiteon = false;
+        for (int channel = 0;channel < 3;channel++){
+            updateLEDCtrl(channel,red,green,blue,whiteon);
+        };
+        }
+        teststate = false;
+    }
+
+
+    
     if (sscanf(input, "p%d %x", channel, rgb) != 2)
         return false;
     
@@ -122,23 +176,6 @@ static int handleInput(unsigned int rgb, uint8_t *red, uint8_t *green, uint8_t *
     return (rgb == 0xFFFFFF) ? 1 : 0; // If 0xFFFFFF turn on the white in other ports
 }
 
-
-static void updateLEDCtrl(int channel, unsigned int red, unsigned int green, unsigned int blue, int whiteOn)
-{
-    if (whiteOn)
-    {
-        rgbwControl[channel*NO_COLORS] 	   = 0;
-        rgbwControl[channel*NO_COLORS + 1] = 0;
-        rgbwControl[channel*NO_COLORS + 2] = 0;
-        rgbwControl[channel*NO_COLORS + 3] = MAX_PWM; 
-        return;
-    }
-
-    rgbwControl[channel*NO_COLORS] 	   = red;
-    rgbwControl[channel*NO_COLORS + 1] = green;
-    rgbwControl[channel*NO_COLORS + 2] = blue;
-    rgbwControl[channel*NO_COLORS + 3] = 0; 
-}
 
 // Update LED strip with user input colors
 static void controlLEDStrip(const char *input)
@@ -220,6 +257,74 @@ static void initGpio()
     }
 }
 
+bool controlLightTest()
+{
+    // If state is OFF switch it to RED and set all 3 channels to display red
+    if (partystate == OFF){
+        partystate = RED;
+        int red = 0xFF;
+        int green = 0;
+        int blue = 0;
+        int whiteon = false;
+        for (int channel = 0;channel < 3;channel++){
+            updateLEDCtrl(channel,red,green,blue,whiteon);
+        };
+        return true;
+    }
+    // If state is RED switch it to GREEN and set all 3 channels to display green
+    else if (partystate == RED){
+        partystate = GREEN;   
+        int red = 0;
+        int green = 0xFF;
+        int blue = 0;
+        int whiteon = false;
+        for (int channel = 0;channel < 3;channel++){
+            updateLEDCtrl(channel,red,green,blue,whiteon);
+        };   
+        return true;  
+    }
+    // If state is GREEN switch it to BLUE and set all 3 channels to display blue
+    else if (partystate == GREEN){
+        partystate = BLUE;
+        int red = 0;
+        int green = 0;
+        int blue = 0xFF;
+        int whiteon = false;
+        for (int channel = 0;channel < 3;channel++){
+            updateLEDCtrl(channel,red,green,blue,whiteon);
+        };
+        return true;
+    }
+    // If state is BLUE switch it to WHITE and set all 3 channels to display white
+    else if (partystate == BLUE){
+        partystate = WHITE;
+    
+        int red = 0;
+        int green = 0;
+        int blue = 0;
+        int whiteon = true;
+        for (int channel = 0;channel < 3;channel++){
+            updateLEDCtrl(channel,red,green,blue,whiteon);
+        };
+        return true;
+    }
+    // If state is WHITE switch it to OFF and set all 3 channels to display nothing and turn off the test mode
+    else if (partystate == WHITE){
+        partystate = OFF;
+        teststate = false;
+        int red = 0;
+        int green = 0;
+        int blue = 0;
+        int whiteon = false;
+        for (int channel = 0;channel < 3;channel++){
+            updateLEDCtrl(channel,red,green,blue,whiteon);
+        };
+        return true;
+    }
+    
+    return true;
+}
+
 // Callback: timer has rolled over
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -259,4 +364,51 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWD
 void LightControllerLoop(const char* bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
+
+    if (teststate == true){
+    
+    // Turn on every colour for 2 second during the test
+        switch(partystate){  
+
+            case OFF: 
+                timerstart = HAL_GetTick();
+                time_now = timerstart;
+                controlLightTest();
+                break;
+
+            case RED:
+                time_now = HAL_GetTick();
+                if (time_now > (timerstart + 2000)){
+                    controlLightTest();
+                }
+                break;
+            
+
+            case GREEN:
+                time_now = HAL_GetTick();
+
+                if (time_now > timerstart + 4000){
+                    controlLightTest();
+                }
+                break;
+            
+
+            case BLUE:
+                time_now = HAL_GetTick();
+
+                if (time_now > timerstart + 6000){
+                    controlLightTest();
+                }
+                break;
+            
+
+            case WHITE:
+                time_now = HAL_GetTick();
+
+                if (time_now > timerstart + 8000){
+                    controlLightTest(); 
+                }      
+                break;             
+        }
+    }
 }
