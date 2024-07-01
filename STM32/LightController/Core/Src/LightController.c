@@ -128,6 +128,7 @@ bool isInputValid(const char *input, int *channel, unsigned int *rgb)
             updateLEDCtrl(channel,red,green,blue,whiteon);
         };
         }
+        partystate = OFF;
         teststate = false;
     }
 
