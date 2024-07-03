@@ -15,7 +15,6 @@
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "systemInfo.h"
-//#include "stm32f4xx_hal_tim.h"
 #include "transmitterIR.h"
 #include "pcbversion.h"
 
@@ -182,14 +181,14 @@ void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_, WWDG_
 {
     initCAProtocol(&caProto, usbRx);
 
+    loopTimer = loopTimer_;
+    hwwdg_    = hwwdg;
+    timerCtx  = ctx;
+
     // Pin out has changed from PCB V1.8 - older versions need other software.
     if(-1 == boardSetup(AirCondition, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR})) {
         return;
     }
-
-    hwwdg_    = hwwdg;
-    loopTimer = loopTimer_;
-    timerCtx  = ctx;
 
     HAL_TIM_Base_Start(timerCtx);
     __HAL_TIM_SET_COUNTER(timerCtx, 0);

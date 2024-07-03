@@ -11,9 +11,10 @@
 
 #include <stdbool.h>
 
+#include "stm32f4xx_hal.h"
+
 #include "transmitterIR.h"
 #include "StmGpio.h"
-#include "main.h"
 
 /***************************************************************************************************
 ** STATIC FUNCTION PROTOTYPES

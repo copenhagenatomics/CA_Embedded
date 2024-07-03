@@ -31,7 +31,7 @@ set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Filtering/Inc
             ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
 set(UT_FAKES ../../CA_Embedded_Libraries/unit_testing/fakes)
 set(UT_STUBS ../../CA_Embedded_Libraries/unit_testing/stubs)
-set(DRIV ../../STM32/LightController/Drivers/STM32F4xx_HAL_Driver)
+set(DRIV ../../STM32/AirconCtrl/Drivers/STM32F4xx_HAL_Driver)
 
 ####################################################################################################
 ## List of tests to run
@@ -41,9 +41,9 @@ enable_testing()
 
 include(GoogleTest)
 
-# LightController test
-add_executable(lightcontroller_test LightController_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp)
-target_include_directories(lightcontroller_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/LightController/Core/Src ${SRC}/LightController/Core/Inc ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
-target_link_libraries(lightcontroller_test GTest::gtest_main gmock_main)
-target_compile_definitions(lightcontroller_test PUBLIC UNIT_TESTING)
-gtest_discover_tests(lightcontroller_test)
+# AirconCtrl tests
+add_executable(aircon_test Aircon_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp)
+target_include_directories(aircon_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/AirconCtrl/Core/Src ${SRC}/AirconCtrl/Core/Inc ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
+target_link_libraries(aircon_test GTest::gtest_main gmock_main)
+target_compile_definitions(aircon_test PUBLIC UNIT_TESTING)
+gtest_discover_tests(aircon_test)
