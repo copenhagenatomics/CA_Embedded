@@ -68,8 +68,8 @@ jobs:
     # Run the static code analysis test.
     - name: Run static tests
       run: |
-      cd unit_testing
-      ./code_generation_test.sh ${{ matrix.package }}
+        cd unit_testing
+        ./code_generation_test.sh ${{ matrix.package }}
   build:
     needs: changes
     permissions:
