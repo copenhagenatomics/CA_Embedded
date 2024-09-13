@@ -67,7 +67,9 @@ jobs:
         python unitTests.py -D ${{ matrix.package }}
     # Run the static code analysis test.
     - name: Run static tests
-      run: STM32/CommonTests/code_generation_test.sh STM32/${{ matrix.package }}
+      run: |
+        cd unit_testing
+        ./code_generation_test.sh ${{ matrix.package }}
   build:
     needs: changes
     permissions:
