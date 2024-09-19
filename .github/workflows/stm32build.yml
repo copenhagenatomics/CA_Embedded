@@ -120,7 +120,7 @@ jobs:
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-2
         # tag only pushes to the main branch
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        #if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           bump_version_scheme: minor
           use_github_release_notes: true
@@ -141,14 +141,20 @@ jobs:
             echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion latest both")" >> $GITHUB_OUTPUT
             echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion breaking both")" >> $GITHUB_OUTPUT
           fi 
-
+      - name: Rename build files for Github release
+        #if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+        # Rename .elf and .bin files to include release tag and pcb version in the Github release
+        run: |
+          RELEASENAME=${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}
+          cp STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf ${RELEASENAME}.elf
+          cp STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin ${RELEASENAME}.bin
       - name: Release
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+        #if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
-            **/*.elf
-            **/*.bin
+            **/${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}.elf
+            **/${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}.bin
           tag_name: ${{ steps.release-on-push-2.outputs.tag_name }}
           name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}"
         env:
