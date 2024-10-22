@@ -411,3 +411,55 @@ TEST_F(LightControllerTest, LEDSwitching)
     for(int i = 0; i < LED_CHANNELS*NO_COLORS - 1; i++) EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
     EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
 } 
+
+TEST_F(LightControllerTest, LEDSwitchingTimeout)
+{
+    LightControllerInit(&htim2, &htim5, &hwwdg);
+    LightControllerLoop(bootMsg);
+
+    /* --- Turn on white LED for p1-3  --- */
+    writeLightControllerMessage("p1 FFFFFF\n");
+    writeLightControllerMessage("p2 FFFFFF\n");
+    writeLightControllerMessage("p3 FFFFFF\n");
+
+    forceTick(1);                   // Set system tick to 1
+    LightControllerLoop(bootMsg);   // Run main loop which monitors ACTUATION_TIMEOUT
+    goToTick(1);                    // LED switching interrupt 
+
+    // All white GPIOs should be on
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
+
+    forceTick(25123);               // Set system tick to 25123 i.e. < ACTUATION_TIMEOUT
+    LightControllerLoop(bootMsg);   // Run main loop which monitors ACTUATION_TIMEOUT
+    goToTick(2);                    // LED switching interrupt
+
+    // All white GPIOs should still be on since the ACTUATION_TIMEOUT has not yet occured
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
+
+    forceTick(ACTUATION_TIMEOUT + 1); // Set tick after ACTUATION_TIMEOUT
+    LightControllerLoop(bootMsg);     // Run main loop to turn off outputs
+    goToTick(3);                      // LED switching interrupt
+
+    // Everything should be turned off because of timeout.
+    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++)
+    { 
+        EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
+    }
+
+    /* --- Turn on white LED for p1-3  --- */
+    writeLightControllerMessage("p1 FFFFFF\n");
+    writeLightControllerMessage("p2 FFFFFF\n");
+    writeLightControllerMessage("p3 FFFFFF\n");
+
+    forceTick(ACTUATION_TIMEOUT + 2); // Set system tick to 1
+    LightControllerLoop(bootMsg);     // Run main loop which monitors ACTUATION_TIMEOUT
+    goToTick(4);                      // LED switching interrupt 
+
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
+    EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
+}

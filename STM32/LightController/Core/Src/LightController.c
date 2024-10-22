@@ -21,20 +21,15 @@
 #include "systemInfo.h"
 #include "USBprint.h"
 #include "StmGpio.h"
+#include "pcbversion.h"
 
+/***************************************************************************************************
+** PRIVATE VARIABLES
+***************************************************************************************************/
 
-static StmGpio Ch1_R;
-static StmGpio Ch1_G;
-static StmGpio Ch1_B;
-static StmGpio Ch1_W;
-static StmGpio Ch2_R;
-static StmGpio Ch2_G;
-static StmGpio Ch2_B;
-static StmGpio Ch2_W;
-static StmGpio Ch3_R;
-static StmGpio Ch3_G;
-static StmGpio Ch3_B;
-static StmGpio Ch3_W;
+static StmGpio Ch1_R, Ch1_G, Ch1_B, Ch1_W;
+static StmGpio Ch2_R, Ch2_G, Ch2_B, Ch2_W;
+static StmGpio Ch3_R, Ch3_G, Ch3_B, Ch3_W;
 
 static StmGpio* ChCtrl[12] = {&Ch1_R, &Ch1_G, &Ch1_B, &Ch1_W,
                               &Ch2_R, &Ch2_G, &Ch2_B, &Ch2_W,
@@ -43,17 +38,16 @@ static StmGpio* ChCtrl[12] = {&Ch1_R, &Ch1_G, &Ch1_B, &Ch1_W,
 static unsigned int rgbwControl[LED_CHANNELS*NO_COLORS] = {0};
 static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
 
+static uint32_t lastCmdTime = 0;
+
 static TIM_HandleTypeDef* loopTimer = NULL;
 static TIM_HandleTypeDef* ledUpdateTimer = NULL;
 static WWDG_HandleTypeDef* hwwdg_ = NULL;
 
-static void controlLEDStrip(const char *input);
-static void LightControllerStatus();
-static void updateLEDCtrl(int channel, unsigned int red, unsigned int green, unsigned int blue, int whiteOn);
-static void SwitchPartyState();
 // variables for keeping track of the time elapsed to control the LED test
-static int timer_start = 0;
-static int time_now = 0;
+static uint32_t timer_start = 0;
+static uint32_t time_now = 0;
+
 // states
 typedef enum {
     OFF,
@@ -63,8 +57,24 @@ typedef enum {
     WHITE
 }test_mode_state;
 
-static bool testState = false;
-static test_mode_state partyState = OFF;
+static bool isInTest = false;
+static test_mode_state testState = OFF;
+
+/***************************************************************************************************
+** PRIVATE FUNCTION DECLARATIONS
+***************************************************************************************************/
+
+static void controlLEDStrip(const char *input);
+static bool isInputValid(const char *input, int *channel, unsigned int *rgb);
+static int handleInput(unsigned int rgb, uint8_t *red, uint8_t *green, uint8_t *blue);
+static void LightControllerStatus();
+static void updateLEDCtrl(int channel, unsigned int red, unsigned int green, unsigned int blue, int whiteOn);
+static void monitorTimeout();
+static void switchTestState();
+static bool controlLightTest();
+static void printStates();
+static void updateLEDs();
+static void initGpio();
 
 
 static CAProtocolCtx caProto =
@@ -80,6 +90,10 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
+/***************************************************************************************************
+** PRIVATE FUNCTIONS
+***************************************************************************************************/
+
 static void LightControllerStatus()
 {
      static char buf[600] = { 0 };
@@ -94,21 +108,21 @@ static void LightControllerStatus()
 }
 
 
-bool isInputValid(const char *input, int *channel, unsigned int *rgb)
+static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 {
     // If PARTY command is entered start the colour test
     // If any other input is entered stop it again
-    if (strcmp(input, "PARTY") == 0) {
-        testState = true;
+    if (strcmp(input, "PARTY") == 0) 
+    {
+        isInTest = true;
         return true;
     }
-    else{
-        // Reset the colours when disabling testState
-        partyState = OFF;
-        testState = false;
+    else
+    {
+        // Reset the colours when disabling isInTest
+        testState = OFF;
+        isInTest = false;
     }
-
-
     
     if (sscanf(input, "p%d %x", channel, rgb) != 2)
         return false;
@@ -130,18 +144,7 @@ bool isInputValid(const char *input, int *channel, unsigned int *rgb)
         }
     }
 
-    uint8_t red = (*rgb >> 16) & 0xFF;
-    if (red < 0 || red > MAX_PWM)
-        return false;
-
-    uint8_t green = (*rgb >> 8) & 0xFF;
-    if (green < 0 || green > MAX_PWM)
-        return false;
-
-    uint8_t blue = *rgb & 0xFF;
-    if (blue < 0 || blue > MAX_PWM)
-        return false;
-
+    lastCmdTime = HAL_GetTick();
     return true;
 }
 
@@ -150,7 +153,7 @@ static int handleInput(unsigned int rgb, uint8_t *red, uint8_t *green, uint8_t *
     *red = (rgb >> 16) & 0xFF;
     *green = (rgb >> 8) & 0xFF;
     *blue = rgb & 0xFF;
-    return (rgb == 0xFFFFFF) ? 1 : 0; // If 0xFFFFFF turn on the white in other ports
+    return (rgb == 0xFFFFFF) ? 1 : 0; // If 0xFFFFFF turn on the white led
 }
 
 
@@ -202,11 +205,11 @@ static void controlLEDStrip(const char *input)
 
 static void updateLEDs()
 {
-    // Interrupt speed of ledUpdateTimer is 20kHz.
-    // For each 10kHz update the counter incremented until 256 and reset
-    // Hence, the update speed of the led channels are 25kHz/256 ~= 98Hz.
+    // Interrupt speed of ledUpdateTimer is 25 kHz.
+    // For each 25 kHz update, the counter is incremented from 0-255 and reset
+    // Hence, the update speed of the led channels are 25 kHz/256 ~= 98Hz.
     static int count = 0;
-    for (int i = 0; i < 12; i++)
+    for (int i = 0; i < LED_CHANNELS*NO_COLORS; i++)
     {
         stmSetGpio(*ChCtrl[i], (count < rgbwControl[i]));
     }
@@ -226,6 +229,116 @@ static void printStates()
     }
 
     USBnprintf("%x, %x, %x, 0x%x", rgbs[0], rgbs[1], rgbs[2], bsGetStatus());
+}
+
+static void monitorTimeout()
+{
+    // If more than ACTUATION_TIMEOUT has passed since last command turn off output.
+    if ((HAL_GetTick() - lastCmdTime) >= ACTUATION_TIMEOUT)
+    {
+        for (int i=0; i<LED_CHANNELS*NO_COLORS; i++)
+        {
+            rgbwControl[i] = 0;
+        }
+    }
+}
+
+static void switchTestState()
+{
+    // Turn on every colour for 2 seconds during the test
+    switch(testState){  
+        
+        case OFF: {
+            timer_start = HAL_GetTick();
+            time_now = timer_start;
+            controlLightTest();
+            break;
+        }
+        case RED: {
+            time_now = HAL_GetTick();
+            if ((time_now - timer_start) > 2000){
+                controlLightTest();
+            }
+            break;
+        }
+        case GREEN: {
+            time_now = HAL_GetTick();
+            if ((time_now - timer_start) > 4000){
+                controlLightTest();
+            }
+            break;
+        }
+        case BLUE: {
+            time_now = HAL_GetTick();
+            if ((time_now - timer_start) > 6000){
+                controlLightTest();
+            }
+            break;
+        }
+        case WHITE: {
+            time_now = HAL_GetTick();
+            if ((time_now - timer_start) > 8000){
+                controlLightTest(); 
+            }      
+            break;   
+        }
+        default: {
+            isInTest = false;
+            testState = OFF;          
+        }
+    }
+}
+
+static bool controlLightTest()
+{
+    // If state is OFF switch it to RED and set all 3 channels to display red
+    if (testState == OFF){
+        testState = RED;
+        for (int i = 0; i < 3; i++){
+            //updateLEDCtrl(channel,red,green,blue,whiteon)
+            updateLEDCtrl(i, 0xFF, 0, 0, false);
+        };
+        return true;
+    }
+    // If state is RED switch it to GREEN and set all 3 channels to display green
+    else if (testState == RED){
+        testState = GREEN;   
+        for (int i = 0; i < 3; i++){
+            //updateLEDCtrl(channel,red,green,blue,whiteon)
+            updateLEDCtrl(i, 0, 0xFF, 0, false);
+        };
+        return true; 
+    }
+    // If state is GREEN switch it to BLUE and set all 3 channels to display blue
+    else if (testState == GREEN){
+        testState = BLUE;
+        for (int i = 0; i < 3; i++){
+            //updateLEDCtrl(channel,red,green,blue,whiteon)
+            updateLEDCtrl(i, 0, 0, 0xFF, false);
+        };
+        return true;
+    }
+    // If state is BLUE switch it to WHITE and set all 3 channels to display white
+    else if (testState == BLUE){
+        testState = WHITE;
+        for (int i = 0; i < 3; i++){
+            //updateLEDCtrl(channel,red,green,blue,whiteon)
+            updateLEDCtrl(i, 0, 0, 0, true);
+        };
+        return true;
+    }
+    // If state is WHITE switch it to OFF and set all 3 channels to display nothing and turn off the test mode
+    else if (testState == WHITE){
+        testState = OFF;
+        isInTest = false;
+        for (int i = 0; i < 3; i++){
+            //updateLEDCtrl(channel,red,green,blue,whiteon)
+            updateLEDCtrl(i, 0, 0, 0, false);
+        };
+        return true;
+    }
+    
+    return false;
 }
 
 static void initGpio()
@@ -251,103 +364,9 @@ static void initGpio()
     }
 }
 
-bool controlLightTest()
-{
-    // If state is OFF switch it to RED and set all 3 channels to display red
-    if (partyState == OFF){
-        partyState = RED;
-        for (int i = 0; i < 3; i++){
-            //updateLEDCtrl(channel,red,green,blue,whiteon)
-            updateLEDCtrl(i, 0xFF, 0, 0, false);
-        };
-        return true;
-    }
-    // If state is RED switch it to GREEN and set all 3 channels to display green
-    else if (partyState == RED){
-        partyState = GREEN;   
-        for (int i = 0; i < 3; i++){
-            //updateLEDCtrl(channel,red,green,blue,whiteon)
-            updateLEDCtrl(i, 0, 0xFF, 0, false);
-        };
-        return true; 
-    }
-    // If state is GREEN switch it to BLUE and set all 3 channels to display blue
-    else if (partyState == GREEN){
-        partyState = BLUE;
-        for (int i = 0; i < 3; i++){
-            //updateLEDCtrl(channel,red,green,blue,whiteon)
-            updateLEDCtrl(i, 0, 0, 0xFF, false);
-        };
-        return true;
-    }
-    // If state is BLUE switch it to WHITE and set all 3 channels to display white
-    else if (partyState == BLUE){
-        partyState = WHITE;
-        for (int i = 0; i < 3; i++){
-            //updateLEDCtrl(channel,red,green,blue,whiteon)
-            updateLEDCtrl(i, 0, 0, 0, true);
-        };
-        return true;
-    }
-    // If state is WHITE switch it to OFF and set all 3 channels to display nothing and turn off the test mode
-    else if (partyState == WHITE){
-        partyState = OFF;
-        testState = false;
-        for (int i = 0; i < 3; i++){
-            //updateLEDCtrl(channel,red,green,blue,whiteon)
-            updateLEDCtrl(i, 0, 0, 0, false);
-        };
-        return true;
-    }
-    
-    return false;
-}
-
-static void SwitchPartyState(){
-    // Turn on every colour for 2 second during the test
-    switch(partyState){  
-        
-        case OFF: 
-            timer_start = HAL_GetTick();
-            time_now = timer_start;
-            controlLightTest();
-            break;
-
-        case RED:
-            time_now = HAL_GetTick();
-            if (time_now > (timer_start + 2000)){
-                controlLightTest();
-            }
-            break;
-        
-        case GREEN:
-            time_now = HAL_GetTick();
-
-            if (time_now > timer_start + 4000){
-                controlLightTest();
-            }
-            break;
-        
-        case BLUE:
-            time_now = HAL_GetTick();
-
-            if (time_now > timer_start + 6000){
-                controlLightTest();
-            }
-            break;
-        
-        case WHITE:
-            time_now = HAL_GetTick();
-
-            if (time_now > timer_start + 8000){
-                controlLightTest(); 
-            }      
-            break;   
-        default:
-            testState = false;
-            partyState = OFF;          
-    }
-}
+/***************************************************************************************************
+** PUBLIC FUNCTIONS
+***************************************************************************************************/
 
 // Callback: timer has rolled over
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
@@ -370,26 +389,30 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 // Initialize board
 void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg)
 {
-    boardSetup(LightController, (pcbVersion){1, 1});
     initCAProtocol(&caProto, usbRx);
 
-    initGpio();
-
-    HAL_TIM_Base_Start_IT(htim2);
     HAL_TIM_Base_Start_IT(htim5);
-
-    ledUpdateTimer = htim2;
     loopTimer = htim5;
-
     hwwdg_ = hwwdg;
+
+    /* Don't initialise any outputs or act on them if the board isn't correct */
+    if(boardSetup(LightController, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}) == -1)
+    {
+        return;
+    }
+
+    initGpio();
+    HAL_TIM_Base_Start_IT(htim2);
+    ledUpdateTimer = htim2;
 }
 
 // Main loop - Board only reacts on user inputs
 void LightControllerLoop(const char* bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
+    monitorTimeout();
 
-    if (testState == true){
-        SwitchPartyState();
+    if (isInTest == true){
+        switchTestState();
     }
 }
