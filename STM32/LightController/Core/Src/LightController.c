@@ -412,7 +412,7 @@ void LightControllerLoop(const char* bootMsg)
     CAhandleUserInputs(&caProto, bootMsg);
     monitorTimeout();
 
-    if (isInTest == true){
+    if (isInTest){
         switchTestState();
     }
 }
