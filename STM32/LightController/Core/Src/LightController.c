@@ -239,6 +239,12 @@ static void monitorTimeout()
         for (int i=0; i<LED_CHANNELS*NO_COLORS; i++)
         {
             rgbwControl[i] = 0;
+
+            if (i < LED_CHANNELS)
+            {
+                rgbs[i] = 0;
+                bsClearField(LIGHT_PORT_STATUS_Msk(i));
+            }
         }
     }
 }
