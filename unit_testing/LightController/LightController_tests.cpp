@@ -422,9 +422,22 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
     writeLightControllerMessage("p2 FFFFFF\n");
     writeLightControllerMessage("p3 FFFFFF\n");
 
+    HAL_TIM_PeriodElapsedCallback(&htim5);
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r", 
+        "Boot Unit Test\r",
+        "ffffff, ffffff, ffffff, 0x7"
+    )); 
+
     forceTick(1);                   // Set system tick to 1
     LightControllerLoop(bootMsg);   // Run main loop which monitors ACTUATION_TIMEOUT
-    goToTick(1);                    // LED switching interrupt 
+    goToTick(1);                    // LED switching interrupt
+
+    HAL_TIM_PeriodElapsedCallback(&htim5);
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r",
+        "ffffff, ffffff, ffffff, 0x7"
+    )); 
 
     // All white GPIOs should be on
     EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
@@ -435,6 +448,12 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
     LightControllerLoop(bootMsg);   // Run main loop which monitors ACTUATION_TIMEOUT
     goToTick(2);                    // LED switching interrupt
 
+    HAL_TIM_PeriodElapsedCallback(&htim5);
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r",
+        "ffffff, ffffff, ffffff, 0x7"
+    )); 
+
     // All white GPIOs should still be on since the ACTUATION_TIMEOUT has not yet occured
     EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
     EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
@@ -443,6 +462,12 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
     forceTick(ACTUATION_TIMEOUT + 1); // Set tick after ACTUATION_TIMEOUT
     LightControllerLoop(bootMsg);     // Run main loop to turn off outputs
     goToTick(3);                      // LED switching interrupt
+
+    HAL_TIM_PeriodElapsedCallback(&htim5);
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r",
+        "0, 0, 0, 0x0"
+    )); 
 
     // Everything should be turned off because of timeout.
     for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++)
@@ -458,6 +483,12 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
     forceTick(ACTUATION_TIMEOUT + 2); // Set system tick to 1
     LightControllerLoop(bootMsg);     // Run main loop which monitors ACTUATION_TIMEOUT
     goToTick(4);                      // LED switching interrupt 
+
+    HAL_TIM_PeriodElapsedCallback(&htim5);
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r",
+        "ffffff, ffffff, ffffff, 0x7"
+    )); 
 
     EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
     EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
