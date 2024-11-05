@@ -201,7 +201,7 @@ TEST_F(DCBoard, printStatus)
     EXPECT_FLUSH_USB(ElementsAre(
         "\r", 
         "Boot Unit Test\r", 
-        "Board Status:\r", 
+        "Start of board status:\r", 
         "The board is operating normally.\r", 
         "Port 0: On: 0, PWM percent: 0\r", 
         "Port 1: On: 0, PWM percent: 0\r", 
@@ -220,7 +220,7 @@ TEST_F(DCBoard, printStatus)
     
     EXPECT_FLUSH_USB(ElementsAre( 
         "\r", 
-        "Board Status:\r", 
+        "Start of board status:\r", 
         "The board is operating normally.\r", 
         "Port 0: On: 0, PWM percent: 0\r",
         "Port 1: On: 1, PWM percent: 999\r",
@@ -248,7 +248,7 @@ TEST_F(DCBoard, status24v)
         "\r", 
         "Boot Unit Test\r", 
         "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000\r",
-        "Board Status:\r", 
+        "Start of board status:\r", 
         "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r",
         "Port 0: On: 0, PWM percent: 0\r", 
         "Port 1: On: 0, PWM percent: 0\r", 

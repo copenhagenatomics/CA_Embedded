@@ -391,7 +391,7 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 ** 
 ** * Responds to user input
 ** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
-**   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
+**   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches). 
 */
 void DCBoardLoop(const char* bootMsg)
 {
