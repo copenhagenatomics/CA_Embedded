@@ -31,7 +31,7 @@ class ACHeaterCtrl: public ::testing::Test
             /* Create a full set of heaters */
             for(int i = 0; i < MAX_NO_HEATERS; i++) 
             {
-                stmGpioInit(&heaterGpios[i], (uint32_t*)0, 0, STM_GPIO_OUTPUT);
+                stmGpioInit(&heaterGpios[i], (GPIO_TypeDef*)0, 0, STM_GPIO_OUTPUT);
                 EXPECT_NE(heatCtrlAdd(&heaterGpios[i], &heaterButtons[i]), nullptr);
             }
 

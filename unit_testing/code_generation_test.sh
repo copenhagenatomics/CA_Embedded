@@ -14,14 +14,14 @@
 
 # Get the project path 
 path=$1
-if [[ ! -d "$path" ]]; then
+if [[ ! -d "../STM32/$path" ]]; then
     echo "Error: Missing project path."
     exit 1
 fi
 
 # Step 1: Ensure correct initialisation in .ioc-file.
 # Check for project .ioc file
-project_ioc=$(find $path/ -iname *.ioc)
+project_ioc=$(find ../STM32/$path/ -iname *.ioc)
 
 # Find function sort list
 function_list=$(cat $project_ioc | grep ProjectManager.functionlistsort)
@@ -45,7 +45,7 @@ for idx in $adc_idx; do
 done
 
 ## Step 2: Ensure correct initialisation in main file.
-project_main=$(find $path/Core/Src/ -iname main.c)
+project_main=$(find ../STM32/$path/Core/Src/ -iname main.c)
 
 # Find lines where MX_ADCx_Init() and MX_DMA_Init() are initialised in main.c
 adc_main_idx=$(cat $project_main | grep -n 'MX_ADC[0-9]_Init()'| cut -d : -f 1)
@@ -61,4 +61,5 @@ for idx in $adc_main_idx; do
         exit 1
     fi
 done
+echo "Static analysis passed."
 exit 0

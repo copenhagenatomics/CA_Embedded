@@ -43,12 +43,12 @@ include(GoogleTest)
 
 # AC tests
 add_executable(heatCtrl_test heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp)
-target_include_directories(heatCtrl_test PRIVATE ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src)
+target_include_directories(heatCtrl_test PRIVATE ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
 gtest_discover_tests(heatCtrl_test)
 
 add_executable(ac_test AC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp)
-target_include_directories(ac_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/AC/Core/Src ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc)
+target_include_directories(ac_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/AC/Core/Src ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(ac_test GTest::gtest_main gmock_main)
 target_compile_definitions(ac_test PUBLIC UNIT_TESTING)
 gtest_discover_tests(ac_test)

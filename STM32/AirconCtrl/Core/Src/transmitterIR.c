@@ -11,10 +11,10 @@
 
 #include <stdbool.h>
 
+#include "stm32f4xx_hal.h"
+
 #include "transmitterIR.h"
 #include "StmGpio.h"
-#include "main.h"
-#include "USBprint.h"
 
 /***************************************************************************************************
 ** STATIC FUNCTION PROTOTYPES
@@ -278,8 +278,6 @@ static bool startSendingTempUpdate(int temp, bool isNewController)
     commandState.isCommReady = false;
     commandState.cmdTimeStamp = HAL_GetTick();
     currentTemp = temp;
-
-    // USBnprintf("Started sending: %x %x %x %x", IRCommand.command[0], IRCommand.command[1], IRCommand.command[2], IRCommand.command[3]);
 
     return true;
 }
