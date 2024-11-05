@@ -176,9 +176,6 @@ static double ADCtoTemperature(double adc_val)
 WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
-    // Update window watchdog. Will trigger reset outside window: <90ms && >110ms.
-    //HAL_WWDG_Refresh(hwwdg_);
-
     // Make calibration static since this should be done only once.
     static bool isCalibrationDone = false;
     static int16_t current_calibration[ADC_CHANNELS];
