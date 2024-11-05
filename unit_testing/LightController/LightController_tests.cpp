@@ -444,7 +444,7 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
     EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
     EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
 
-    forceTick(25123);               // Set system tick to 25123 i.e. < ACTUATION_TIMEOUT
+    forceTick(25123);               // Set system tick to 25123 i.e. < ACTUATION_TIMEOUT - 1
     LightControllerLoop(bootMsg);   // Run main loop which monitors ACTUATION_TIMEOUT
     goToTick(2);                    // LED switching interrupt
 
