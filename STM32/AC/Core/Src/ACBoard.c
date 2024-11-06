@@ -20,6 +20,7 @@
 #include "StmGpio.h"
 #include "ACBoard.h"
 #include "faultHandlers.h"
+#include "pcbversion.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -378,7 +379,7 @@ static void updateBoardStatus()
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
     // Pin out has changed from PCB V6.4 - older versions need other software.
-    boardSetup(AC_Board, (pcbVersion){6, 4});
+    boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usbRx);
