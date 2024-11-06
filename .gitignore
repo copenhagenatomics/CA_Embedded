@@ -7,6 +7,7 @@ githash.h
 /.NET/FFTviewer/.vs/FFTviewer/v17/.suo
 /.NET/FFTviewer/.vs/FFTviewer
 /.NET/FFTviewer/FFTviewer/obj
+/**/settings.json
 
 # Compiled python files
 *.pyc
