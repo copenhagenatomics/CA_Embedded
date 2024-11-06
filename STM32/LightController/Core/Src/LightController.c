@@ -20,7 +20,7 @@
 #include <stdint.h>
 #include <ctype.h>
 
-
+static uint32_t lastCmdTime = 0;
 static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
 
 static void controlLEDStrip(const char *input);
@@ -73,6 +73,7 @@ bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 	if (blue < 0 || blue > MAX_PWM)
 		return false;
 
+    lastCmdTime = HAL_GetTick();
 	return true;
 }
 
@@ -146,6 +147,23 @@ static void printStates()
 	USBnprintf("%x, %x, %x", rgbs[0], rgbs[1], rgbs[2]);
 }
 
+static void monitorTimeout()
+{
+    TIM_HandleTypeDef * htimers[3] = {htim2_, htim3_, htim4_};
+    // If more than ACTUATION_TIMEOUT has passed since last command turn off output.
+    if ((HAL_GetTick() - lastCmdTime) >= ACTUATION_TIMEOUT)
+    {
+        for (int i = 0; i<LED_CHANNELS; i++)
+        {
+            htimers[i]->Instance->CCR1 = 0;
+            htimers[i]->Instance->CCR2 = 0;
+            htimers[i]->Instance->CCR3 = 0;
+
+            rgbs[i] = 0;
+        }
+    }
+}
+
 // Initialise PWM group
 static void pwmInit(TIM_HandleTypeDef * htim)
 {
@@ -200,4 +218,5 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3, TIM
 void LightControllerLoop(const char* bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
+    monitorTimeout();
 }
