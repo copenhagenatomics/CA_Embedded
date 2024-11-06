@@ -17,6 +17,7 @@
 #include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
+#include "faultHandlers.c"
 
 /* UUT */
 #include "ACBoard.c"

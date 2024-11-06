@@ -9,6 +9,12 @@ project(unit_testing)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set timestamp policy to avoid warning (default value)
+if(POLICY CMP0135)
+	cmake_policy(SET CMP0135 NEW)
+	set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
+endif()
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -28,7 +34,7 @@ set(LIB ../../CA_Embedded_Libraries/STM32)
 set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Filtering/Inc 
             ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
             ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc 
-            ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
+            ${LIB}/USBprint/Inc ${LIB}/Util/Inc ${LIB}/Util/Src)
 set(UT_FAKES ../../CA_Embedded_Libraries/unit_testing/fakes)
 set(UT_STUBS ../../CA_Embedded_Libraries/unit_testing/stubs)
 set(DRIV ../../STM32/AC/Drivers/STM32F4xx_HAL_Driver)
@@ -42,13 +48,15 @@ enable_testing()
 include(GoogleTest)
 
 # AC tests
-add_executable(heatCtrl_test heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp)
-target_include_directories(heatCtrl_test PRIVATE ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
+add_executable(heatCtrl_test heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_FLASH_readwrite.cpp ${UT_FAKES}/fake_USBprint.cpp)
+target_include_directories(heatCtrl_test PRIVATE ${INC_LIB} ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
+target_compile_options(heatCtrl_test PRIVATE -fpermissive)
 gtest_discover_tests(heatCtrl_test)
 
-add_executable(ac_test AC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp)
+add_executable(ac_test AC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp  ${UT_FAKES}/fake_FLASH_readwrite.cpp)
 target_include_directories(ac_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/AC/Core/Src ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(ac_test GTest::gtest_main gmock_main)
 target_compile_definitions(ac_test PUBLIC UNIT_TESTING)
+target_compile_options(ac_test PRIVATE -fpermissive)
 gtest_discover_tests(ac_test)

@@ -97,11 +97,6 @@ static void printAcHeader()
     }
 }
 
-static int illegal_instruction_execution(void) {
-  int (*bad_instruction)(void) = (int (*)()) 0xE0000000;
-  return bad_instruction();
-}
-
 /*!
 ** @brief Verbose print of the AC board status
 */
@@ -131,9 +126,6 @@ static void userInput(const char *input)
     {
         isFanForceOn = false;
         stmSetGpio(fanCtrl, false);
-    }
-    else if (strncmp(input, "fault", 5) == 0) {
-        illegal_instruction_execution();
     }
     else 
     {
