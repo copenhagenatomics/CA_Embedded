@@ -51,7 +51,7 @@ typedef struct ActuationInfo {
 static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
 static void userInput(const char *input);
-static void printAcStatus();
+static void printAcTenChannelStatus();
 static void updateBoardStatus();
 
 /***************************************************************************************************
@@ -71,7 +71,7 @@ static CAProtocolCtx caProto =
 {
         .undefined = userInput,
         .printHeader = CAPrintHeader,
-        .printStatus = printAcStatus,
+        .printStatus = printAcTenChannelStatus,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, // TODO: change method for calibration?
         .calibrationRW = NULL,
@@ -89,7 +89,7 @@ static CAProtocolCtx caProto =
 /*!
 ** @brief Verbose print of the AC board status
 */
-static void printAcStatus()
+static void printAcTenChannelStatus()
 {
     static char buf[600] = { 0 };
     int len = 0;
@@ -173,14 +173,13 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
     {
-        USBnprintf("0x%x" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32, bsGetStatus());
         return;
     }
 
     if (!isCalibrationDone)
     {
-        // Go from channel 1 since 0 is temperature.
-        for (int i = 1; i < noOfChannels; i++)
+        for (int i = 0; i < noOfChannels; i++)
         {
             // finding the average of each channel array to subtract from the readings
             current_calibration[i] = -ADCMean(pData, i);
@@ -189,14 +188,14 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     }
 
     // Set bias for each channel.
-    for (int i = 1; i < noOfChannels; i++)
+    for (int i = 0; i < noOfChannels; i++)
     {
         // Go from channel 1 since 0 is temperature.
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
     float heatSinkTemperature = 0;
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.2f, 0x%x" PRIx32, 
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.2f, 0x%08" PRIx32, 
                 ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), ADCtoCurrent(ADCrms(pData, 2)), 
                 ADCtoCurrent(ADCrms(pData, 3)), ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)), 
                 ADCtoCurrent(ADCrms(pData, 6)), ADCtoCurrent(ADCrms(pData, 7)), ADCtoCurrent(ADCrms(pData, 8)), 
@@ -368,7 +367,7 @@ void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim)
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
-    HAL_TIM_Base_Start_IT(htim);
+    HAL_TIM_Base_Start(htim);
 
     GpioInit();
 }
