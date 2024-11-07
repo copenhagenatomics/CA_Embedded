@@ -124,13 +124,13 @@ static void userInput(const char *input)
 
 static void GpioInit()
 {
-    const int noPorts = AC_TEN_CH_NUM_PORTS;
+    const int NO_PORTS = AC_TEN_CH_NUM_PORTS;
     static GPIO_TypeDef *const pinsBlk[] = { CTRL_0_GPIO_Port, CTRL_1_GPIO_Port, CTRL_2_GPIO_Port, CTRL_3_GPIO_Port, CTRL_4_GPIO_Port,
                                              CTRL_5_GPIO_Port, CTRL_6_GPIO_Port, CTRL_7_GPIO_Port, CTRL_8_GPIO_Port, CTRL_9_GPIO_Port };
     static const uint16_t pins[] = { CTRL_0_Pin, CTRL_1_Pin, CTRL_2_Pin, CTRL_3_Pin, CTRL_4_Pin,
                                      CTRL_5_Pin, CTRL_6_Pin, CTRL_7_Pin, CTRL_8_Pin, CTRL_9_Pin };
 
-    for (int i = 0; i < noPorts; i++)
+    for (int i = 0; i < NO_PORTS; i++)
     {
         stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
         heatCtrlAdd(&heaterPorts[i].heater);
@@ -361,14 +361,14 @@ void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim)
     initCAProtocol(&caProto, usbRx);
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
-    if(boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}) == -1)
+    if(boardSetup(ACTenChannel, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}) == -1)
     {
         return;
     }
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
-    HAL_TIM_Base_Start(htim);
+    HAL_TIM_Base_Start_IT(htim);
 
     GpioInit();
 }
