@@ -27,12 +27,12 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS	10
+#define ADC_CHANNELS	        10
 #define ADC_CHANNEL_BUF_SIZE	400
 
-#define MAX_TEMPERATURE 70
+#define MAX_TEMPERATURE         70
 
-#define USB_COMMS_TIMEOUT_MS 5000
+#define USB_COMMS_TIMEOUT_MS    5000
 
 /***************************************************************************************************
 ** PRIVATE TYPEDEFS
@@ -335,9 +335,10 @@ static void heatSinkLoop()
 */
 static void updateBoardStatus() 
 {
+    stmGetGpio(fanCtrl) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(0)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(0));
     for(int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
     {
-        stmGetGpio(heaterPorts[i].heater) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(i)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(i));
+        stmGetGpio(heaterPorts[i].heater) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(i+1)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(i+1));
     }
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
