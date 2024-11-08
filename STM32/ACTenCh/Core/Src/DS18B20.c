@@ -4,7 +4,9 @@
  *  Created on: 7 Nov 2024
  *      Author: matias
  * 
- * 	Library based heavily on the implementation done by [vtx22](https://github.com/vtx22/STM32-DS18B20/blob/master/src/DS18B20.cpp)
+ * 	Interface based heavily on the implementation done by [vtx22](https://github.com/vtx22/STM32-DS18B20/blob/master/src/DS18B20.cpp)
+ *  Detailed explanation of DS18B20 communication interface: https://controllerstech.com/ds18b20-and-stm32/
+ *  Datasheet: https://www.analog.com/media/en/technical-documentation/data-sheets/DS18B20.pdf
  */
 
 #include "DS18B20.h"
@@ -60,10 +62,7 @@ void setPinInput()
 static void delay_us(uint32_t us)
 {
     __HAL_TIM_SET_COUNTER(DS18B20_tim, 0);
-    while (DS18B20_tim->Instance->CNT < us)
-    {
-
-    }
+    while (DS18B20_tim->Instance->CNT < us);
 }
 
 /*!
@@ -130,7 +129,7 @@ static uint8_t startSensor()
     delay_us(480);
     setPinInput();
     delay_us(80);
-    alive = (!stmGetGpio(*comm.dataGpio)) ? 1 : 0;
+    alive = (!stmGetGpio(*comm.dataGpio)) ? 1 : -1;
     delay_us(400);
     return alive;
 }

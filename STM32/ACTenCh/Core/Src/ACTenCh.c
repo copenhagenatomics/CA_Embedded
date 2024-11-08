@@ -60,10 +60,7 @@ static void updateBoardStatus();
 ***************************************************************************************************/
 
 /* GPIO settings. */
-static struct
-{
-    StmGpio heater;
-} heaterPorts[AC_TEN_CH_NUM_PORTS];
+StmGpio heaterPorts[AC_TEN_CH_NUM_PORTS];
 static StmGpio fanCtrl;
 static StmGpio DQ1;
 static double heatSinkTemperature = 0; // Heat Sink temperature
@@ -75,7 +72,7 @@ static CAProtocolCtx caProto =
         .printHeader = CAPrintHeader,
         .printStatus = printAcTenChannelStatus,
         .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = NULL, // TODO: change method for calibration?
+        .calibration = NULL,
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
@@ -100,7 +97,7 @@ static void printAcTenChannelStatus()
     for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
     {
         len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", 
-                        i, stmGetGpio(heaterPorts[i].heater), getPWMPinPercent(i));
+                        i, stmGetGpio(heaterPorts[i]), getPWMPinPercent(i));
     }
 
     writeUSB(buf, len);
@@ -134,8 +131,8 @@ static void GpioInit()
 
     for (int i = 0; i < NO_PORTS; i++)
     {
-        stmGpioInit(&heaterPorts[i].heater, pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
-        heatCtrlAdd(&heaterPorts[i].heater);
+        stmGpioInit(&heaterPorts[i], pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
+        heatCtrlAdd(&heaterPorts[i]);
     }
 
     stmGpioInit(&fanCtrl, FAN_CTRL_GPIO_Port, FAN_CTRL_Pin, STM_GPIO_OUTPUT);
@@ -267,6 +264,7 @@ static void CAallOn(bool isOn, int duration)
         allOff();
     }
 }
+
 static void CAportState(int port, bool state, int percent, int duration)
 {
     uint8_t pwmPercent = getPWMPinPercent(port-1);
@@ -338,7 +336,7 @@ static void updateBoardStatus()
     stmGetGpio(fanCtrl) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(0)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(0));
     for(int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
     {
-        stmGetGpio(heaterPorts[i].heater) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(i+1)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(i+1));
+        stmGetGpio(heaterPorts[i]) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(i+1)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(i+1));
     }
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
