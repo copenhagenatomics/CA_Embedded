@@ -69,6 +69,8 @@ void Error_Handler(void);
 #define CTRL_8_GPIO_Port GPIOB
 #define CTRL_9_Pin GPIO_PIN_8
 #define CTRL_9_GPIO_Port GPIOA
+#define DQ1_Pin GPIO_PIN_9
+#define DQ1_GPIO_Port GPIOA
 #define CTRL_LED_Pin GPIO_PIN_3
 #define CTRL_LED_GPIO_Port GPIOB
 #define CTRL_4_Pin GPIO_PIN_5

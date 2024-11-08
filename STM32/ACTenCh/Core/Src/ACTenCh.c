@@ -1,5 +1,5 @@
 /*
- * ACBoard.c
+ * ACTenCh.c
  */
 
 #include <math.h>
@@ -21,6 +21,7 @@
 #include "StmGpio.h"
 #include "ACTenCh.h"
 #include "pcbversion.h"
+#include "DS18B20.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -64,6 +65,7 @@ static struct
     StmGpio heater;
 } heaterPorts[AC_TEN_CH_NUM_PORTS];
 static StmGpio fanCtrl;
+static StmGpio DQ1;
 static double heatSinkTemperature = 0; // Heat Sink temperature
 static bool isFanForceOn = false;
 
@@ -194,7 +196,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    float heatSinkTemperature = 0;
+    float heatSinkTemperature = getTemp();
     USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.2f, 0x%08" PRIx32, 
                 ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), ADCtoCurrent(ADCrms(pData, 2)), 
                 ADCtoCurrent(ADCrms(pData, 3)), ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)), 
@@ -354,7 +356,7 @@ static void updateBoardStatus()
 ** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
 ** link
 */
-void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim)
+void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_HandleTypeDef* hDS18B20tim)
 {
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usbRx);
@@ -368,8 +370,9 @@ void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim)
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
     HAL_TIM_Base_Start(htim);
-
     GpioInit();
+
+    DS18B20Init(hDS18B20tim, &DQ1, DQ1_GPIO_Port, DQ1_Pin);
 }
 
 /*!

@@ -28,7 +28,7 @@
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim);
+void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_HandleTypeDef* hDS18B20tim);
 void ACTenChannelLoop(const char* bootMsg);
 
 #endif /* SRC_ACTENCH_H_ */
