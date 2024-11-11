@@ -11,10 +11,10 @@
 
 #include <stdbool.h>
 
+#include "stm32f4xx_hal.h"
+
 #include "transmitterIR.h"
 #include "StmGpio.h"
-#include "main.h"
-#include "USBprint.h"
 
 /***************************************************************************************************
 ** STATIC FUNCTION PROTOTYPES
@@ -31,7 +31,8 @@ static void setupLowBit();
 ** STATIC VARIABLES
 ***************************************************************************************************/
 
-static TIM_HandleTypeDef* timFreqCarrier = NULL;
+static TIM_HandleTypeDef* timFreqCarrier1 = NULL;
+static TIM_HandleTypeDef* timFreqCarrier2 = NULL;
 static TIM_HandleTypeDef* timSignal = NULL;
 
 static int currentTemp = 0;
@@ -94,8 +95,8 @@ static uint32_t crcCodes[8] = {CRC18, CRC19, CRC20, CRC21, CRC22, CRC23, CRC24, 
 */
 static void setupSignalTimer(uint32_t period, uint32_t interval)
 {
-    TIM3->ARR = period;
-    TIM3->CCR2 = interval;
+    timSignal->Instance->ARR = period;
+    timSignal->Instance->CCR2 = interval;
 }
 
 /*!
@@ -278,8 +279,6 @@ static bool startSendingTempUpdate(int temp, bool isNewController)
     commandState.cmdTimeStamp = HAL_GetTick();
     currentTemp = temp;
 
-    // USBnprintf("Started sending: %x %x %x %x", IRCommand.command[0], IRCommand.command[1], IRCommand.command[2], IRCommand.command[3]);
-
     return true;
 }
 
@@ -300,7 +299,7 @@ void pwmGPIO()
         return;
     }
 
-    TIM3->CNT < TIM3->CCR2 ? turnOnLED() : turnOffLED();
+    timSignal->Instance->CNT < timSignal->Instance->CCR2 ? turnOnLED() : turnOffLED();
 }
 
 /*!
@@ -338,7 +337,8 @@ void turnOffAC()
 */
 void turnOnLED()
 {
-    HAL_TIM_PWM_Start(timFreqCarrier, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(timFreqCarrier1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(timFreqCarrier2, TIM_CHANNEL_3);
 }
 
 /*!
@@ -346,7 +346,8 @@ void turnOnLED()
 */
 void turnOffLED()
 {
-    HAL_TIM_PWM_Stop(timFreqCarrier, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Stop(timFreqCarrier1, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Stop(timFreqCarrier2, TIM_CHANNEL_3);
 }
 
 /*!
@@ -378,10 +379,11 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 /*!
 ** @brief Initisalise IR transmitter by starting timer
 */
-void initTransmitterIR(TIM_HandleTypeDef *timFreqCarrier_, TIM_HandleTypeDef *timSignal_)
+void initTransmitterIR(TIM_HandleTypeDef *timFreqCarrier1_, TIM_HandleTypeDef *timFreqCarrier2_, TIM_HandleTypeDef *timSignal_)
 {
     HAL_TIM_PWM_Start_IT(timSignal_, TIM_CHANNEL_2);
     timSignal = timSignal_;
-    timFreqCarrier = timFreqCarrier_;
+    timFreqCarrier1 = timFreqCarrier1_;
+    timFreqCarrier2 = timFreqCarrier2_;
 }
 

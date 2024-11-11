@@ -18,13 +18,15 @@
 // Local functions
 static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations);
 static void calibrateReadWrite(bool write);
-static void TempPrintHeader();
+static void printTempHeader();
+static void printTempStatus();
 
 // Local variables
 static CAProtocolCtx caProto =
 {
         .undefined = HALundefined,
-        .printHeader = TempPrintHeader,
+        .printHeader = printTempHeader,
+        .printStatus = printTempStatus,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = calibrateTypeInput,
         .calibrationRW = calibrateReadWrite,
@@ -39,13 +41,52 @@ static CAProtocolCtx caProto =
 static ADS1120Device ads1120[ NO_SPI_DEVICES ];
 float portCalVal[NO_SPI_DEVICES*2][2];
 
-static void TempPrintHeader()
+static void printTempHeader()
 {
-	CAPrintHeader();
-	calibrateReadWrite(false);
+    CAPrintHeader();
+    calibrateReadWrite(false);
 }
 
-static int initSpiDevices(SPI_HandleTypeDef* hspi)
+static void printTempStatus()
+{
+    static char buf[600] = { 0 };
+    int len = 0;
+    uint32_t tempStatus = bsGetStatus();
+
+    for (int i = 0; i < NO_SPI_DEVICES; i++)
+    {
+        if (tempStatus & TEMP_ADS1120_x_Error_Msk(i))
+        {
+            len += snprintf(&buf[len], sizeof(buf) - len, 
+                "Communication lost to the ADS1120 chip that measures temperature on port %d and %d.\r\n", i*2, i*2+1);
+        }
+    }
+    writeUSB(buf, len);
+}
+
+static void initConnection(ADS1120Device *ads1120, int channel)
+{
+    // Configure the device.
+    int ret = ADS1120Init(ads1120);
+    if (ret != 0) {
+        // If connection could not be established to chip
+        // set temperatures to 10010 to indicate miscommunication
+        ads1120->data.internalTemp = 10010;
+        ads1120->data.chA = 10010;
+        ads1120->data.chB = 10010;
+
+        // The TEMP_ADS1120_Error_Msk maps to the bit relating to the
+        // 0th ADS1120 on the temperature board. Hence, we shift the index
+        // according to the relevant chip having an error.
+        bsSetErrorRange(ret << (channel*2), TEMP_ADS1120_x_Error_Msk(channel));
+    }
+    else
+    {
+        bsClearField(TEMP_ADS1120_x_Error_Msk(channel));
+    }
+}
+
+static void initSpiDevices(SPI_HandleTypeDef* hspi)
 {
     // Initialise Chip Select pin
     stmGpioInit(&ads1120[0].cs, CS1_GPIO_Port, CS1_Pin, STM_GPIO_OUTPUT);
@@ -76,139 +117,153 @@ static int initSpiDevices(SPI_HandleTypeDef* hspi)
     HAL_SPI_Transmit(hspi, dummy, 2, 1);
 
     // Now configure the devices.
-    int err = 0;
     for (int i=0; i < NO_SPI_DEVICES; i++)
     {
-        int ret = ADS1120Init(&ads1120[i]);
-        if (ret != 0) {
-            err |= ret << (4*i);
-
-            // If connection could not be established to chip
-            // set temperatures to 10010 to indicate miscommunication
-        	ads1120[i].data.internalTemp = 10010;
-            ads1120[i].data.chA = 10010;
-            ads1120[i].data.chB = 10010;
-        }
+        initConnection(&ads1120[i], i);
     }
-    return err;
 }
 
+static void monitorBoardStatus()
+{
+    for (int i=0; i < NO_SPI_DEVICES; i++)
+    {
+        // Try to re-establish connection to ADS1120.
+        // if the connection is broken
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0)
+        {
+            initConnection(&ads1120[i], i);
+            // If there are no more errors left then clear the error bit.
+            if ((bsGetStatus() & TEMP_No_Error_Msk) == 0)
+            {
+                bsClearField(BS_ERROR_Msk);
+            }
+        } 
+    }
+}
+
+static void getPeripheralTemperatures()
+{
+    for (int i=0; i < NO_SPI_DEVICES; i++)
+    {
+        // Try to re-establish connection to ADS1120.
+        // If the connection is broken
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) continue;
+
+        // Get measurements
+        float *calPtr = &portCalVal[i*2][0];
+        int ret = ADS1120Loop(&ads1120[i], calPtr);
+
+        // If the return value is different from 0 - set an error.
+        if (ret != 0)
+        {
+            bsSetErrorRange(ret << (i*2), TEMP_ADS1120_x_Error_Msk(i));
+        }
+    }
+}
+
+static float getInternalTemperature()
+{
+    int count = 0;
+    double internalTemp = 0;
+    for (int i = 0; i < NO_SPI_DEVICES; i++)
+    {
+        // Do not include internal temperature of chip if
+        // connection could not be established to ADS1120 chip.
+        // Reconnection is handled in updateTempAndStates()
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) continue;
+
+        internalTemp += ads1120[i].data.internalTemp;
+        count++;
+    }
+    return internalTemp/count;
+}
+
+static void enableWWDG()
+{
+    static int isWWDGEnabled = 0;
+    if (!isWWDGEnabled)
+    {
+        isWWDGEnabled = 1;
+        __HAL_RCC_WWDG_CLK_ENABLE(); 
+    }
+}
 
 static SPI_HandleTypeDef* hspi = NULL;
 static WWDG_HandleTypeDef* hwwdg = NULL;
 static CRC_HandleTypeDef* hcrc = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
 {
+    boardSetup(Temperature, (pcbVersion){5, 2});
     initCAProtocol(&caProto, usb_cdc_rx);
 
-    BoardType board;
-    if (getBoardInfo(&board, NULL) || board != Temperature)
-        return;
-
-    pcbVersion ver;
-    if (getPcbVersion(&ver) || ver.major < 5)
-        return;
-
-    // SW versions lower than 5.2 are not supported
-    if (ver.major == 5 && ver.minor < 2)
-        return;
-
     hspi = hspi_;
-	hwwdg = hwwdg_;
-	hcrc = hcrc_;
+    hwwdg = hwwdg_;
+    hcrc = hcrc_;
 
     initSensorCalibration();
+    initSpiDevices(hspi);
 }
 
 void LoopTemperature(const char* bootMsg)
 {
-    static int spiErr = 0;
     static uint32_t timeStamp = 0;
     static const uint32_t tsUpload = 100;
-    static bool isFirstWrite = true;
 
     CAhandleUserInputs(&caProto, bootMsg);
 
-    for (int i=0; i < NO_SPI_DEVICES && hspi != NULL && !isFirstWrite; i++)
-    {
-    	// Continue if connection could not be established to ADS1120 chip.
-    	if (((spiErr >> 4*i) & 0x0F) != 0) continue;
-
-        float *calPtr = &portCalVal[i*2][0];
-        ADS1120Loop(&ads1120[i], calPtr);
-    }
+    // Check the status off the board
+    monitorBoardStatus();
+    // Measure temperatures
+    getPeripheralTemperatures();
+    float internalTemp = getInternalTemperature();
 
     // Upload data every "tsUpload" ms.
     if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
     {
         timeStamp = HAL_GetTick();
-    	HAL_WWDG_Refresh(hwwdg);
-
-        if (isComPortOpen())
+        HAL_WWDG_Refresh(hwwdg);
+        
+        if (!isComPortOpen())
         {
-            if (isFirstWrite)
-            {
-                __HAL_RCC_WWDG_CLK_ENABLE(); // Enable wwdg now that print frequency has stabilised.
-                if (hspi != NULL)
-                    spiErr = initSpiDevices(hspi);
-                isFirstWrite = false;
-                return;
-            }
-
-            if (hspi == NULL) {
-                USBnprintf("This Temperature SW require PCB version >= 5.2 where SPI devices are attached");
-            }
-
-            int count = 0;
-            double internalTemp = 0;
-            for (int i = 0; i < NO_SPI_DEVICES; i++)
-            {
-            	// Do not include internal temperature of chip if
-            	// connection could not be established to ADS1120 chip.
-            	if (((spiErr >> 4*i) & 0x0F) != 0) continue;
-
-            	internalTemp += ads1120[i].data.internalTemp;
-            	count++;
-            }
-            internalTemp = internalTemp/count;
-
-			USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f"
-					, ads1120[0].data.chA, ads1120[0].data.chB
-					, ads1120[1].data.chA, ads1120[1].data.chB
-					, ads1120[2].data.chA, ads1120[2].data.chB
-					, ads1120[3].data.chA, ads1120[3].data.chB
-					, ads1120[4].data.chA, ads1120[4].data.chB
-					, internalTemp);
+            return;
         }
-    }
 
-    if (!isComPortOpen())
-        isFirstWrite=true;
+        // Enable wwdg now that print frequency has stabilised.
+        enableWWDG(); 
+
+        USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x"
+                , ads1120[0].data.chA, ads1120[0].data.chB
+                , ads1120[1].data.chA, ads1120[1].data.chB
+                , ads1120[2].data.chA, ads1120[2].data.chB
+                , ads1120[3].data.chA, ads1120[3].data.chB
+                , ads1120[4].data.chA, ads1120[4].data.chB
+                , internalTemp, bsGetStatus());
+    }
 }
 
 void initSensorCalibration()
 {
-	readFromFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
-	if (*((uint8_t*) portCalVal) == 0xFF)
-	{
-		// If nothing is stored in FLASH default to type K thermocouple
-		for (int i = 0; i < NO_SPI_DEVICES*2; i++)
-		{
-			portCalVal[i][0] = TYPE_K_DELTA;
-			portCalVal[i][1] = TYPE_K_CJ_DELTA;
-		}
-	}
+    readFromFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
+    if (*((uint8_t*) portCalVal) == 0xFF)
+    {
+        // If nothing is stored in FLASH default to type K thermocouple
+        for (int i = 0; i < NO_SPI_DEVICES*2; i++)
+        {
+            portCalVal[i][0] = TYPE_K_DELTA;
+            portCalVal[i][1] = TYPE_K_CJ_DELTA;
+        }
+    }
 }
 
 static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations)
 {
-	__HAL_RCC_WWDG_CLK_DISABLE();
+    __HAL_RCC_WWDG_CLK_DISABLE();
     for (int count = 0; count < noOfCalibrations; count++)
     {
         if (1 <= calibrations[count].port && calibrations[count].port <= 10)
         {
-        	portCalVal[calibrations[count].port-1][0] = calibrations[count].alpha;
-			portCalVal[calibrations[count].port-1][1] = calibrations[count].beta;
+            portCalVal[calibrations[count].port-1][0] = calibrations[count].alpha;
+            portCalVal[calibrations[count].port-1][1] = calibrations[count].beta;
         }
     }
     // Update automatically when receiving new calibration values
@@ -222,18 +277,18 @@ static void calibrateReadWrite(bool write)
         writeToFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
     else
     {
-    	char buf[512];
-    	int len = 0;
-    	for (int i = 0; i < NO_SPI_DEVICES*2; i++)
-    	{
-    		if (i == 0)
-    		{
-    			len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
-    		}
-    		len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i+1, portCalVal[i][0], portCalVal[i][1]);
-    	}
-    	len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
-		writeUSB(buf, len);
+        char buf[512];
+        int len = 0;
+        for (int i = 0; i < NO_SPI_DEVICES*2; i++)
+        {
+            if (i == 0)
+            {
+                len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
+            }
+            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i+1, portCalVal[i][0], portCalVal[i][1]);
+        }
+        len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
+        writeUSB(buf, len);
     }
 }
 

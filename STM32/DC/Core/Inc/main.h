@@ -62,6 +62,14 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_Pin GPIO_PIN_15
 #define LED_GPIO_Port GPIOC
+#define CTRL_3_Pin GPIO_PIN_0
+#define CTRL_3_GPIO_Port GPIOA
+#define CTRL_4_Pin GPIO_PIN_1
+#define CTRL_4_GPIO_Port GPIOA
+#define CTRL_6_Pin GPIO_PIN_2
+#define CTRL_6_GPIO_Port GPIOA
+#define CTRL_5_Pin GPIO_PIN_3
+#define CTRL_5_GPIO_Port GPIOA
 #define Hall_1_Pin GPIO_PIN_4
 #define Hall_1_GPIO_Port GPIOA
 #define Hall_2_Pin GPIO_PIN_5
@@ -72,14 +80,10 @@ void Error_Handler(void);
 #define Hall_4_GPIO_Port GPIOA
 #define Hall_5_Pin GPIO_PIN_0
 #define Hall_5_GPIO_Port GPIOB
-#define pres1_Pin GPIO_PIN_1
-#define pres1_GPIO_Port GPIOB
-#define Emerg_Off_Pin GPIO_PIN_2
-#define Emerg_Off_GPIO_Port GPIOB
-#define CounterClkWise_Pin GPIO_PIN_12
-#define CounterClkWise_GPIO_Port GPIOB
-#define ClkWise_Pin GPIO_PIN_13
-#define ClkWise_GPIO_Port GPIOB
+#define Hall_6_Pin GPIO_PIN_1
+#define Hall_6_GPIO_Port GPIOB
+#define SENSE_24V_Pin GPIO_PIN_8
+#define SENSE_24V_GPIO_Port GPIOA
 #define Btn_1_Pin GPIO_PIN_15
 #define Btn_1_GPIO_Port GPIOA
 #define Btn_2_Pin GPIO_PIN_3
@@ -88,14 +92,15 @@ void Error_Handler(void);
 #define Btn_3_GPIO_Port GPIOB
 #define Btn_4_Pin GPIO_PIN_5
 #define Btn_4_GPIO_Port GPIOB
-#define SCL_Pin GPIO_PIN_6
-#define SCL_GPIO_Port GPIOB
-#define SDA_Pin GPIO_PIN_7
-#define SDA_GPIO_Port GPIOB
+#define CTRL_2_Pin GPIO_PIN_6
+#define CTRL_2_GPIO_Port GPIOB
+#define CTRL_1_Pin GPIO_PIN_7
+#define CTRL_1_GPIO_Port GPIOB
 #define Btn_5_Pin GPIO_PIN_8
 #define Btn_5_GPIO_Port GPIOB
 #define Btn_6_Pin GPIO_PIN_9
 #define Btn_6_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

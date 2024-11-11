@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "usbd_def.h": "c",
+        "acboard.c": "cpp",
+        "systeminfo.h": "c",
+        "usb_cdc_fops.h": "c",
+        "main.h": "c",
+        "array": "c",
+        "*.tcc": "c",
+        "memory": "c",
+        "istream": "c",
+        "functional": "c",
+        "tuple": "c",
+        "utility": "c",
+        "variant": "c"
+    }
+}
