@@ -88,14 +88,11 @@ static CAProtocolCtx caProto =
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
 
-static void printAcHeader()
-{
+/*!
+** @brief Printout of the general board info, e.g. serial number, sw version, etc...
+*/
+static void printAcHeader() {
     CAPrintHeader();
-
-    /* If a serious fault occurs that requires a reset */
-    if(printFaultInfo()) {
-        clearFaultInfo();
-    }
 }
 
 /*!
@@ -403,7 +400,13 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 */
 void ACBoardLoop(const char *bootMsg)
 {
-    CAhandleUserInputs(&caProto, bootMsg);
+    if(CAhandleUserInputs(&caProto, bootMsg)) {
+        /* If a serious fault occurs that required a reset occurs, print the stack trace 
+        ** immediately upon boot */
+        if(printFaultInfo()) {
+            clearFaultInfo();
+        }
+    };
     updateBoardStatus();
     ADCMonitorLoop(printCurrentArray);
     heatSinkLoop();
