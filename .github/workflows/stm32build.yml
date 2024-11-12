@@ -2,7 +2,7 @@ name: C/C++ stm32 build for the open-source embedded software
 
 on:
   push:
-    branches: [ 'patch/light_v1.0' ]
+    branches: [ 'main' ]
     paths: ['STM32/**', '.github/workflows/stm32build.yml']
   pull_request:
     branches: [ 'main' ]
@@ -123,9 +123,9 @@ jobs:
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-2
         # tag only pushes to the main branch
-        #if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
-          bump_version_scheme: patch
+          bump_version_scheme: minor
           use_github_release_notes: true
           tag_prefix: "${{ matrix.package }}-"
         env:
@@ -142,7 +142,7 @@ jobs:
         run: echo "breaking=$(if test -f STM32/${{ matrix.package }}/pcbversion && sed -n '2p' STM32/${{ matrix.package }}/pcbversion | grep -Eq "^v[0-9]+\.[0-9]+$"; then echo $(sed -n '2p' STM32/${{ matrix.package }}/pcbversion); else if test -f STM32/${{ matrix.package }}/pcbversion; then echo $(head -n 1 STM32/${{ matrix.package }}/pcbversion); else echo "v0.0"; fi; fi)" >> $GITHUB_OUTPUT
 
       - name: Release
-        #if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
