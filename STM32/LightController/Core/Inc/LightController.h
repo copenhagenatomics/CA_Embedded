@@ -14,6 +14,8 @@
 #define LED_CHANNELS 3
 #define MAX_PWM 256
 
+#define ACTUATION_TIMEOUT 30000 // The output times out after 30 seconds if no new input is received
+
 bool isInputValid(const char *input, int *channel, unsigned int *rgb);
 int handleInput(unsigned int rgb, int *channel, uint8_t *red, uint8_t *green, uint8_t *blue);
 
