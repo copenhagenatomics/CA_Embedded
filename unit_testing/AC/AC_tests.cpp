@@ -21,6 +21,11 @@
 #include "CAProtocolStm.c"
 #include "faultHandlers.c"
 
+/* Prevents attempting to access non-existent linker script variables */
+#define FLASH_ADDR_FAULT ((uint32_t) 0U)
+
+#include "flashHandler.c"
+
 /* UUT */
 #include "ACBoard.c"
 
@@ -43,6 +48,10 @@ class ACBoard: public CaBoardUnitTest
         *******************************************************************************************/
         ACBoard() : CaBoardUnitTest(ACBoardLoop, AC_Board, {LATEST_MAJOR, LATEST_MINOR}) {
             hadc.Init.NbrOfConversion = 5;
+
+            /* Prevent fault info triggering automatically at startup */
+            faultInfo_t tmp = {.fault = NO_FAULT};
+            writeToFlash(FLASH_ADDR_FAULT, (uint8_t*)&tmp, sizeof(faultInfo_t));
         }
 
         void simTick()
@@ -329,4 +338,27 @@ TEST_F(ACBoard, heatsinkLoop)
 
     goToTick(10925);
     EXPECT_FALSE(stmGetGpio(heaterPorts[0].heater));
+}
+
+TEST_F(ACBoard, faultInfoPrintout) {
+    faultInfo_t tmp = {.fault = HARD_FAULT};
+    writeToFlash(FLASH_ADDR_FAULT, (uint8_t*)&tmp, sizeof(faultInfo_t));
+
+    ACBoardInit(&hadc, &hwwdg);
+    ACBoardLoop(bootMsg);
+
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r", 
+        "Boot Unit Test", 
+        "Start of fault info\r", 
+        "Last fault was: 1\r", 
+        "CFSR was: 0x00000000\r", 
+        "HFSR was: 0x00000000\r", 
+        "MMFA was: 0x00000000\r", 
+        "BFA was:  0x00000000\r", 
+        "AFSR was: 0x00000000\r", 
+        "Stack Frame was:\r", "0x00000000, 0x00000000, 0x00000000, 0x00000000\r", 
+        "0x00000000, 0x00000000, 0x00000000, 0x00000000\r", 
+        "End of fault info\r"
+    ));
 }

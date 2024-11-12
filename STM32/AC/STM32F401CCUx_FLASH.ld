@@ -66,8 +66,13 @@ FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 128K
 FLASHCAL (rw)  : ORIGIN = 0x8020000, LENGTH = 128K
 }
 
-_FlashSector = 0x05;
-_FlashAddr   = ORIGIN(FLASHCAL);
+/* Main program area. Area may not be used for user data storage */
+_ProgramMemoryStart = ORIGIN(FLASH);
+_ProgramMemoryEnd = ORIGIN(FLASH) + LENGTH(FLASH);
+
+
+/* FLASH areas dedicated to user data storage */
+_FlashAddrFault = ORIGIN(FLASHCAL);
 
 /* Define output sections */
 SECTIONS

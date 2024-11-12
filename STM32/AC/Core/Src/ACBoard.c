@@ -21,6 +21,7 @@
 #include "ACBoard.h"
 #include "faultHandlers.h"
 #include "pcbversion.h"
+#include "flashHandler.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -386,6 +387,10 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
     GpioInit();
 
+    /* Setup flash handling */
+    fhLoadDeposit();
+    setLocalFaultInfo(fhGetFaultInfo());
+
     hwwdg_=hwwdg;
 }
 
@@ -405,6 +410,7 @@ void ACBoardLoop(const char *bootMsg)
         ** immediately upon boot */
         if(printFaultInfo()) {
             clearFaultInfo();
+            fhSaveDeposit();
         }
     };
     updateBoardStatus();
