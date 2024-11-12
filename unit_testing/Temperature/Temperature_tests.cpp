@@ -23,8 +23,6 @@
 /* UUT */
 #include "Temperature.c"
 
-using ::testing::Contains;
-using ::testing::ElementsAre;
 using namespace std;
 
 /***************************************************************************************************
