@@ -3,17 +3,22 @@
  * Description: reads temperature from devices connected to SPI.
  */
 
+#include <stdbool.h>
+#include <stdio.h>
+
+#include "stm32f4xx_hal.h"
+
+#include "main.h"
 #include "Temperature.h"
 #include "systemInfo.h"
-#include "usb_cdc_fops.h"
-#include <CAProtocol.h>
-#include <CAProtocolStm.h>
+#include "CAProtocol.h"
+#include "CAProtocolStm.h"
 #include "USBprint.h"
 #include "time32.h"
 #include "StmGpio.h"
 #include "ADS1120.h"
-#include <stdbool.h>
 #include "FLASH_readwrite.h"
+#include "pcbversion.h"
 
 // Local functions
 static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations);
@@ -193,8 +198,8 @@ static WWDG_HandleTypeDef* hwwdg = NULL;
 static CRC_HandleTypeDef* hcrc = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
 {
-    boardSetup(Temperature, (pcbVersion){5, 2});
-    initCAProtocol(&caProto, usb_cdc_rx);
+    boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
+    initCAProtocol(&caProto, usbRx);
 
     hspi = hspi_;
     hwwdg = hwwdg_;
@@ -223,7 +228,7 @@ void LoopTemperature(const char* bootMsg)
         timeStamp = HAL_GetTick();
         HAL_WWDG_Refresh(hwwdg);
         
-        if (!isComPortOpen())
+        if (!isUsbPortOpen())
         {
             return;
         }
