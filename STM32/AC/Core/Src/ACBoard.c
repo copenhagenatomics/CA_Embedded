@@ -406,8 +406,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 void ACBoardLoop(const char *bootMsg)
 {
     if(CAhandleUserInputs(&caProto, bootMsg)) {
-        /* If a serious fault occurs that required a reset occurs, print the stack trace 
-        ** immediately upon boot */
+        /* If a serious fault that required a reset occurs, print the stack trace immediately upon boot */
         if(printFaultInfo()) {
             clearFaultInfo();
             fhSaveDeposit();
