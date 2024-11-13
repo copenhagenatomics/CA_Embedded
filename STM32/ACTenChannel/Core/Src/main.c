@@ -22,7 +22,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "ACTenCh.h"
+#include "ACTenChannel.h"
 #include "CAProtocolStm.h"
 /* USER CODE END Includes */
 

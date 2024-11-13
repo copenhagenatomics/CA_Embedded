@@ -5,8 +5,8 @@
  *      Author: matias
  */
 
-#ifndef SRC_ACTENCH_H_
-#define SRC_ACTENCH_H_
+#ifndef SRC_ACTENCHANNEL_H_
+#define SRC_ACTENCHANNEL_H_
 
 /***************************************************************************************************
 ** DEFINES
@@ -31,4 +31,4 @@
 void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_HandleTypeDef* hDS18B20tim);
 void ACTenChannelLoop(const char* bootMsg);
 
-#endif /* SRC_ACTENCH_H_ */
+#endif /* SRC_ACTENCHANNEL_H_ */

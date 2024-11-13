@@ -2,7 +2,7 @@
 HeaderPath=../../CA_Embedded_Libraries/STM32/ADCMonitor/Inc;../../CA_Embedded_Libraries/STM32/circularBuffer/Inc;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc;../../CA_Embedded_Libraries/STM32/Util/Inc;../../CA_Embedded_Libraries/STM32/USBprint/Inc;../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc;HeatCtrl/Inc;
 
 [Groups]
-Core/Src=Core/Src/ACTenCh.c;
+Core/Src=Core/Src/ACTenChannel.c;
 HeatCtrl/Src=HeatCtrl/Src/HeatCtrl.c;
 ../../CA_Embedded_Libraries/STM32/ADCMonitor/Src=../../CA_Embedded_Libraries/STM32/ADCMonitor/Src/ADCmonitor.c;
 ../../CA_Embedded_Libraries/STM32/circularBuffer/Src=../../CA_Embedded_Libraries/STM32/circularBuffer/Src/circular_buffer.c;

@@ -4,7 +4,7 @@
         {
             "name": "Cortex Debug",
             "cwd": "${workspaceRoot}",
-            "executable": "./build/ACTenCh.elf",
+            "executable": "./build/ACTenChannel.elf",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",

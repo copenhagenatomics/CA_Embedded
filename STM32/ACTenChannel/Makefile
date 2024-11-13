@@ -20,7 +20,7 @@ makefile.init:
 ######################################
 # target
 ######################################
-TARGET = ACTenCh
+TARGET = ACTenChannel
 
 
 ######################################
@@ -89,7 +89,7 @@ Core/Src/syscalls.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/time32.c \
-Core/Src/ACTenCh.c \
+Core/Src/ACTenChannel.c \
 HeatCtrl/Src/HeatCtrl.c \
 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_iwdg.c \
 Core/Src/DS18B20.c

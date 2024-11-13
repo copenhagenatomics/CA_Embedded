@@ -1,5 +1,5 @@
 /*
- * ACTenCh.c
+ * ACTenChannel.c
  */
 
 #include <math.h>
@@ -19,7 +19,7 @@
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "StmGpio.h"
-#include "ACTenCh.h"
+#include "ACTenChannel.h"
 #include "pcbversion.h"
 #include "DS18B20.h"
 
