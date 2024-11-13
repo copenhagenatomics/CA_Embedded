@@ -349,7 +349,7 @@ TEST_F(ACBoard, faultInfoPrintout) {
 
     EXPECT_FLUSH_USB(ElementsAre(
         "\r", 
-        "Boot Unit Test", 
+        "Boot Unit Test\r", 
         "Start of fault info\r", 
         "Last fault was: 1\r", 
         "CFSR was: 0x00000000\r", 
