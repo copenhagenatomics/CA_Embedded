@@ -10,6 +10,9 @@
 #include "fake_stm32xxxx_hal.h"
 #include "fake_StmGpio.h"
 
+/* Real supporting units */
+#include "faultHandlers.c"
+
 /* UUT */
 #include "HeatCtrl.c"
 
