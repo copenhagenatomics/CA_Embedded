@@ -7,7 +7,7 @@
 ** DEFINES
 ***************************************************************************************************/
 // Extern value defined in .ld linker script
-extern uint32_t _FlashAddrCal;   // Starting address of main program in FLASH
+extern uint32_t _FlashAddrCal;   // Starting address of calibration values in FLASH
 #define FLASH_ADDR_CAL ((uintptr_t) &_FlashAddrCal)
 
 
