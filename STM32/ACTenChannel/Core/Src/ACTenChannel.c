@@ -123,13 +123,12 @@ static void userInput(const char *input)
 
 static void GpioInit()
 {
-    const int NO_PORTS = AC_TEN_CH_NUM_PORTS;
     static GPIO_TypeDef *const pinsBlk[] = { CTRL_0_GPIO_Port, CTRL_1_GPIO_Port, CTRL_2_GPIO_Port, CTRL_3_GPIO_Port, CTRL_4_GPIO_Port,
                                              CTRL_5_GPIO_Port, CTRL_6_GPIO_Port, CTRL_7_GPIO_Port, CTRL_8_GPIO_Port, CTRL_9_GPIO_Port };
     static const uint16_t pins[] = { CTRL_0_Pin, CTRL_1_Pin, CTRL_2_Pin, CTRL_3_Pin, CTRL_4_Pin,
                                      CTRL_5_Pin, CTRL_6_Pin, CTRL_7_Pin, CTRL_8_Pin, CTRL_9_Pin };
 
-    for (int i = 0; i < NO_PORTS; i++)
+    for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
     {
         stmGpioInit(&heaterPorts[i], pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
         heatCtrlAdd(&heaterPorts[i]);
@@ -140,8 +139,8 @@ static void GpioInit()
 
 static double ADCtoCurrent(double adc_val)
 {
-    static float CURRENT_SCALAR = 0.013138;
-    static float CURRENT_BIAS = -0.01;
+    static const float CURRENT_SCALAR = 0.013138;
+    static const float CURRENT_BIAS = -0.01;
 
     return CURRENT_SCALAR * adc_val + CURRENT_BIAS;
 }
@@ -170,7 +169,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     port_close_time = 0;
 
     /* If the version is incorrect, there is no point printing data or doing maths */
-    if (bsGetStatus() & BS_VERSION_ERROR_Msk)
+    if (bsGetField(BS_VERSION_ERROR_Msk))
     {
         USBnprintf("0x%08" PRIx32, bsGetStatus());
         return;
@@ -186,10 +185,9 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         isCalibrationDone = true;
     }
 
-    // Set bias for each channel.
+    // Set bias for each ADC channel.
     for (int i = 0; i < noOfChannels; i++)
     {
-        // Go from channel 1 since 0 is temperature.
         ADCSetOffset(pData, current_calibration[i], i);
     }
 

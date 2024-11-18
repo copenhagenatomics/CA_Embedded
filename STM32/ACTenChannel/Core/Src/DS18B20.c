@@ -10,6 +10,7 @@
  */
 
 #include "DS18B20.h"
+#include "time32.h"
 
 TIM_HandleTypeDef* DS18B20_tim = NULL;
 
@@ -166,7 +167,7 @@ float getTemp()
 
         resetTime = HAL_GetTick();
     } 
-    else if (acquiring && ((HAL_GetTick() - resetTime) >= 800))
+    else if (acquiring && (tdiff_u32(HAL_GetTick(), resetTime) >= 800))
     {
         acquiring = 0;
 
