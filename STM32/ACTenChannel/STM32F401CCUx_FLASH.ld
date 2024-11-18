@@ -82,7 +82,25 @@ SECTIONS
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASH
+  } >FLASHISR
+
+  .calData (NOLOAD) :
+  {
+    KEEP(*(.calData))
+    . = . + 0x4000;
+  } > FLASHCAL
+
+  .calData2 (NOLOAD) :
+  {
+    KEEP(*(.calData2))
+    . = . + 0x4000;
+  } > FLASHCAL2
+
+  .calData3 (NOLOAD) :
+  {
+    KEEP(*(.calData3))
+    . = . + 0x4000;
+  } > FLASHCAL3
 
   /* The program code and other data goes into FLASH */
   .text :
