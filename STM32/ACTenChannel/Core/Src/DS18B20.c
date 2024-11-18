@@ -98,7 +98,6 @@ static void writeData(uint8_t data)
 static uint8_t readData()
 {
     uint8_t value = 0;
-    setPinInput();
     for (uint8_t i = 0; i < 8; i++)
     {
         setPinOutput();
