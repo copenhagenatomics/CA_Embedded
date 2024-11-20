@@ -50,6 +50,8 @@ IWDG_HandleTypeDef hiwdg;
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim5;
 
+WWDG_HandleTypeDef hwwdg;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -62,6 +64,7 @@ static void MX_ADC1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_IWDG_Init(void);
 static void MX_TIM5_Init(void);
+static void MX_WWDG_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -105,6 +108,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_IWDG_Init();
   MX_TIM5_Init();
+  MX_WWDG_Init();
   /* USER CODE BEGIN 2 */
   ACTenChannelInit(&hadc1, &htim2, &htim5);
   /* USER CODE END 2 */
@@ -114,6 +118,7 @@ int main(void)
   while (1)
   {
       HAL_IWDG_Refresh(&hiwdg);
+      HAL_WWDG_Refresh(&hwwdg);
       ACTenChannelLoop(bootMsg);
     /* USER CODE END WHILE */
 
@@ -318,7 +323,7 @@ static void MX_IWDG_Init(void)
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
   hiwdg.Init.Prescaler = IWDG_PRESCALER_256;
-  hiwdg.Init.Reload = 4095;
+  hiwdg.Init.Reload = 250;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();
@@ -416,6 +421,36 @@ static void MX_TIM5_Init(void)
   /* USER CODE BEGIN TIM5_Init 2 */
 
   /* USER CODE END TIM5_Init 2 */
+
+}
+
+/**
+  * @brief WWDG Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_WWDG_Init(void)
+{
+
+  /* USER CODE BEGIN WWDG_Init 0 */
+
+  /* USER CODE END WWDG_Init 0 */
+
+  /* USER CODE BEGIN WWDG_Init 1 */
+
+  /* USER CODE END WWDG_Init 1 */
+  hwwdg.Instance = WWDG;
+  hwwdg.Init.Prescaler = WWDG_PRESCALER_8;
+  hwwdg.Init.Window = 127;
+  hwwdg.Init.Counter = 127;
+  hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
+  if (HAL_WWDG_Init(&hwwdg) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN WWDG_Init 2 */
+
+  /* USER CODE END WWDG_Init 2 */
 
 }
 
