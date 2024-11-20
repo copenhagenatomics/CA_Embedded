@@ -7,13 +7,13 @@ import sys
 
 def run_tests_in_subdirectory(dir, regex, verbose):
     ret = subprocess.run("cmake -S . -B build", shell=True, cwd=dir)
-    if (ret != 0):
+    if (ret.returncode != 0):
         return ret.returncode
 
     ret = subprocess.run("cmake --build build", shell=True, cwd=dir)
-    if (ret != 0):
+    if (ret.returncode != 0):
         return ret.returncode
-
+        
     run_str = "cd build && ctest"
     run_str += regex
     run_str += verbose

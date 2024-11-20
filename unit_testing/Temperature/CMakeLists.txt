@@ -53,7 +53,7 @@ add_executable(temperature_test Temperature_tests.cpp ${UT_STUBS}/stub_jumpToBoo
                                 ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
                                 ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp 
                                 ${UT_FAKES}/fake_FLASH_readwrite.cpp ${UT_LIB}/Util/serialStatus_tests.cpp 
-                                ${UT_FAKES}/fake_ADS1120.cpp)
+                                ${UT_FAKES}/fake_ADS1120test.cpp)
 target_include_directories(temperature_test PRIVATE 
                                 ${UT_FAKES} ${UT_STUBS} ${SRC}/Temperature/Core/Src 
                                 ${SRC}/Temperature/Core/Inc ${LIB}/Util/Src ${INC_LIB} 

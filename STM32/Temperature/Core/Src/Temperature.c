@@ -279,7 +279,10 @@ static void calibrateReadWrite(bool write)
 {
     if (write)
     {
-        writeToFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal));
+        if (writeToFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0) 
+        { 
+            USBnprintf("Calibration was not stored in FLASH"); 
+        }
     }
     else
     {
