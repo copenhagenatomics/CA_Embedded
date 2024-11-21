@@ -65,8 +65,11 @@ MEMORY
   FLASH    (rx)   : ORIGIN = 0x08000000,   LENGTH = 128K
   FLASHCAL (r)    : ORIGIN = 0x08020000,   LENGTH = 128K
 }
-_FlashSector = 0x5;
-_FlashAddr = ORIGIN(FLASHCAL);
+
+_ProgramMemoryStart = ORIGIN(FLASH);
+_ProgramMemoryEnd = ORIGIN(FLASH) + LENGTH(FLASH);
+
+_FlashAddrCal = ORIGIN(FLASHCAL);
 
 /* Define output sections */
 SECTIONS

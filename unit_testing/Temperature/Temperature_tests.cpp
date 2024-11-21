@@ -4,8 +4,11 @@
 ** @date   05/11/2024
 */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
+#include <inttypes.h>
+
+extern "C" {
+    uint32_t _FlashAddrCal = 0;
+}
 
 #include "caBoardUnitTests.h"
 #include "serialStatus_tests.h"
