@@ -9,12 +9,6 @@ project(unit_testing)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Set timestamp policy to avoid warning (default value)
-if(POLICY CMP0135)
-	cmake_policy(SET CMP0135 NEW)
-	set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
-endif()
-
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -49,7 +43,7 @@ include(GoogleTest)
 
 # AC tests
 add_executable(heatCtrl_test heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp)
-target_include_directories(heatCtrl_test PRIVATE ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
+target_include_directories(heatCtrl_test PRIVATE ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
 gtest_discover_tests(heatCtrl_test)
 
