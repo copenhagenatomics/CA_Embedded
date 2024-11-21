@@ -111,8 +111,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
     while (1)
     {
-        HAL_IWDG_Refresh(&hiwdg);
-        ACBoardLoop(bootMsg);
+      HAL_IWDG_Refresh(&hiwdg);
+      HAL_WWDG_Refresh(&hwwdg);
+      ACBoardLoop(bootMsg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -273,8 +274,8 @@ static void MX_IWDG_Init(void)
 
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
-  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
-  hiwdg.Init.Reload = 4095;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_128;
+  hiwdg.Init.Reload = 500;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();
@@ -347,8 +348,8 @@ static void MX_WWDG_Init(void)
   /* USER CODE END WWDG_Init 1 */
   hwwdg.Instance = WWDG;
   hwwdg.Init.Prescaler = WWDG_PRESCALER_8;
-  hwwdg.Init.Window = 74;
-  hwwdg.Init.Counter = 118;
+  hwwdg.Init.Window = 127;
+  hwwdg.Init.Counter = 127;
   hwwdg.Init.EWIMode = WWDG_EWI_DISABLE;
   if (HAL_WWDG_Init(&hwwdg) != HAL_OK)
   {

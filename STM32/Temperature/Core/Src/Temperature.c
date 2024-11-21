@@ -248,8 +248,7 @@ void LoopTemperature(const char* bootMsg)
 
 void initSensorCalibration()
 {
-    readFromFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
-    if (*((uint8_t*) portCalVal) == 0xFF)
+    if (readFromFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0)
     {
         // If nothing is stored in FLASH default to type K thermocouple
         for (int i = 0; i < NO_SPI_DEVICES*2; i++)
@@ -279,7 +278,12 @@ static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibr
 static void calibrateReadWrite(bool write)
 {
     if (write)
-        writeToFlashSafe(hcrc, 0, sizeof(portCalVal), (uint8_t *) portCalVal);
+    {
+        if (writeToFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0) 
+        { 
+            USBnprintf("Calibration was not stored in FLASH"); 
+        }
+    }
     else
     {
         char buf[512];

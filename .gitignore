@@ -4,6 +4,7 @@ build/
 *.launch
 *.mxproject
 githash.h
+/**/settings.json
 
 # Compiled python files
 *.pyc

@@ -3,6 +3,14 @@
 #include "stm32f4xx_hal.h"
 #include "stdbool.h"
 
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+// Extern value defined in .ld linker script
+extern uint32_t _FlashAddrCal;   // Starting address of calibration values in FLASH
+#define FLASH_ADDR_CAL ((uintptr_t) &_FlashAddrCal)
+
+
 // Industry standard values. Can be found in https://datasheets.maximintegrated.com/en/ds/MAX31855.pdf
 #define TYPE_J_DELTA	0.000057953 // Sensitivity in V/C
 #define TYPE_J_CJ_DELTA	0.000052136 // Sensitivity at cold-junction in V/C
