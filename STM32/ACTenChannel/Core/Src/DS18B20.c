@@ -41,7 +41,7 @@ void setPinOutput()
     GPIO_InitStruct.Pin = comm.pin;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
-    //HAL_GPIO_Init(comm.blk, &GPIO_InitStruct);
+    HAL_GPIO_Init(comm.blk, &GPIO_InitStruct);
     stmGpioInit(comm.dataGpio, comm.blk, comm.pin, STM_GPIO_OUTPUT);
 }
 
@@ -52,7 +52,7 @@ void setPinInput()
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
-    //HAL_GPIO_Init(comm.blk, &GPIO_InitStruct);
+    HAL_GPIO_Init(comm.blk, &GPIO_InitStruct);
     stmGpioInit(comm.dataGpio, comm.blk, comm.pin, STM_GPIO_INPUT);
 }
 
