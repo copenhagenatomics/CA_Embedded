@@ -11,7 +11,6 @@
 #include "fake_StmGpio.h"
 #include "fake_stm32xxxx_hal.h"
 #include "fake_USBprint.h"
-#include "fake_DS18B20.h"
 
 /* Real supporting units */
 #include "HeatCtrl.c"
