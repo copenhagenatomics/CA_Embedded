@@ -1,0 +1,20 @@
+{
+    "version": "2.0.0",
+    "configurations": [
+        {
+            "name": "Cortex Debug",
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/ACTenChannel.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "STM32F401CCU6",
+            "configFiles": [
+                "interface/stlink-v2.cfg",
+                "target/stm32f4x.cfg"
+            ],
+            "svdFile": "STM32F401.svd",
+            "showDevDebugOutput": "raw"
+        }
+    ]
+}

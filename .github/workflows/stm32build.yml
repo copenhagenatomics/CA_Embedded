@@ -30,6 +30,7 @@ jobs:
       with:
         filters: |
           AC: STM32/AC/**
+          ACTenChannel: STM32/ACTenChannel/**
           AirconCtrl: STM32/AirconCtrl/**
           DC: STM32/DC/**
           LightController: STM32/LightController/**
