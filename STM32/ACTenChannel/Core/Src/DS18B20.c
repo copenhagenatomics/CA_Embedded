@@ -62,8 +62,19 @@ void setPinInput()
 */
 static void delay_us(uint32_t us)
 {
+    uint8_t updateCount = 0;
+    uint8_t const MAX_LOOPS_WITHOUT_CHANGE = 64;
+
     __HAL_TIM_SET_COUNTER(DS18B20_tim, 0);
-    while (DS18B20_tim->Instance->CNT < us);
+    uint32_t startCount = DS18B20_tim->Instance->CNT;
+    while (DS18B20_tim->Instance->CNT < us)
+    {
+        // In the case where DS18B20_tim is not running correctly return from function.
+        if ((startCount == DS18B20_tim->Instance->CNT) && (updateCount++ >= MAX_LOOPS_WITHOUT_CHANGE))
+        {
+            break;
+        }
+    }
 }
 
 /*!
@@ -181,7 +192,7 @@ float getTemp()
 
         uint8_t adc_low = readData();
         uint8_t adc_high = readData();
-        adc = (adc_high << 8) | adc_low;
+        adc = ((uint16_t) adc_high << 8) | adc_low;
         temp = (float) (adc / 16.0f);
     }
     return temp;

@@ -99,7 +99,6 @@ TEST_F(ACTenCh, goldenPath)
 
 TEST_F(ACTenCh, printStatus) {
     statusPrintoutTest(sst, {
-        "Fan     On: 0\r", 
         "Port 0: On: 0, PWM percent: 0\r", 
         "Port 1: On: 0, PWM percent: 0\r", 
         "Port 2: On: 0, PWM percent: 0\r", 
@@ -119,8 +118,7 @@ TEST_F(ACTenCh, printStatus) {
     EXPECT_FLUSH_USB(ElementsAre(
         "\r", 
         "Start of board status:\r", 
-        "The board is operating normally.\r", 
-        "Fan     On: 0\r", 
+        "The board is operating normally.\r",
         "Port 0: On: 0, PWM percent: 0\r", 
         "Port 1: On: 1, PWM percent: 100\r", 
         "Port 2: On: 0, PWM percent: 0\r", 

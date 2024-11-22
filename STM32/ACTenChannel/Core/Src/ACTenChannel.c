@@ -51,7 +51,6 @@ typedef struct ActuationInfo {
 
 static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
-static void userInput(const char *input);
 static void printAcTenChannelStatus();
 static void updateBoardStatus();
 
@@ -61,14 +60,12 @@ static void updateBoardStatus();
 
 /* GPIO settings. */
 StmGpio heaterPorts[AC_TEN_CH_NUM_PORTS];
-static StmGpio fanCtrl;
 static StmGpio DQ1;
 static double heatSinkTemperature = 0; // Heat Sink temperature
-static bool isFanForceOn = false;
 
 static CAProtocolCtx caProto =
 {
-        .undefined = userInput,
+        .undefined = HALundefined,
         .printHeader = CAPrintHeader,
         .printStatus = printAcTenChannelStatus,
         .jumpToBootLoader = HALJumpToBootloader,
@@ -93,7 +90,6 @@ static void printAcTenChannelStatus()
     static char buf[600] = { 0 };
     int len = 0;
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "Fan     On: %d\r\n", stmGetGpio(fanCtrl));
     for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
     {
         len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", 
@@ -101,24 +97,6 @@ static void printAcTenChannelStatus()
     }
 
     writeUSB(buf, len);
-}
-
-static void userInput(const char *input)
-{
-    if (strncmp(input, "fan on", 6) == 0)
-    {
-        isFanForceOn = true;
-        stmSetGpio(fanCtrl, true);
-    }
-    else if (strncmp(input, "fan off", 7) == 0)
-    {
-        isFanForceOn = false;
-        stmSetGpio(fanCtrl, false);
-    }
-    else 
-    {
-        HALundefined(input);
-    }
 }
 
 static void GpioInit()
@@ -133,8 +111,6 @@ static void GpioInit()
         stmGpioInit(&heaterPorts[i], pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
         heatCtrlAdd(&heaterPorts[i]);
     }
-
-    stmGpioInit(&fanCtrl, FAN_CTRL_GPIO_Port, FAN_CTRL_Pin, STM_GPIO_OUTPUT);
 }
 
 static double ADCtoCurrent(double adc_val)
@@ -191,7 +167,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    float heatSinkTemperature = getTemp();
+    heatSinkTemperature = getTemp();
     USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.2f, 0x%08" PRIx32, 
                 ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), ADCtoCurrent(ADCrms(pData, 2)), 
                 ADCtoCurrent(ADCrms(pData, 3)), ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)), 
@@ -283,45 +259,6 @@ static void CAportState(int port, bool state, int percent, int duration)
     }
 }
 
-/*!
-** @brief Loop for controlling board temperature.
-**
-** Loops keeping the board cool using the attached fan. If the board gets too hot, starts to reduce
-** the power on all ports by reducing the PWM
-*/
-static void heatSinkLoop()
-{
-    static unsigned long previous = 0;
-    // Turn on fan if temp > 55 and turn of when temp < 50.
-    if (heatSinkTemperature <= MAX_TEMPERATURE)
-    {
-        if (heatSinkTemperature < 50 && !isFanForceOn)
-        {
-            stmSetGpio(fanCtrl, false);
-        }
-        else if (heatSinkTemperature > 55)
-        {
-            stmSetGpio(fanCtrl, true);
-        }
-
-        bsClearField(BS_OVER_TEMPERATURE_Msk);
-    }
-    else // Safety mode to avoid overheating of the board
-    {
-        stmSetGpio(fanCtrl, true);
-        
-        unsigned long now = HAL_GetTick();
-        if (now - previous > 2000)  // 2000ms. Should be aligned with the control period of heater.
-        {
-            previous = now;
-            adjustPWMDown();
-        }
-
-        bsSetError(BS_OVER_TEMPERATURE_Msk);
-    }
-
-    setBoardTemp(heatSinkTemperature);
-}
 
 /*!
 ** @brief Updates the global error/status object.
@@ -331,10 +268,9 @@ static void heatSinkLoop()
 */
 static void updateBoardStatus() 
 {
-    stmGetGpio(fanCtrl) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(0)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(0));
     for(int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
     {
-        stmGetGpio(heaterPorts[i]) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(i+1)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(i+1));
+        stmGetGpio(heaterPorts[i]) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(i)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(i));
     }
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
@@ -386,7 +322,6 @@ void ACTenChannelLoop(const char *bootMsg)
     CAhandleUserInputs(&caProto, bootMsg);
     updateBoardStatus();
     ADCMonitorLoop(printCurrentArray);
-    heatSinkLoop();
 
     // Toggle pins if needed when in pwm mode
     heaterLoop();
