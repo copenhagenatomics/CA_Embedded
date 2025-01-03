@@ -95,7 +95,8 @@ TEST_F(ACBoard, printStatus) {
                              "Port 0: On: 0, PWM percent: 0\r", 
                              "Port 1: On: 0, PWM percent: 0\r", 
                              "Port 2: On: 0, PWM percent: 0\r", 
-                             "Port 3: On: 0, PWM percent: 0\r"});
+                             "Port 3: On: 0, PWM percent: 0\r",
+                             "Power     On: 0\r"});
 
     writeBoardMessage("fan on\n");
     writeBoardMessage("p2 on 1\n");
@@ -111,6 +112,7 @@ TEST_F(ACBoard, printStatus) {
         "Port 1: On: 1, PWM percent: 100\r",
         "Port 2: On: 0, PWM percent: 0\r",
         "Port 3: On: 1, PWM percent: 100\r",
+        "Power     On: 0\r",
         "\r", 
         "End of board status. \r"
     ));
