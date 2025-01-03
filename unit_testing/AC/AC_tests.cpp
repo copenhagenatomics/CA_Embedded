@@ -87,7 +87,7 @@ class ACBoard: public CaBoardUnitTest
 ***************************************************************************************************/
 
 TEST_F(ACBoard, CorrectBoardParams) {
-    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, 0.00, 0.00, 0.00, 0.00, 0x0");
+    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -50.00, -50.00, -50.00, -50.00, 0x0");
 }
 
 TEST_F(ACBoard, printStatus) {
@@ -292,37 +292,37 @@ TEST_F(ACBoard, heatsinkLoop)
     const int TEMP_CHANNEL = 4;
 
     /* Fill the temperature buffer with ~54 degC - fan should stay off */
-    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL + ADC_CHANNELS*i) = 680;
+    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL + ADC_CHANNELS*i) = 1300;
     goToTick(100);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 54.81, 0.00, 0.00, 0.00, 0x0"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 54.78, -50.00, -50.00, -50.00, 0x0"));
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
     /* Fill the temperature buffer with ~56 degC - fan should turn on */
-    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 700;
+    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 1320;
     goToTick(200);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 56.42, 0.00, 0.00, 0.00, 0x0"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 56.39, -50.00, -50.00, -50.00, 0x0"));
     EXPECT_TRUE(stmGetGpio(fanCtrl));
 
     /* Fill the temperature buffer with ~51 degC - fan should remain on */
     /* Note: Status changes to 0x1 because fan pin is enabled. The previous message didn't contain 
     ** it because the printout and heatSink update are in the same function, and the heatsinkLoop 
     ** is outside the function */
-    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 630;
+    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 1250;
     goToTick(300);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 50.78, 0.00, 0.00, 0.00, 0x1"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 50.75, -50.00, -50.00, -50.00, 0x1"));
     EXPECT_TRUE(stmGetGpio(fanCtrl));
 
     /* Fill the temperature buffer with ~49 degC - fan should turn off */
-    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 608;
+    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 1228;
     goToTick(400);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 49.00, 0.00, 0.00, 0.00, 0x1"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 48.98, -50.00, -50.00, -50.00, 0x1"));
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
     /* Fill the temperature buffer with ~71 degC - fan should turn on and PWM of heaters should be reduced */
     writeBoardMessage("p1 on 10\n");
-    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 880;
+    for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 1500;
     goToTick(600);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 70.93, 0.00, 0.00, 0.00, 0xc0000003"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 70.90, -50.00, -50.00, -50.00, 0xc0000003"));
     EXPECT_TRUE(stmGetGpio(fanCtrl));
     
     /* p1 was turned on 100 % for 10 secs at t=400. The temperature rise would not be detected until 

@@ -164,9 +164,10 @@ static double ADCtoCurrent(double adc_val)
 static double ADCtoTemperature(double adc_val)
 {
     // TODO: change method for calibration?
-    static float temp_scalar = 0.0806;
+    static const float TEMP_SCALAR = 0.0806;
+    static const float TEMP_BIAS = -50.0;
 
-    return temp_scalar * adc_val;
+    return TEMP_SCALAR * adc_val + TEMP_BIAS;
 }
 
 WWDG_HandleTypeDef* hwwdg_ = NULL;
