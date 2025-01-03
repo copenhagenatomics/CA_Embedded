@@ -27,8 +27,9 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS	5
+#define ADC_CHANNELS	8           // 4 current + 4 temperature
 #define ADC_CHANNEL_BUF_SIZE	400
+#define NUM_CURRENT_CHANNELS 4
 
 #define MAX_TEMPERATURE 70
 
@@ -67,6 +68,7 @@ static struct
     StmGpio button;
 } heaterPorts[AC_BOARD_NUM_PORTS];
 static StmGpio fanCtrl;
+static StmGpio powerStatus;
 static double heatSinkTemperature = 0; // Heat Sink temperature
 static bool isFanForceOn = false;
 
@@ -76,7 +78,7 @@ static CAProtocolCtx caProto =
         .printHeader = printAcHeader,
         .printStatus = printAcStatus,
         .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = NULL, // TODO: change method for calibration?
+        .calibration = NULL, 
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
@@ -111,6 +113,8 @@ static void printAcStatus()
                         i, stmGetGpio(heaterPorts[i].heater), getPWMPinPercent(i));
     }
 
+    len += snprintf(&buf[len], sizeof(buf) - len, "Power     On: %d\r\n", stmGetGpio(powerStatus));
+
     writeUSB(buf, len);
 }
 
@@ -144,7 +148,8 @@ static void GpioInit()
         heatCtrlAdd(&heaterPorts[i].heater, &heaterPorts[i].button);
     }
 
-    stmGpioInit(&fanCtrl, powerCut_GPIO_Port, powerCut_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&fanCtrl, fanctrl_GPIO_Port, fanctrl_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&powerStatus, powerStatus_GPIO_Port, powerStatus_Pin, STM_GPIO_INPUT);
 }
 
 static double ADCtoCurrent(double adc_val)
@@ -197,8 +202,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 
     if (!isCalibrationDone)
     {
-        // Go from channel 1 since 0 is temperature.
-        for (int i = 1; i < noOfChannels; i++)
+        for (int i = 0; i < NUM_CURRENT_CHANNELS; i++)
         {
             // finding the average of each channel array to subtract from the readings
             current_calibration[i] = -ADCMean(pData, i);
@@ -207,18 +211,18 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     }
 
     // Set bias for each channel.
-    for (int i = 1; i < noOfChannels; i++)
+    for (int i = 0; i < NUM_CURRENT_CHANNELS; i++)
     {
         // Go from channel 1 since 0 is temperature.
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 0));
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
-            ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
-            ADCtoCurrent(ADCrms(pData, 4)), 
-            heatSinkTemperature,
-            bsGetStatus());
+    heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 4));
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), 
+                                                                       ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)), 
+                                                                       ADCtoTemperature(ADCMean(pData, 4)), ADCtoTemperature(ADCMean(pData, 5)),
+                                                                       ADCtoTemperature(ADCMean(pData, 6)), ADCtoTemperature(ADCMean(pData, 7)),
+                                                                       bsGetStatus());
 }
 
 /*!
@@ -357,6 +361,8 @@ static void updateBoardStatus()
     {
         stmGetGpio(heaterPorts[i].heater) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(i+1)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(i+1));
     }
+
+    stmGetGpio(powerStatus) ? bsSetField(AC_POWER_STATUS_Msk) : bsClearField(AC_POWER_STATUS_Msk);
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
     ** the (other) error bits are cleared, but doing here means it only needs to be done once */
