@@ -30,6 +30,7 @@
 #define ADC_CHANNELS	8           // 4 current + 4 temperature
 #define ADC_CHANNEL_BUF_SIZE	400
 #define NUM_CURRENT_CHANNELS 4
+#define NUM_TEMP_CHANNELS 4
 
 #define MAX_TEMPERATURE 70
 
@@ -69,7 +70,8 @@ static struct
 } heaterPorts[AC_BOARD_NUM_PORTS];
 static StmGpio fanCtrl;
 static StmGpio powerStatus;
-static double heatSinkTemperature = 0; // Heat Sink temperature
+static double heatSinkTemperatures[NUM_TEMP_CHANNELS] = {0};
+static double heatSinkMaxTemp = 0;
 static bool isFanForceOn = false;
 
 static CAProtocolCtx caProto =
@@ -163,7 +165,6 @@ static double ADCtoCurrent(double adc_val)
 
 static double ADCtoTemperature(double adc_val)
 {
-    // TODO: change method for calibration?
     static const float TEMP_SCALAR = 0.0806;
     static const float TEMP_BIAS = -50.0;
 
@@ -218,11 +219,22 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 4));
+    double maxTemp = 0;
+    for (int i = 0; i < NUM_TEMP_CHANNELS; i++)
+    {
+        // Temperature channels are 4-7
+        heatSinkTemperatures[i] = ADCtoTemperature(ADCMean(pData, i+4));
+        if (heatSinkTemperatures[i] > maxTemp)
+        {
+            maxTemp = heatSinkTemperatures[i];
+        }
+    }
+    heatSinkMaxTemp = maxTemp;
+
     USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), 
                                                                        ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)), 
-                                                                       ADCtoTemperature(ADCMean(pData, 4)), ADCtoTemperature(ADCMean(pData, 5)),
-                                                                       ADCtoTemperature(ADCMean(pData, 6)), ADCtoTemperature(ADCMean(pData, 7)),
+                                                                       heatSinkTemperatures[0], heatSinkTemperatures[1],
+                                                                       heatSinkTemperatures[2], heatSinkTemperatures[3],
                                                                        bsGetStatus());
 }
 
@@ -294,7 +306,7 @@ static void CAportState(int port, bool state, int percent, int duration)
     uint8_t pwmPercent = getPWMPinPercent(port-1);
     // If heat sink has reached the maximum allowed temperature and user
     // tries to heat the system further up then disregard the input command
-    if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
+    if (heatSinkMaxTemp > MAX_TEMPERATURE && percent > pwmPercent)
         return;
 
     if((duration <= 0) && (percent != 0)) 
@@ -319,13 +331,13 @@ static void heatSinkLoop()
 {
     static unsigned long previous = 0;
     // Turn on fan if temp > 55 and turn of when temp < 50.
-    if (heatSinkTemperature <= MAX_TEMPERATURE)
+    if (heatSinkMaxTemp <= MAX_TEMPERATURE)
     {
-        if (heatSinkTemperature < 50 && !isFanForceOn)
+        if (heatSinkMaxTemp < 50 && !isFanForceOn)
         {
             stmSetGpio(fanCtrl, false);
         }
-        else if (heatSinkTemperature > 55)
+        else if (heatSinkMaxTemp > 55)
         {
             stmSetGpio(fanCtrl, true);
         }
@@ -346,7 +358,7 @@ static void heatSinkLoop()
         bsSetError(BS_OVER_TEMPERATURE_Msk);
     }
 
-    setBoardTemp(heatSinkTemperature);
+    setBoardTemp(heatSinkMaxTemp);
 }
 
 /*!
@@ -357,13 +369,20 @@ static void heatSinkLoop()
 */
 static void updateBoardStatus() 
 {
+    static int const FILTER_LEN = 1000;
+    static float isMainsConnected = 0;
+
     stmGetGpio(fanCtrl) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(0)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(0));
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++)
     {
         stmGetGpio(heaterPorts[i].heater) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(i+1)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(i+1));
     }
 
-    stmGetGpio(powerStatus) ? bsSetField(AC_POWER_STATUS_Msk) : bsClearField(AC_POWER_STATUS_Msk);
+    /* Heavily averaged signal of the last 1000 samples to smooth out large dips
+    ** The gpio input is not supposed to change value generally so should be fine to use a large filter
+    ** Note: When power is toggled the status code changes within one print cycle */
+    isMainsConnected += (stmGetGpio(powerStatus) - isMainsConnected)/FILTER_LEN;
+    (isMainsConnected >= 0.5) ? bsClearField(AC_POWER_ERROR_Msk) : bsSetError(AC_POWER_ERROR_Msk);
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
     ** the (other) error bits are cleared, but doing here means it only needs to be done once */
