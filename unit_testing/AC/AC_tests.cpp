@@ -67,6 +67,16 @@ class ACBoard: public CaBoardUnitTest
             ACBoardLoop(bootMsg);
         }
 
+        void setPowerStatus(bool state)
+        {
+            ACBoardInit(&hadc, &hwwdg);
+            powerStatus.state = state;
+            for (int i = 0; i < 1000; i++)
+            {
+                updateBoardStatus();
+            }
+        }
+
         /*******************************************************************************************
         ** MEMBERS
         *******************************************************************************************/
@@ -87,17 +97,22 @@ class ACBoard: public CaBoardUnitTest
 ***************************************************************************************************/
 
 TEST_F(ACBoard, CorrectBoardParams) {
+    setPowerStatus(true);
+
     goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -50.00, -50.00, -50.00, -50.00, 0x0");
 }
 
 TEST_F(ACBoard, printStatus) {
+    setPowerStatus(true);
+
     statusPrintoutTest(sst, {"Fan     On: 0\r", 
                              "Port 0: On: 0, PWM percent: 0\r", 
                              "Port 1: On: 0, PWM percent: 0\r", 
                              "Port 2: On: 0, PWM percent: 0\r", 
                              "Port 3: On: 0, PWM percent: 0\r",
-                             "Power     On: 0\r"});
+                             "Power     On: 1\r"});
 
+    setPowerStatus(false);
     writeBoardMessage("fan on\n");
     writeBoardMessage("p2 on 1\n");
     writeBoardMessage("p4 on 1\n");
@@ -105,8 +120,7 @@ TEST_F(ACBoard, printStatus) {
     
     EXPECT_FLUSH_USB(ElementsAre( 
         "\r", 
-        "Start of board status:\r", 
-        "The board is operating normally.\r", 
+        "Start of board status:\r",
         "Fan     On: 1\r",
         "Port 0: On: 0, PWM percent: 0\r",
         "Port 1: On: 1, PWM percent: 100\r",
@@ -286,6 +300,8 @@ TEST_F(ACBoard, heatsinkLoop)
 {
     ACBoardInit(&hadc, &hwwdg);
     ACBoardLoop(bootMsg);
+
+    setPowerStatus(true);
 
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
