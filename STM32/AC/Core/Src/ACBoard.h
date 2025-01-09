@@ -15,11 +15,11 @@
 /* AC board status register definitions */
 
 /* Each of the 5 ports (1x Fan + 4x AC) can be on or off */
-#define AC_BOARD_PORT_x_STATUS_Msk(x) (1U << (x))
-#define AC_BOARD_PORTS_STATUS_Msk     ((1U << 5U) - 1U)
+#define AC_BOARD_PORT_x_STATUS_Msk(x) (1UL << (x))
+#define AC_BOARD_PORTS_STATUS_Msk     ((1UL << 5UL) - 1UL)
 
 /* Is on when there is mains is not connected to the board */
-#define AC_POWER_ERROR_Msk           (1U << 5U)
+#define AC_POWER_ERROR_Msk           (1UL << 5UL)
 
 /* Define showing which bits are "errors" and which are only for information */
 #define AC_BOARD_No_Error_Msk         (BS_SYSTEM_ERRORS_Msk | AC_POWER_ERROR_Msk)

@@ -58,6 +58,14 @@ static void userInput(const char *input);
 static void printAcStatus();
 static void updateBoardStatus();
 static void printAcHeader();
+static void printAcStatusDef();
+static void computeHeatSinkTemperatures(int16_t *pData);
+static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples);
+static void GpioInit();
+static double ADCtoCurrent(double adc_val);
+static double ADCtoTemperature(double adc_val);
+static void actuatePins(ActuationInfo actuationInfo);
+static void heatSinkLoop(); 
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -81,6 +89,7 @@ static CAProtocolCtx caProto =
         .undefined = userInput,
         .printHeader = printAcHeader,
         .printStatus = printAcStatus,
+        .printStatusDef = printAcStatusDef,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL, 
         .calibrationRW = NULL,
@@ -117,9 +126,26 @@ static void printAcStatus()
                         i, stmGetGpio(heaterPorts[i].heater), getPWMPinPercent(i));
     }
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "Power     On: %d\r\n", round(isMainsConnected));
+    len += snprintf(&buf[len], sizeof(buf) - len, "Power   On: %d\r\n", (int) round(isMainsConnected));
 
     writeUSB(buf, len);
+}
+
+/*!
+ * @brief Definition of status definition information when the 'StatusDef' command is received
+*/
+static void printAcStatusDef()
+{
+	static char buf[300] = {0};
+	int len = 0;
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Mains not-connected error\r\n", AC_POWER_ERROR_Msk);
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 4 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(4));
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 3 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(3));
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 2 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(2));
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 1 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(1));
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Fan state\r\n", AC_BOARD_PORT_x_STATUS_Msk(0));
+
+	writeUSB(buf, len);
 }
 
 static void userInput(const char *input)
@@ -173,6 +199,20 @@ static double ADCtoTemperature(double adc_val)
     return TEMP_SCALAR * adc_val + TEMP_BIAS;
 }
 
+static void computeHeatSinkTemperatures(int16_t *pData)
+{
+    double maxTemp = DBL_MIN;
+    for (int i = 0; i < NUM_TEMP_CHANNELS; i++)
+    {
+        heatSinkTemperatures[i] = ADCtoTemperature(ADCMean(pData, i+NUM_CURRENT_CHANNELS));
+        if (heatSinkTemperatures[i] > maxTemp)
+        {
+            maxTemp = heatSinkTemperatures[i];
+        }
+    }
+    heatSinkMaxTemp = maxTemp;
+}
+
 WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
@@ -193,6 +233,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         {
             allOff();
         }
+        computeHeatSinkTemperatures(pData);
         return;
     }
     port_close_time = 0;
@@ -220,17 +261,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    double maxTemp = DBL_MIN;
-    for (int i = 0; i < NUM_TEMP_CHANNELS; i++)
-    {
-        // Temperature channels are 4-7
-        heatSinkTemperatures[i] = ADCtoTemperature(ADCMean(pData, i+NUM_CURRENT_CHANNELS));
-        if (heatSinkTemperatures[i] > maxTemp)
-        {
-            maxTemp = heatSinkTemperatures[i];
-        }
-    }
-    heatSinkMaxTemp = maxTemp;
+    computeHeatSinkTemperatures(pData);
 
     USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,  ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), 
                                                                                 ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)), 

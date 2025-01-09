@@ -99,7 +99,7 @@ class ACBoard: public CaBoardUnitTest
 TEST_F(ACBoard, CorrectBoardParams) {
     setPowerStatus(true);
 
-    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -50.00, -50.00, -50.00, -50.00, 0x0");
+    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -50.00, -50.00, -50.00, -50.00, 0x00000000");
 }
 
 TEST_F(ACBoard, printStatus) {
@@ -110,7 +110,7 @@ TEST_F(ACBoard, printStatus) {
                              "Port 1: On: 0, PWM percent: 0\r", 
                              "Port 2: On: 0, PWM percent: 0\r", 
                              "Port 3: On: 0, PWM percent: 0\r",
-                             "Power     On: 1\r"});
+                             "Power   On: 1\r"});
 
     setPowerStatus(false);
     writeBoardMessage("fan on\n");
@@ -126,7 +126,7 @@ TEST_F(ACBoard, printStatus) {
         "Port 1: On: 1, PWM percent: 100\r",
         "Port 2: On: 0, PWM percent: 0\r",
         "Port 3: On: 1, PWM percent: 100\r",
-        "Power     On: 0\r",
+        "Power   On: 0\r",
         "\r", 
         "End of board status. \r"
     ));
@@ -310,13 +310,13 @@ TEST_F(ACBoard, heatsinkLoop)
     /* Fill the temperature buffer with ~54 degC - fan should stay off */
     for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL + ADC_CHANNELS*i) = 1300;
     goToTick(100);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 54.78, -50.00, -50.00, -50.00, 0x0"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 54.78, -50.00, -50.00, -50.00, 0x00000000"));
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
     /* Fill the temperature buffer with ~56 degC - fan should turn on */
     for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 1320;
     goToTick(200);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 56.39, -50.00, -50.00, -50.00, 0x0"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 56.39, -50.00, -50.00, -50.00, 0x00000000"));
     EXPECT_TRUE(stmGetGpio(fanCtrl));
 
     /* Fill the temperature buffer with ~51 degC - fan should remain on */
@@ -325,13 +325,13 @@ TEST_F(ACBoard, heatsinkLoop)
     ** is outside the function */
     for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 1250;
     goToTick(300);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 50.75, -50.00, -50.00, -50.00, 0x1"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 50.75, -50.00, -50.00, -50.00, 0x00000001"));
     EXPECT_TRUE(stmGetGpio(fanCtrl));
 
     /* Fill the temperature buffer with ~49 degC - fan should turn off */
     for(int i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 1228;
     goToTick(400);
-    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 48.98, -50.00, -50.00, -50.00, 0x1"));
+    EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 48.98, -50.00, -50.00, -50.00, 0x00000001"));
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
     /* Fill the temperature buffer with ~71 degC - fan should turn on and PWM of heaters should be reduced */
