@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <float.h>
+#include <inttypes.h>
 
 #include "main.h"
 #include "HeatCtrl.h"
@@ -72,6 +73,7 @@ static StmGpio fanCtrl;
 static StmGpio powerStatus;
 static double heatSinkTemperatures[NUM_TEMP_CHANNELS] = {0};
 static double heatSinkMaxTemp = 0;
+static float isMainsConnected = 0;
 static bool isFanForceOn = false;
 
 static CAProtocolCtx caProto =
@@ -115,7 +117,7 @@ static void printAcStatus()
                         i, stmGetGpio(heaterPorts[i].heater), getPWMPinPercent(i));
     }
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "Power     On: %d\r\n", stmGetGpio(powerStatus));
+    len += snprintf(&buf[len], sizeof(buf) - len, "Power     On: %d\r\n", round(isMainsConnected));
 
     writeUSB(buf, len);
 }
@@ -198,7 +200,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
     {
-        USBnprintf("0x%x", bsGetStatus());
+        USBnprintf("0x%08" PRIx32, bsGetStatus());
         return;
     }
 
@@ -212,18 +214,17 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         isCalibrationDone = true;
     }
 
-    // Set bias for each channel.
+    // Set bias for each current channel.
     for (int i = 0; i < NUM_CURRENT_CHANNELS; i++)
     {
-        // Go from channel 1 since 0 is temperature.
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    double maxTemp = 0;
+    double maxTemp = DBL_MIN;
     for (int i = 0; i < NUM_TEMP_CHANNELS; i++)
     {
         // Temperature channels are 4-7
-        heatSinkTemperatures[i] = ADCtoTemperature(ADCMean(pData, i+4));
+        heatSinkTemperatures[i] = ADCtoTemperature(ADCMean(pData, i+NUM_CURRENT_CHANNELS));
         if (heatSinkTemperatures[i] > maxTemp)
         {
             maxTemp = heatSinkTemperatures[i];
@@ -231,11 +232,11 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     }
     heatSinkMaxTemp = maxTemp;
 
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), 
-                                                                       ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)), 
-                                                                       heatSinkTemperatures[0], heatSinkTemperatures[1],
-                                                                       heatSinkTemperatures[2], heatSinkTemperatures[3],
-                                                                       bsGetStatus());
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,  ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), 
+                                                                                ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)), 
+                                                                                heatSinkTemperatures[0], heatSinkTemperatures[1],
+                                                                                heatSinkTemperatures[2], heatSinkTemperatures[3],
+                                                                                bsGetStatus());
 }
 
 /*!
@@ -370,7 +371,6 @@ static void heatSinkLoop()
 static void updateBoardStatus() 
 {
     static int const FILTER_LEN = 1000;
-    static float isMainsConnected = 0;
 
     stmGetGpio(fanCtrl) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(0)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(0));
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++)
