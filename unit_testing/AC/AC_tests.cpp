@@ -69,7 +69,7 @@ class ACBoard: public CaBoardUnitTest
 
         void setPowerStatus(bool state)
         {
-            ACBoardInit(&hadc, &hwwdg);
+            ACBoardInit(&hadc);
             powerStatus.state = state;
             for (int i = 0; i < 1000; i++)
             {
@@ -82,12 +82,9 @@ class ACBoard: public CaBoardUnitTest
         *******************************************************************************************/
         
         ADC_HandleTypeDef hadc;
-        WWDG_HandleTypeDef hwwdg = {
-            .Instance = WWDG,
-        };
         
         SerialStatusTest sst = {
-            .boundInit = bind(ACBoardInit, &hadc, &hwwdg),
+            .boundInit = bind(ACBoardInit, &hadc),
             .testFixture = this
         };
 };
@@ -147,7 +144,7 @@ TEST_F(ACBoard, incorrectBoardParams) {
 ** perfect */
 TEST_F(ACBoard, fanInput) 
 {
-    ACBoardInit(&hadc, &hwwdg);
+    ACBoardInit(&hadc);
     ACBoardLoop(bootMsg);
 
     EXPECT_FALSE(isFanForceOn);
@@ -187,7 +184,7 @@ TEST_F(ACBoard, GpioInit)
     expectStmNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNull(&heaterPorts[i].heater);
 
-    ACBoardInit(&hadc, &hwwdg);
+    ACBoardInit(&hadc);
 
     expectStmNotNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNotNull(&heaterPorts[i].heater);
@@ -236,7 +233,7 @@ TEST_F(ACBoard, GpioInit)
 
 TEST_F(ACBoard, InvalidCommands)
 {
-    ACBoardInit(&hadc, &hwwdg);
+    ACBoardInit(&hadc);
     ACBoardLoop(bootMsg);
     hostUSBread(true); /* Flush USB buffer */
 
@@ -268,7 +265,7 @@ TEST_F(ACBoard, UsbTimeout)
     static const int TEST_LENGTH_MS = 10000;
     static const int TIMEOUT_LENGTH_MS = 5000;
 
-    ACBoardInit(&hadc, &hwwdg);
+    ACBoardInit(&hadc);
     ACBoardLoop(bootMsg);
     writeBoardMessage("all on 60\n");
 
@@ -298,7 +295,7 @@ TEST_F(ACBoard, UsbTimeout)
 
 TEST_F(ACBoard, heatsinkLoop) 
 {
-    ACBoardInit(&hadc, &hwwdg);
+    ACBoardInit(&hadc);
     ACBoardLoop(bootMsg);
 
     setPowerStatus(true);
@@ -364,7 +361,7 @@ TEST_F(ACBoard, faultInfoPrintout) {
     faultInfo_t tmp = {.fault = HARD_FAULT};
     writeToFlash(FLASH_ADDR_FAULT, (uint8_t*)&tmp, sizeof(faultInfo_t));
 
-    ACBoardInit(&hadc, &hwwdg);
+    ACBoardInit(&hadc);
     ACBoardLoop(bootMsg);
 
     EXPECT_FLUSH_USB(ElementsAre(
