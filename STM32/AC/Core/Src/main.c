@@ -102,7 +102,7 @@ int main(void)
   // Initialization of timers takes time which will force a wwdg reset,
   // hence disable timers momentarily during setup.
   __HAL_RCC_WWDG_CLK_DISABLE();
-  ACBoardInit(&hadc1, &hwwdg);
+  ACBoardInit(&hadc1);
   HAL_TIM_Base_Start_IT(&htim2);
   __HAL_RCC_WWDG_CLK_ENABLE();
   /* USER CODE END 2 */

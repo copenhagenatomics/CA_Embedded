@@ -37,7 +37,7 @@ extern uint32_t _FlashAddrFault;   // Variable defined in ld linker script.
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg);
+void ACBoardInit(ADC_HandleTypeDef* hadc);
 void ACBoardLoop(const char* startMsg);
 
 #endif /* SRC_ACBOARD_H_ */

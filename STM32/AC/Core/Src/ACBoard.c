@@ -213,7 +213,6 @@ static void computeHeatSinkTemperatures(int16_t *pData)
     heatSinkMaxTemp = maxTemp;
 }
 
-WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
     // Make calibration static since this should be done only once.
@@ -431,7 +430,7 @@ static void updateBoardStatus()
 ** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
 ** link
 */
-void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
+void ACBoardInit(ADC_HandleTypeDef* hadc)
 {
     // Pin out has changed from PCB V6.4 - older versions need other software.
     boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
@@ -447,8 +446,6 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     /* Setup flash handling */
     fhLoadDeposit();
     setLocalFaultInfo(fhGetFaultInfo());
-
-    hwwdg_=hwwdg;
 }
 
 /*!
