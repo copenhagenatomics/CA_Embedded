@@ -58,30 +58,34 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define TempSense_Pin GPIO_PIN_0
-#define TempSense_GPIO_Port GPIOA
-#define ctrl4_Pin GPIO_PIN_1
-#define ctrl4_GPIO_Port GPIOA
-#define ctrl3_Pin GPIO_PIN_2
-#define ctrl3_GPIO_Port GPIOA
+#define fanctrl_Pin GPIO_PIN_14
+#define fanctrl_GPIO_Port GPIOC
+#define hall1_Pin GPIO_PIN_0
+#define hall1_GPIO_Port GPIOA
+#define hall2_Pin GPIO_PIN_1
+#define hall2_GPIO_Port GPIOA
+#define hall3_Pin GPIO_PIN_2
+#define hall3_GPIO_Port GPIOA
 #define hall4_Pin GPIO_PIN_3
 #define hall4_GPIO_Port GPIOA
-#define hall3_Pin GPIO_PIN_4
-#define hall3_GPIO_Port GPIOA
-#define hall2_Pin GPIO_PIN_5
-#define hall2_GPIO_Port GPIOA
-#define hall1_Pin GPIO_PIN_6
-#define hall1_GPIO_Port GPIOA
-#define powerCut_Pin GPIO_PIN_10
-#define powerCut_GPIO_Port GPIOB
-#define ctrl2_Pin GPIO_PIN_8
-#define ctrl2_GPIO_Port GPIOA
-#define ctrl1_Pin GPIO_PIN_9
-#define ctrl1_GPIO_Port GPIOA
-#define test1_Pin GPIO_PIN_6
-#define test1_GPIO_Port GPIOB
-#define test2_Pin GPIO_PIN_7
-#define test2_GPIO_Port GPIOB
+#define temp1_Pin GPIO_PIN_5
+#define temp1_GPIO_Port GPIOA
+#define temp2_Pin GPIO_PIN_6
+#define temp2_GPIO_Port GPIOA
+#define temp3_Pin GPIO_PIN_7
+#define temp3_GPIO_Port GPIOA
+#define temp4_Pin GPIO_PIN_0
+#define temp4_GPIO_Port GPIOB
+#define powerStatus_Pin GPIO_PIN_2
+#define powerStatus_GPIO_Port GPIOB
+#define ctrl1_Pin GPIO_PIN_6
+#define ctrl1_GPIO_Port GPIOB
+#define ctrl2_Pin GPIO_PIN_7
+#define ctrl2_GPIO_Port GPIOB
+#define ctrl3_Pin GPIO_PIN_8
+#define ctrl3_GPIO_Port GPIOB
+#define ctrl4_Pin GPIO_PIN_9
+#define ctrl4_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

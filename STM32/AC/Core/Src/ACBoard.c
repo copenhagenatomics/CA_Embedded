@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <float.h>
+#include <inttypes.h>
 
 #include "main.h"
 #include "HeatCtrl.h"
@@ -27,8 +28,10 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS	5
+#define ADC_CHANNELS	8           // 4 current + 4 temperature
 #define ADC_CHANNEL_BUF_SIZE	400
+#define NUM_CURRENT_CHANNELS 4
+#define NUM_TEMP_CHANNELS 4
 
 #define MAX_TEMPERATURE 70
 
@@ -55,6 +58,14 @@ static void userInput(const char *input);
 static void printAcStatus();
 static void updateBoardStatus();
 static void printAcHeader();
+static void printAcStatusDef();
+static void computeHeatSinkTemperatures(int16_t *pData);
+static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples);
+static void GpioInit();
+static double ADCtoCurrent(double adc_val);
+static double ADCtoTemperature(double adc_val);
+static void actuatePins(ActuationInfo actuationInfo);
+static void heatSinkLoop(); 
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -67,7 +78,10 @@ static struct
     StmGpio button;
 } heaterPorts[AC_BOARD_NUM_PORTS];
 static StmGpio fanCtrl;
-static double heatSinkTemperature = 0; // Heat Sink temperature
+static StmGpio powerStatus;
+static double heatSinkTemperatures[NUM_TEMP_CHANNELS] = {0};
+static double heatSinkMaxTemp = 0;
+static float isMainsConnected = 0;
 static bool isFanForceOn = false;
 
 static CAProtocolCtx caProto =
@@ -75,8 +89,9 @@ static CAProtocolCtx caProto =
         .undefined = userInput,
         .printHeader = printAcHeader,
         .printStatus = printAcStatus,
+        .printStatusDef = printAcStatusDef,
         .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = NULL, // TODO: change method for calibration?
+        .calibration = NULL, 
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
@@ -111,7 +126,26 @@ static void printAcStatus()
                         i, stmGetGpio(heaterPorts[i].heater), getPWMPinPercent(i));
     }
 
+    len += snprintf(&buf[len], sizeof(buf) - len, "Power   On: %d\r\n", (int) round(isMainsConnected));
+
     writeUSB(buf, len);
+}
+
+/*!
+ * @brief Definition of status definition information when the 'StatusDef' command is received
+*/
+static void printAcStatusDef()
+{
+	static char buf[300] = {0};
+	int len = 0;
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Mains not-connected error\r\n", AC_POWER_ERROR_Msk);
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 4 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(4));
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 3 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(3));
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 2 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(2));
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 1 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(1));
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Fan state\r\n", AC_BOARD_PORT_x_STATUS_Msk(0));
+
+	writeUSB(buf, len);
 }
 
 static void userInput(const char *input)
@@ -144,7 +178,8 @@ static void GpioInit()
         heatCtrlAdd(&heaterPorts[i].heater, &heaterPorts[i].button);
     }
 
-    stmGpioInit(&fanCtrl, powerCut_GPIO_Port, powerCut_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&fanCtrl, fanctrl_GPIO_Port, fanctrl_Pin, STM_GPIO_OUTPUT);
+    stmGpioInit(&powerStatus, powerStatus_GPIO_Port, powerStatus_Pin, STM_GPIO_INPUT);
 }
 
 static double ADCtoCurrent(double adc_val)
@@ -158,13 +193,26 @@ static double ADCtoCurrent(double adc_val)
 
 static double ADCtoTemperature(double adc_val)
 {
-    // TODO: change method for calibration?
-    static float temp_scalar = 0.0806;
+    static const float TEMP_SCALAR = 0.0806;
+    static const float TEMP_BIAS = -50.0;
 
-    return temp_scalar * adc_val;
+    return TEMP_SCALAR * adc_val + TEMP_BIAS;
 }
 
-WWDG_HandleTypeDef* hwwdg_ = NULL;
+static void computeHeatSinkTemperatures(int16_t *pData)
+{
+    double maxTemp = DBL_MIN;
+    for (int i = 0; i < NUM_TEMP_CHANNELS; i++)
+    {
+        heatSinkTemperatures[i] = ADCtoTemperature(ADCMean(pData, i+NUM_CURRENT_CHANNELS));
+        if (heatSinkTemperatures[i] > maxTemp)
+        {
+            maxTemp = heatSinkTemperatures[i];
+        }
+    }
+    heatSinkMaxTemp = maxTemp;
+}
+
 static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 {
     // Make calibration static since this should be done only once.
@@ -184,6 +232,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         {
             allOff();
         }
+        computeHeatSinkTemperatures(pData);
         return;
     }
     port_close_time = 0;
@@ -191,14 +240,13 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
     {
-        USBnprintf("0x%x", bsGetStatus());
+        USBnprintf("0x%08" PRIx32, bsGetStatus());
         return;
     }
 
     if (!isCalibrationDone)
     {
-        // Go from channel 1 since 0 is temperature.
-        for (int i = 1; i < noOfChannels; i++)
+        for (int i = 0; i < NUM_CURRENT_CHANNELS; i++)
         {
             // finding the average of each channel array to subtract from the readings
             current_calibration[i] = -ADCMean(pData, i);
@@ -206,19 +254,19 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         isCalibrationDone = true;
     }
 
-    // Set bias for each channel.
-    for (int i = 1; i < noOfChannels; i++)
+    // Set bias for each current channel.
+    for (int i = 0; i < NUM_CURRENT_CHANNELS; i++)
     {
-        // Go from channel 1 since 0 is temperature.
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    heatSinkTemperature = ADCtoTemperature(ADCMean(pData, 0));
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, 0x%x", ADCtoCurrent(ADCrms(pData, 1)),
-            ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
-            ADCtoCurrent(ADCrms(pData, 4)), 
-            heatSinkTemperature,
-            bsGetStatus());
+    computeHeatSinkTemperatures(pData);
+
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,  ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), 
+                                                                                ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)), 
+                                                                                heatSinkTemperatures[0], heatSinkTemperatures[1],
+                                                                                heatSinkTemperatures[2], heatSinkTemperatures[3],
+                                                                                bsGetStatus());
 }
 
 /*!
@@ -289,7 +337,7 @@ static void CAportState(int port, bool state, int percent, int duration)
     uint8_t pwmPercent = getPWMPinPercent(port-1);
     // If heat sink has reached the maximum allowed temperature and user
     // tries to heat the system further up then disregard the input command
-    if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
+    if (heatSinkMaxTemp > MAX_TEMPERATURE && percent > pwmPercent)
         return;
 
     if((duration <= 0) && (percent != 0)) 
@@ -314,13 +362,13 @@ static void heatSinkLoop()
 {
     static unsigned long previous = 0;
     // Turn on fan if temp > 55 and turn of when temp < 50.
-    if (heatSinkTemperature <= MAX_TEMPERATURE)
+    if (heatSinkMaxTemp <= MAX_TEMPERATURE)
     {
-        if (heatSinkTemperature < 50 && !isFanForceOn)
+        if (heatSinkMaxTemp < 50 && !isFanForceOn)
         {
             stmSetGpio(fanCtrl, false);
         }
-        else if (heatSinkTemperature > 55)
+        else if (heatSinkMaxTemp > 55)
         {
             stmSetGpio(fanCtrl, true);
         }
@@ -341,7 +389,7 @@ static void heatSinkLoop()
         bsSetError(BS_OVER_TEMPERATURE_Msk);
     }
 
-    setBoardTemp(heatSinkTemperature);
+    setBoardTemp(heatSinkMaxTemp);
 }
 
 /*!
@@ -352,11 +400,19 @@ static void heatSinkLoop()
 */
 static void updateBoardStatus() 
 {
+    static int const FILTER_LEN = 1000;
+
     stmGetGpio(fanCtrl) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(0)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(0));
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++)
     {
         stmGetGpio(heaterPorts[i].heater) ? bsSetField(AC_BOARD_PORT_x_STATUS_Msk(i+1)) : bsClearField(AC_BOARD_PORT_x_STATUS_Msk(i+1));
     }
+
+    /* Heavily averaged signal of the last 1000 samples to smooth out large dips
+    ** The gpio input is not supposed to change value generally so should be fine to use a large filter
+    ** Note: When power is toggled the status code changes within one print cycle */
+    isMainsConnected += (stmGetGpio(powerStatus) - isMainsConnected)/FILTER_LEN;
+    (isMainsConnected >= 0.5) ? bsClearField(AC_POWER_ERROR_Msk) : bsSetError(AC_POWER_ERROR_Msk);
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
     ** the (other) error bits are cleared, but doing here means it only needs to be done once */
@@ -374,7 +430,7 @@ static void updateBoardStatus()
 ** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
 ** link
 */
-void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
+void ACBoardInit(ADC_HandleTypeDef* hadc)
 {
     // Pin out has changed from PCB V6.4 - older versions need other software.
     boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
@@ -390,8 +446,6 @@ void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
     /* Setup flash handling */
     fhLoadDeposit();
     setLocalFaultInfo(fhGetFaultInfo());
-
-    hwwdg_=hwwdg;
 }
 
 /*!
