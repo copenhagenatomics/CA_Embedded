@@ -186,36 +186,6 @@ void setPWMPin(int pin, int pwmPct, int duration_ms)
     }
 }
 
-/*!
-** @brief Reduces the PWM, and extends duration to maintain energy delivered
-**
-** Reduces the PWM by 1%, and extends duration of "on-time" (up to a maximum) by the inverse of the
-** percentage drop. This means the board tries to keep the maximal attainable temperature.
-** However, the board should ultimately go into safe mode by shutting off if no new commands are 
-** received in case of loss of communication.
-*/
-void adjustPWMDown()
-{
-    for(HeatCtrl *ctx = heaters; ctx < &heaters[noOfHeaters]; ctx++)
-    {
-        if (ctx->pwmPercent > 1)
-        {
-            uint8_t new_pct = ctx->pwmPercent - 1;
-            float duration_scaler = ((float) ctx->pwmPercent) / new_pct;
-
-            /* Extend time on to match lost PWM pct, and keep equal energy delivered */
-            ctx->periodDuration = duration_scaler * ctx->periodDuration;
-            ctx->periodDuration = (ctx->periodDuration > MAX_TIMEOUT) ? MAX_TIMEOUT : ctx->periodDuration;
-            setPwmPercent(ctx, new_pct);
-        }
-        else
-        {
-            ctx->periodDuration = 0;
-            setPwmPercent(ctx, 0);
-        }
-    }
-}
-
 uint8_t getPWMPinPercent(int pin)
 {
     if (pin >= 0 && pin < noOfHeaters)
