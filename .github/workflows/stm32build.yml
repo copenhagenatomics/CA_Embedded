@@ -33,6 +33,7 @@ jobs:
           ACTenChannel: STM32/ACTenChannel/**
           AirconCtrl: STM32/AirconCtrl/**
           DC: STM32/DC/**
+          Humidity: STM32/Humidity/**
           LightController: STM32/LightController/**
           OTP: STM32/OTP/**
           Temperature: STM32/Temperature/**
