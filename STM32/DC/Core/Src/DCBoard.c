@@ -91,7 +91,7 @@ static StmGpio sense24v;
 */
 static void DCInputHandler(const char* input)
 {
-    ACDCInputHandler(&caProto);
+    ACDCInputHandler(&caProto, input);
 }
 
 /*!
