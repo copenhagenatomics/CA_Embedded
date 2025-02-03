@@ -1,5 +1,5 @@
 /*!
-** @file   AC_tests.cpp
+** @file   DC_tests.cpp
 ** @author Luke W
 ** @date   12/10/2023
 */
@@ -16,6 +16,7 @@
 #include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
+#include "CAProtocolBoard.c"
 
 /* UUT */
 #include "DCBoard.c"

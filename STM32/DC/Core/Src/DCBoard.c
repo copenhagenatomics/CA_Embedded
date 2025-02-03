@@ -14,6 +14,7 @@
 #include "ADCMonitor.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
+#include "CAProtocolBoard.h"
 #include "time32.h"
 #include "StmGpio.h"
 #include "pcbversion.h"
@@ -39,6 +40,7 @@
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
+static void DCInputHandler(const char* input);
 static void CAallOn(bool isOn, int duration_ms);
 static void CAportState(int port, bool state, int percent, int duration);
 static volatile uint32_t* getTimerCCR(int pinNumber);
@@ -53,7 +55,7 @@ static void handlePorts();
 
 static CAProtocolCtx caProto =
 {
-        .undefined = HALundefined,
+        .undefined = DCInputHandler,
         .printHeader = CAPrintHeader,
         .printStatus = printDcStatus,
         .jumpToBootLoader = HALJumpToBootloader,
@@ -77,12 +79,20 @@ static GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_
                                         Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
 static const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
                                        Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
-static StmGpio buttonGpio[ACTUATIONPORTS] = {0};
+static StmGpio buttonGpio[ACTUATIONPORTS] = {};
 static StmGpio sense24v;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
 ***************************************************************************************************/
+
+/*!
+** @brief Call command handler for DC board
+*/
+static void DCInputHandler(const char* input)
+{
+    ACDCInputHandler(&caProto);
+}
 
 /*!
 ** @brief Verbose print of the DC board status
