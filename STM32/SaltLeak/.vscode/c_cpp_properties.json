@@ -1,0 +1,59 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/ADCMonitor/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/USBprint/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "USE_HAL_DRIVER",
+                "STM32F401xC"
+            ],
+            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-arm",
+            "compilerArgs": [
+                "-mcpu=cortex-m4",
+                "-mthumb"
+            ]
+        },
+        {
+            "name": "Windows",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/ADCMonitor/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/USBprint/**",
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "USE_HAL_DRIVER",
+                "STM32F401xC"
+            ],
+            "compilerPath": "${env:ARMGCC_DIR}/arm-none-eabi-gcc.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-arm",
+            "compilerArgs": [
+                "-mcpu=cortex-m4",
+                "-mthumb"
+            ]
+        }
+    ],
+    "version": 4
+}
