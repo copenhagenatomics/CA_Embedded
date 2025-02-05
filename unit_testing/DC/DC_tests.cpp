@@ -16,7 +16,7 @@
 #include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
-#include "CAProtocolBoard.c"
+#include "CAProtocolACDC.c"
 
 /* UUT */
 #include "DCBoard.c"
@@ -427,7 +427,7 @@ TEST_F(DCBoard, onboardButtonsOff)
 
     for(int i = 0; i < ACTUATIONPORTS; i++) {
         /* All ports initially on */
-        writeDcMessage("all on\n");
+        writeDcMessage("all on 5\n");
 
         for(int j = 0; j < ACTUATIONPORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
@@ -471,13 +471,13 @@ TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod)
 
     for(int i = 0; i < ACTUATIONPORTS; i++) {
         /* All ports initially on */
-        writeDcMessage("all on\n");
+        writeDcMessage("all on 5\n");
 
         for(int j = 0; j < ACTUATIONPORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
         }
 
-        /* Put one port on a timer */
+        /* Put one port on a shorter timer */
         char cmd[100] = {0};
         sprintf(cmd, "p%u on %u\n", i+1, 1);
         writeDcMessage(cmd);
@@ -529,3 +529,53 @@ TEST_F(DCBoard, testCurrentBuffer) {
         EXPECT_FLUSH_USB(Contains(buf));
     }
 } 
+
+
+/* Test that ports are shut off when disconnecting USB */
+TEST_F(DCBoard, testPortShutOffAtUSBDisconnect) 
+{
+    dcSetup();
+    goToTick(1);
+
+    writeDcMessage("all on 20\n");
+
+    /* All ports should be on */
+    for(int j = 0; j < ACTUATIONPORTS; j++) {
+        ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
+    }
+
+    goToTick(5000);
+    /* All ports should still be on */
+    for(int j = 0; j < ACTUATIONPORTS; j++) {
+        ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
+    }
+
+    goToTick(20002);
+    /* All ports should be shut off after 20 seconds */
+    for(int j = 0; j < ACTUATIONPORTS; j++) {
+        ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;    
+    }
+
+    // Reset timer and turn on ports on again
+    writeDcMessage("all on 20\n");
+
+    /* All ports should be on */
+    for(int j = 0; j < ACTUATIONPORTS; j++) {
+        ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
+    }
+
+    /* Disconnect USB */
+    hostUSBDisconnect();
+    goToTick(22500);
+     /* Ports should not turn off until 5 seconds after USB disconnect */
+    for(int j = 0; j < ACTUATIONPORTS; j++) {
+        ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
+    }
+
+    // Takes a 100 ticks to go to the ADC callback function
+    goToTick(25100);
+    /* Ports should not turn off until 5 seconds after USB disconnect */
+    for(int j = 0; j < ACTUATIONPORTS; j++) {
+        ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;    
+    }
+}

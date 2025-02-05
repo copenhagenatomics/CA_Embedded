@@ -1,20 +1,25 @@
-/*
- * DCBoard.c
+/**
+ ******************************************************************************
+ * @file    DCBoard.c
+ * @brief   Main file for DC board
+ * @date:   6 Oct 2021
+ * @author: Matias
+ ******************************************************************************
  */
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <stdio.h>
 
 #include "main.h"
-#include "circular_buffer.h"
 #include "USBprint.h"
 #include "systemInfo.h"
 #include "DCBoard.h"
 #include "ADCMonitor.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "CAProtocolBoard.h"
+#include "CAProtocolACDC.h"
 #include "time32.h"
 #include "StmGpio.h"
 #include "pcbversion.h"
@@ -36,6 +41,8 @@
 #define PORT_STATE_ON_SW  0x01U
 #define PORT_STATE_ON_BTN 0x02U
 
+#define USB_COMMS_TIMEOUT_MS 5000
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
@@ -46,12 +53,29 @@ static void CAportState(int port, bool state, int percent, int duration);
 static volatile uint32_t* getTimerCCR(int pinNumber);
 static void printDcStatus();
 static void updateBoardStatus();
-static void gpioInit ();
+static double meanCurrent(const int16_t *pData, uint16_t channel);
+static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples);
+static void setPWMPin(int pinNumber, int pwmState, int duration);
+static void allOn();
+static void allOff();
+static void turnOnPin(int pinNumber);
+static void turnOnPinDuration(int pinNumber, int duration);
+static void turnOffPin(int pinNumber);
+static void gpioInit();
 static void handlePorts();
+static void autoOff();
+static void handleButtonPress();
+static void checkButtonPress();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
 ***************************************************************************************************/
+
+static ACDCProtocolCtx dcProto =
+{
+        .allOn = CAallOn,
+        .portState = CAportState
+};
 
 static CAProtocolCtx caProto =
 {
@@ -63,9 +87,7 @@ static CAProtocolCtx caProto =
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
-        .otpWrite = NULL,
-        .allOn = CAallOn,
-        .portState = CAportState
+        .otpWrite = NULL
 };
 
 /* General */
@@ -91,7 +113,7 @@ static StmGpio sense24v;
 */
 static void DCInputHandler(const char* input)
 {
-    ACDCInputHandler(&caProto, input);
+    ACDCInputHandler(&dcProto, input);
 }
 
 /*!
@@ -149,11 +171,25 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
 WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
 {
+    static uint32_t port_close_time = 0;
+
     // Watch dog refresh. Triggers reset if reset after <90ms or >110ms.
     // Ensures ADC sampling is performed with correct timing.
     HAL_WWDG_Refresh(hwwdg_);
+
+    /* If the USB port is not open, no messages should be printed. Also if the USB port has been 
+    ** closed for more than a timeout, everything should be turned off as a safety measure */
     if (!isUsbPortOpen())
     {
+        if (port_close_time == 0)
+        {
+            port_close_time = HAL_GetTick();
+        }
+        else if ((HAL_GetTick() - port_close_time) >= USB_COMMS_TIMEOUT_MS)
+        {
+            port_close_time = 0;
+            allOff();
+        }
         return;
     }
 
@@ -180,13 +216,23 @@ static void setPWMPin(int pinNumber, int pwmState, int duration)
 }
 
 // Turn on all pins.
-static void allOn()
+static void allOn(int duration)
 {
-    for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++)
+    if (duration <= 0)
     {
-        actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
-        port_state[pinNumber] |= PORT_STATE_ON_SW;
-        ccr_states[pinNumber] = TURNONPWM;
+        char buf[20] = {0};
+        snprintf(buf, 20, "all on %d", duration);
+        HALundefined(buf);
+    }
+    else
+    {
+        for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++)
+        {
+            actuationStart[pinNumber] = HAL_GetTick();
+            actuationDuration[pinNumber] = duration;
+            port_state[pinNumber] |= PORT_STATE_ON_SW;
+            ccr_states[pinNumber] = TURNONPWM;
+        }
     }
 }
 
@@ -265,12 +311,9 @@ static void actuatePins(ActuationInfo actuationInfo)
     }
 }
 
-static void CAallOn(bool isOn, int duration_ms)
+static void CAallOn(bool isOn, int duration)
 {
-    /* Unused argument required for compatibility with AC board */
-    (void) duration_ms;
-
-    (isOn) ? allOn() : allOff();
+    (isOn) ? allOn(1000*duration) : allOff();
 }
 
 static void CAportState(int port, bool state, int percent, int duration)
@@ -299,6 +342,7 @@ static void handleButtonPress()
         if (stmGetGpio(buttonGpio[i]) == 0)
         {
             port_state[i] |= PORT_STATE_ON_BTN;
+            
         }
         else if (stmGetGpio(buttonGpio[i]) == 1)
         {
@@ -308,7 +352,6 @@ static void handleButtonPress()
                 int duration = actuationDuration[i] - (int) tdiff_u32(now, actuationStart[i]);
                 setPWMPin(i, ccr_states[i], duration);
             }
-
             port_state[i] &= ~PORT_STATE_ON_BTN;
         }
     }
