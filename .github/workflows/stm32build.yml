@@ -113,7 +113,7 @@ jobs:
         env:
           VERSION_TAG: ${{ steps.tagfilter.outputs.version }}
         # Upload the .elf and .bin file under the summary tab
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}
           path: |
