@@ -130,6 +130,10 @@ static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
     if (*channel <= 0 || *channel > LED_CHANNELS)
         return false;
 
+    // If rgb is 0 shut off all colors 
+    if (*rgb == 0)
+        return true;
+
     // Check the RGB format is exactly 6 hex characters long
     char* idx = index((char*)input, ' ');
     if (strlen(&idx[1]) != 6)
