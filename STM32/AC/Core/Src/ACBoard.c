@@ -28,14 +28,15 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS	8           // 4 current + 4 temperature
-#define ADC_CHANNEL_BUF_SIZE	400
-#define NUM_CURRENT_CHANNELS 4
-#define NUM_TEMP_CHANNELS 4
+#define ADC_CHANNELS	            8   // 4 current + 4 temperature
+#define ADC_CHANNEL_BUF_SIZE	  400
+#define NUM_CURRENT_CHANNELS        4
+#define NUM_TEMP_CHANNELS           4
 
-#define MAX_TEMPERATURE 70
+#define MAX_TEMPERATURE            70
+#define MAX_ON_TIME_REQUEST        10 // seconds
 
-#define USB_COMMS_TIMEOUT_MS 5000
+#define USB_COMMS_TIMEOUT_MS     5000
 
 /***************************************************************************************************
 ** PRIVATE TYPEDEFS
@@ -334,10 +335,9 @@ static void CAallOn(bool isOn, int duration)
 }
 static void CAportState(int port, bool state, int percent, int duration)
 {
-    uint8_t pwmPercent = getPWMPinPercent(port-1);
     // If heat sink has reached the maximum allowed temperature and user
     // tries to heat the system further up then disregard the input command
-    if (heatSinkMaxTemp > MAX_TEMPERATURE && percent > pwmPercent)
+    if (heatSinkMaxTemp > MAX_TEMPERATURE)
         return;
 
     if((duration <= 0) && (percent != 0)) 
@@ -348,6 +348,15 @@ static void CAportState(int port, bool state, int percent, int duration)
     }
     else 
     {
+        if (duration > MAX_ON_TIME_REQUEST)
+        {
+            duration = MAX_ON_TIME_REQUEST;
+            bsSetField(AC_LIMIT_ON_TIME_STATUS_Msk);
+        }
+        else
+        {
+            bsClearField(AC_LIMIT_ON_TIME_STATUS_Msk);
+        }
         actuatePins((ActuationInfo) { port - 1, percent, 1000*duration, true });
     }
 }
@@ -360,7 +369,6 @@ static void CAportState(int port, bool state, int percent, int duration)
 */
 static void heatSinkLoop()
 {
-    static unsigned long previous = 0;
     // Turn on fan if temp > 55 and turn of when temp < 50.
     if (heatSinkMaxTemp <= MAX_TEMPERATURE)
     {
@@ -375,17 +383,13 @@ static void heatSinkLoop()
 
         bsClearField(BS_OVER_TEMPERATURE_Msk);
     }
-    else // Safety mode to avoid overheating of the board
+    else 
     {
+        /* Board is running above max temperature 
+        ** NOTE: As the max on time per request is 10 seconds, it is deemed safe
+        **       to let the board run until the next timeout (<=10 sec) occurs.
+        **       While the board is above max temperature it ignores any new requests. */
         stmSetGpio(fanCtrl, true);
-        
-        unsigned long now = HAL_GetTick();
-        if (now - previous > 2000)  // 2000ms. Should be aligned with the control period of heater.
-        {
-            previous = now;
-            adjustPWMDown();
-        }
-
         bsSetError(BS_OVER_TEMPERATURE_Msk);
     }
 

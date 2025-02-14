@@ -337,24 +337,6 @@ TEST_F(ACBoard, heatsinkLoop)
     goToTick(600);
     EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 70.90, -50.00, -50.00, -50.00, 0xc0000003"));
     EXPECT_TRUE(stmGetGpio(fanCtrl));
-    
-    /* p1 was turned on 100 % for 10 secs at t=400. The temperature rise would not be detected until 
-    ** t = 500. Since the simulated temperature doesn't change, the PWM will be adjusted down as 
-    ** follows:
-    ** * t =  2000, pwm = 99, duration = 10101 ms 
-    ** * t =  4000, pwm = 98, duration = 10204 ms
-    ** * t =  6000, pwm = 97, duration = 10309 ms
-    ** * t =  8000, pwm = 96, duration = 10416 ms
-    ** * t = 10000, pwm = 95, duration = 10525 ms
-    **
-    ** So starting from the original time of 400, we expect p1 to turn off at 10925 ms. Note: that 
-    ** during the interval, the heater will turn off a few times temporarily as it starts to be 
-    ** PWM'd */
-    goToTick(10924);
-    EXPECT_TRUE(stmGetGpio(heaterPorts[0].heater));
-
-    goToTick(10925);
-    EXPECT_FALSE(stmGetGpio(heaterPorts[0].heater));
 }
 
 TEST_F(ACBoard, faultInfoPrintout) {
