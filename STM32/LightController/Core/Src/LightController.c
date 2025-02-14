@@ -110,9 +110,9 @@ static void LightControllerStatus()
 
 static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 {
-    // If PARTY command is entered start the colour test
+    // If test command is entered start the colour test
     // If any other input is entered stop it again
-    if (strcmp(input, "PARTY") == 0) 
+    if (strcmp(input, "test") == 0) 
     {
         isInTest = true;
         return true;
