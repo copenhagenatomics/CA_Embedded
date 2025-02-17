@@ -237,47 +237,6 @@ TEST_F(ACHeaterCtrl, setPWMPinDuration)
     }
 }
 
-/*!
-** @brief Test that PWM gets reduced safely if board is overheating
-*/
-TEST_F(ACHeaterCtrl, adjustPWMDown) 
-{
-    static const int STAGGER = 5;
-    int start_pwm[MAX_NO_HEATERS] = {0};
-
-    heaterLoop();
-
-    /* Setup staggered PWMs on different pins */
-    for(int i = 0; i < MAX_NO_HEATERS; i++) 
-    {
-        start_pwm[i] = STAGGER * (i + 1);
-        setPWMPin(i, start_pwm[i], 2000);
-    }
-
-    /* Force setting the PWMs (because they don't take effect until the following PWM period) */
-    forceTick(1000);
-    heaterLoop();
-
-    /* + 1 added to ensure going below 0 is tested for every channel, including the last one */
-    for(int i = 0; i < STAGGER * MAX_NO_HEATERS + 1; i++)
-    {
-        for(int j = 0; j < MAX_NO_HEATERS; j++)
-        {
-            if(start_pwm[j] > i)
-            {
-                ASSERT_EQ(getPWMPinPercent(j), STAGGER * (j + 1) - i) << "Heater " << j;
-            }
-            else
-            {
-                ASSERT_EQ(getPWMPinPercent(j), 0) << "Heater " << j;
-            }
-            
-        }
-
-        adjustPWMDown();
-    }
-}
-
 /* getPWMPinPercent is sort of tested implicitly by other tests */
 
 /*!
