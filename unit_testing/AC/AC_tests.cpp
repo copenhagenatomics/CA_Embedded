@@ -19,6 +19,7 @@
 #include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
+#include "CAProtocolACDC.c"
 #include "faultHandlers.c"
 
 /* Prevents attempting to access non-existent linker script variables */
@@ -257,7 +258,7 @@ TEST_F(ACBoard, InvalidCommands)
     writeBoardMessage("p4 on 80%\n");
     EXPECT_FLUSH_USB(Contains("MISREAD: p4 on -1"));
     writeBoardMessage("all on\n");
-    EXPECT_FLUSH_USB(Contains("MISREAD: all on -1"));
+    EXPECT_FLUSH_USB(Contains("MISREAD: all on"));
 }
 
 TEST_F(ACBoard, UsbTimeout)
