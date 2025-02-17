@@ -1,0 +1,17 @@
+[ProjectFiles]
+HeaderPath=../../CA_Embedded_Libraries/STM32/ADCMonitor/Inc;../../CA_Embedded_Libraries/STM32/circularBuffer/Inc;../../CA_Embedded_Libraries/STM32/Filtering/Inc;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc;../../CA_Embedded_Libraries/STM32/Util/Inc;../../CA_Embedded_Libraries/STM32/USBprint/Inc;../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc;../CAlib/Inc;../../CMSIS-DSP/Include;../../CMSIS-DSP/PrivateInclude
+
+[Groups]
+Core/Src=Core/Src/CurrentApp.c;
+../../CA_Embedded_Libraries/STM32/CaCMCSISInterface/Src=../../CA_Embedded_Libraries/STM32/CaCMCSISInterface/Src/ca_rfft.c;
+../../CMSIS-DSP/Source/BasicMathFunctions/arm_shift_q15.c;
+../../CMSIS-DSP/Source/CommonTables/arm_common_tables.c;../../CMSIS-DSP/Source/CommonTables/arm_const_structs.c;
+../../CMSIS-DSP/Source/StatisticsFunctions/arm_absmax_q15.c;
+../../CMSIS-DSP/Source/TransformFunctions/arm_bitreversal2.c;../../CMSIS-DSP/Source/TransformFunctions/arm_cfft_init_q15.c;../../CMSIS-DSP/Source/TransformFunctions/arm_cfft_q15.c;../../CMSIS-DSP/Source/TransformFunctions/arm_cfft_radix4_init_q15.c;../../CMSIS-DSP/Source/TransformFunctions/arm_cfft_radix4_q15.c;../../CMSIS-DSP/Source/TransformFunctions/arm_rfft_init_q15.c;../../CMSIS-DSP/Source/TransformFunctions/arm_rfft_q15.c;
+../../CA_Embedded_Libraries/STM32/ADCMonitor/Src=../../CA_Embedded_Libraries/STM32/ADCMonitor/Src/ADCmonitor.c;
+../../CA_Embedded_Libraries/STM32/Filtering/Src=../../CA_Embedded_Libraries/STM32/Filtering/Src/array-math.c;
+../../CA_Embedded_Libraries/STM32/circularBuffer/Src=../../CA_Embedded_Libraries/STM32/circularBuffer/Src/circular_buffer.c;
+../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src=../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/FLASH_readwrite.c;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/HAL_otp.c;
+../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src=../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src/jumpToBootloader.c;
+../../CA_Embedded_Libraries/STM32/USBprint/Src=../../CA_Embedded_Libraries/STM32/USBprint/Src/usb_cdc_fops.c;../../CA_Embedded_Libraries/STM32/USBprint/Src/USBprint.c;
+../../CA_Embedded_Libraries/STM32/Util/Src=../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocol.c;../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolStm.c;../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c;../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c;../../CA_Embedded_Libraries/STM32/Util/Src/time32.c;
