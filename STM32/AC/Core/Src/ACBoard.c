@@ -23,6 +23,7 @@
 #include "faultHandlers.h"
 #include "pcbversion.h"
 #include "flashHandler.h"
+#include "CAProtocolACDC.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -55,7 +56,7 @@ typedef struct ActuationInfo {
 
 static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
-static void userInput(const char *input);
+static void ACInputHandler(const char *input);
 static void printAcStatus();
 static void updateBoardStatus();
 static void printAcHeader();
@@ -85,9 +86,15 @@ static double heatSinkMaxTemp = 0;
 static float isMainsConnected = 0;
 static bool isFanForceOn = false;
 
+static ACDCProtocolCtx acProto =
+{
+        .allOn = CAallOn,
+        .portState = CAportState
+};
+
 static CAProtocolCtx caProto =
 {
-        .undefined = userInput,
+        .undefined = ACInputHandler,
         .printHeader = printAcHeader,
         .printStatus = printAcStatus,
         .printStatusDef = printAcStatusDef,
@@ -95,10 +102,7 @@ static CAProtocolCtx caProto =
         .calibration = NULL, 
         .calibrationRW = NULL,
         .logging = NULL,
-        .otpRead = CAotpRead,
-        .otpWrite = NULL,
-        .allOn = CAallOn,
-        .portState = CAportState,
+        .otpRead = CAotpRead
 };
 
 /***************************************************************************************************
@@ -149,7 +153,7 @@ static void printAcStatusDef()
 	writeUSB(buf, len);
 }
 
-static void userInput(const char *input)
+static void ACInputHandler(const char *input)
 {
     if (strncmp(input, "fan on", 6) == 0)
     {
@@ -163,7 +167,7 @@ static void userInput(const char *input)
     }
     else 
     {
-        HALundefined(input);
+        ACDCInputHandler(&acProto, input);
     }
 }
 
