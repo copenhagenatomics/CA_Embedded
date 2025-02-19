@@ -2,10 +2,10 @@ name: C/C++ stm32 build for the open-source embedded software
 
 on:
   push:
-    branches: [ 'main' ]
+    branches: [ 'patch/ac-6.2' ]
     paths: ['STM32/**', '.github/workflows/stm32build.yml']
   pull_request:
-    branches: [ 'main' ]
+    branches: [ 'patch/ac-6.2' ]
     paths: ['STM32/**', '.github/workflows/stm32build.yml']
 
 jobs:
@@ -114,7 +114,7 @@ jobs:
         env:
           VERSION_TAG: ${{ steps.tagfilter.outputs.version }}
         # Upload the .elf and .bin file under the summary tab
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}
           path: |
@@ -122,8 +122,8 @@ jobs:
             STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-2
-        # tag only pushes to the main branch
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        # tag only pushes to the patch branch
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/patch/ac-6.2' }}
         with:
           bump_version_scheme: minor
           use_github_release_notes: true
@@ -142,7 +142,7 @@ jobs:
         run: echo "breaking=$(if test -f STM32/${{ matrix.package }}/pcbversion && sed -n '2p' STM32/${{ matrix.package }}/pcbversion | grep -Eq "^v[0-9]+\.[0-9]+$"; then echo $(sed -n '2p' STM32/${{ matrix.package }}/pcbversion); else if test -f STM32/${{ matrix.package }}/pcbversion; then echo $(head -n 1 STM32/${{ matrix.package }}/pcbversion); else echo "v0.0"; fi; fi)" >> $GITHUB_OUTPUT
 
       - name: Release
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/patch/ac-6.2' }} # upload only pushes to the patch branch
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
@@ -166,7 +166,7 @@ jobs:
           PCB_VERSION_FILE : "STM32/${{ matrix.package }}/pcbversion"
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # File only updated on merge into main (not on pull-request)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/patch/ac-6.2' }} # File only updated on merge into patch (not on pull-request)
         run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.version }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.breakingpcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
         env :
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
