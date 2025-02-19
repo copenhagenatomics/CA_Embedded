@@ -17,6 +17,7 @@
 #include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
+#include "CAProtocolACDC.c"
 
 /* UUT */
 #include "ACTenChannel.c"
