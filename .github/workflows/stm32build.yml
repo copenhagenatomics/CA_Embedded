@@ -32,6 +32,7 @@ jobs:
           AC: STM32/AC/**
           ACTenChannel: STM32/ACTenChannel/**
           AirconCtrl: STM32/AirconCtrl/**
+          Current: STM32/Current/**
           DC: STM32/DC/**
           Humidity: STM32/Humidity/**
           LightController: STM32/LightController/**
