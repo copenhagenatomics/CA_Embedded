@@ -21,7 +21,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -65,6 +64,7 @@ extern DMA_HandleTypeDef hdma_adc1;
   */
 void HAL_MspInit(void)
 {
+
   /* USER CODE BEGIN MspInit 0 */
 
   /* USER CODE END MspInit 0 */
@@ -137,6 +137,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
   /* USER CODE BEGIN ADC1_MspInit 1 */
 
   /* USER CODE END ADC1_MspInit 1 */
+
   }
 
 }
@@ -195,6 +196,7 @@ void HAL_CRC_MspInit(CRC_HandleTypeDef* hcrc)
   /* USER CODE BEGIN CRC_MspInit 1 */
 
   /* USER CODE END CRC_MspInit 1 */
+
   }
 
 }
@@ -317,6 +319,7 @@ void HAL_WWDG_MspInit(WWDG_HandleTypeDef* hwwdg)
   /* USER CODE BEGIN WWDG_MspInit 1 */
 
   /* USER CODE END WWDG_MspInit 1 */
+
   }
 
 }
