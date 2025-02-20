@@ -136,30 +136,29 @@ void allOn(int duration_ms)
     }
 }
 
-void turnOffPin(int pin)
-{
-    if (pin >= 0 && pin < noOfHeaters)
-    {
+/*!
+** @brief Immediately turns off one port
+**
+** @param[in] pin         The port to disable
+*/
+void turnOffPin(int pin) {
+    if (pin >= 0 && pin < noOfHeaters) {
         HeatCtrl *ctx = &heaters[pin];
-        ctx->periodDuration = 0;
+        setPWMPin(pin, 0, 0);
         setPwmPercent(ctx, 0);
     }
 }
 
 /*!
-** @brief Turns on one port for the specfied duration
+** @brief Immediately turns on one port for the specfied duration
 **
 ** @param[in] pin         The port to enable
 ** @param[in] duration_ms The length of time to keep all the port on, in ms
 */
-void turnOnPin(int pin, int duration_ms)
-{
-    if (pin >= 0 && pin < noOfHeaters)
-    {
+void turnOnPin(int pin, int duration_ms) {
+    if (pin >= 0 && pin < noOfHeaters) {
         HeatCtrl *ctx = &heaters[pin];
-        /* Negative values always interpreted as 0 - safety measure  */
-        ctx->periodDuration = (duration_ms >= 0) ? duration_ms : 0;
-        ctx->periodBegin = HAL_GetTick();
+        setPWMPin(pin, 100, duration_ms);
         setPwmPercent(ctx, 100);
     }
 }
