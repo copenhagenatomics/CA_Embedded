@@ -63,6 +63,7 @@ C_SOURCES =  \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/CommonTables/arm_const_structs.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/StatisticsFunctions/arm_absmax_q15.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_bitreversal2.c \
+../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_bitreversal.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_init_q15.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_q15.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_radix4_init_q15.c \
