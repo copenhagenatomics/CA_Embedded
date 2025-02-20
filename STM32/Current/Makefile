@@ -69,7 +69,7 @@ C_SOURCES =  \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_cfft_radix4_q15.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_init_q15.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/Source/TransformFunctions/arm_rfft_q15.c \
-../../CA_Embedded_Libraries/STM32/CaCMCSISInterface/Src/ca_rfft.c \
+../../CA_Embedded_Libraries/STM32/CaCMSISInterface/Src/ca_rfft.c \
 Core/Src/main.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
