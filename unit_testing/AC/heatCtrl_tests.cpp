@@ -347,3 +347,57 @@ TEST_F(ACHeaterCtrl, resetPwmMidperiod)
                                      heaterGpios[2].state, heaterGpios[3].state));
     }
 }
+
+/*!
+** @brief Checks that turning on an output after setting the PWM doesn't revert to the PWM
+*/
+TEST_F(ACHeaterCtrl, turnOnRaceCondition) {
+    /* Repeat test for all pins */
+    for (int i = 0; i < MAX_NO_HEATERS; i++) {
+        forceTick(0);
+        heaterLoop();
+        setPWMPin(i, 10, 2000);
+
+        heaterLoop();
+        forceTick(100);
+        ASSERT_THAT(heaterGpios[i].state, PIN_RESET) << "Heater " << i;
+        turnOnPin(i, 2000);
+        heaterLoop();
+        ASSERT_THAT(heaterGpios[i].state, PIN_SET) << "Heater " << i;
+
+        /* Run until 1 ms after the PWM would turn off, if it had taken priority */
+        for (int j = 101; j < 1101; j++) {
+            forceTick(j);
+            heaterLoop();
+
+            ASSERT_THAT(heaterGpios[i].state, PIN_SET) << "Heater " << i << " at time " << j;
+        }
+    }
+}
+
+/*!
+** @brief Checks that turning off an output after setting the PWM doesn't revert to the PWM
+*/
+TEST_F(ACHeaterCtrl, turnOffRaceCondition) {
+    /* Repeat test for all pins */
+    for (int i = 0; i < MAX_NO_HEATERS; i++) {
+        forceTick(0);
+        heaterLoop();
+        setPWMPin(i, 10, 2000);
+
+        heaterLoop();
+        forceTick(100);
+        ASSERT_THAT(heaterGpios[i].state, PIN_RESET) << "Heater " << i;
+        turnOffPin(i);
+        heaterLoop();
+        ASSERT_THAT(heaterGpios[i].state, PIN_RESET) << "Heater " << i;
+
+        /* Run until 1 ms after the PWM would turn off, if it had taken priority */
+        for (int j = 101; j < 1001; j++) {
+            forceTick(j);
+            heaterLoop();
+
+            ASSERT_THAT(heaterGpios[i].state, PIN_RESET) << "Heater " << i << " at time " << j;
+        }
+    }
+}
