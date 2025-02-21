@@ -21,6 +21,9 @@
 /* Is on when there is mains is not connected to the board */
 #define AC_POWER_ERROR_Msk           (1UL << 5UL)
 
+/* Is on if user requests more than 10 seconds on time for a port until next request */
+#define AC_LIMIT_ON_TIME_STATUS_Msk  (1UL << 6UL)              
+
 /* Define showing which bits are "errors" and which are only for information */
 #define AC_BOARD_No_Error_Msk         (BS_SYSTEM_ERRORS_Msk | AC_POWER_ERROR_Msk)
 

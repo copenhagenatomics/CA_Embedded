@@ -86,6 +86,7 @@ Core/Src/syscalls.c \
 ../../CA_Embedded_Libraries/STM32/USBprint/Src/USBprint.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocol.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolStm.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolACDC.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/time32.c \
