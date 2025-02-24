@@ -1,0 +1,10 @@
+---
+BasedOnStyle: Google
+BreakBeforeBraces: Custom
+BraceWrapping:
+  BeforeElse: true
+ColumnLimit: 100
+IncludeBlocks: Preserve
+InsertBraces: true
+IndentWidth: 4
+...
