@@ -289,7 +289,7 @@ static void getDirection(const int16_t *pData, int noOfChannels, int noOfSamples
 {
     // Find top of Phase A.
     unsigned int maxId = 0;
-    for (unsigned int j = 0; j < noOfSamples - 2; j++)
+    for (int j = 0; j < noOfSamples - 2; j++)
     {
         if (pData[j*noOfChannels] > pData[maxId])
         {
