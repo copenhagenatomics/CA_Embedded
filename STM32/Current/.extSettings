@@ -3,7 +3,7 @@ HeaderPath=../../CA_Embedded_Libraries/STM32/ADCMonitor/Inc;../../CA_Embedded_Li
 
 [Groups]
 Core/Src=Core/Src/CurrentApp.c;
-../../CA_Embedded_Libraries/STM32/CaCMCSISInterface/Src=../../CA_Embedded_Libraries/STM32/CaCMCSISInterface/Src/ca_rfft.c;
+../../CA_Embedded_Libraries/STM32/CaCMSISInterface/Src=../../CA_Embedded_Libraries/STM32/CaCMSISInterface/Src/ca_rfft.c;
 Drivers/CMSIS/DSP/Source/BasicMathFunctions=Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_shift_q15.c;
 Drivers/CMSIS/DSP/Source/CommonTables=Drivers/CMSIS/DSP/Source/CommonTables/arm_common_tables.c;Drivers/CMSIS/DSP/Source/CommonTables/arm_const_structs.c;
 Drivers/CMSIS/DSP/Source/StatisticsFunctions=Drivers/CMSIS/DSP/Source/StatisticsFunctions/arm_absmax_q15.c;

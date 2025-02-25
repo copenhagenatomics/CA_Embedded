@@ -105,7 +105,7 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
-../../CA_Embedded_Libraries/STM32/CaCMCSISInterface/Src/ca_rfft.c \
+../../CA_Embedded_Libraries/STM32/CaCMSISInterface/Src/ca_rfft.c \
 Core/Src/sysmem.c
 
 # ASM sources
