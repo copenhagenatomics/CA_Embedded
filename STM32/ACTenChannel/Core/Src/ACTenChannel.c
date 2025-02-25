@@ -22,6 +22,7 @@
 #include "ACTenChannel.h"
 #include "pcbversion.h"
 #include "DS18B20.h"
+#include "CAProtocolACDC.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -51,6 +52,7 @@ typedef struct ActuationInfo {
 
 static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
+static void ACTenChannelInputHandler(const char *input);
 static void printAcTenChannelStatus();
 static void updateBoardStatus();
 
@@ -63,9 +65,15 @@ StmGpio heaterPorts[AC_TEN_CH_NUM_PORTS];
 static StmGpio DQ1;
 static double heatSinkTemperature = 0; // Heat Sink temperature
 
+static ACDCProtocolCtx acProto =
+{
+        .allOn = CAallOn,
+        .portState = CAportState
+};
+
 static CAProtocolCtx caProto =
 {
-        .undefined = HALundefined,
+        .undefined = ACTenChannelInputHandler,
         .printHeader = CAPrintHeader,
         .printStatus = printAcTenChannelStatus,
         .jumpToBootLoader = HALJumpToBootloader,
@@ -73,9 +81,7 @@ static CAProtocolCtx caProto =
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
-        .otpWrite = NULL,
-        .allOn = CAallOn,
-        .portState = CAportState,
+        .otpWrite = NULL
 };
 
 /***************************************************************************************************
@@ -98,6 +104,13 @@ static void printAcTenChannelStatus()
 
     writeUSB(buf, len);
 }
+
+/*!
+** @brief Handle user input for the ten channel AC board
+**
+** @param input The user input string
+*/
+static void ACTenChannelInputHandler(const char *input) { ACDCInputHandler(&acProto, input); }
 
 static void GpioInit()
 {

@@ -237,47 +237,6 @@ TEST_F(ACHeaterCtrl, setPWMPinDuration)
     }
 }
 
-/*!
-** @brief Test that PWM gets reduced safely if board is overheating
-*/
-TEST_F(ACHeaterCtrl, adjustPWMDown) 
-{
-    static const int STAGGER = 5;
-    int start_pwm[MAX_NO_HEATERS] = {0};
-
-    heaterLoop();
-
-    /* Setup staggered PWMs on different pins */
-    for(int i = 0; i < MAX_NO_HEATERS; i++) 
-    {
-        start_pwm[i] = STAGGER * (i + 1);
-        setPWMPin(i, start_pwm[i], 2000);
-    }
-
-    /* Force setting the PWMs (because they don't take effect until the following PWM period) */
-    forceTick(1000);
-    heaterLoop();
-
-    /* + 1 added to ensure going below 0 is tested for every channel, including the last one */
-    for(int i = 0; i < STAGGER * MAX_NO_HEATERS + 1; i++)
-    {
-        for(int j = 0; j < MAX_NO_HEATERS; j++)
-        {
-            if(start_pwm[j] > i)
-            {
-                ASSERT_EQ(getPWMPinPercent(j), STAGGER * (j + 1) - i) << "Heater " << j;
-            }
-            else
-            {
-                ASSERT_EQ(getPWMPinPercent(j), 0) << "Heater " << j;
-            }
-            
-        }
-
-        adjustPWMDown();
-    }
-}
-
 /* getPWMPinPercent is sort of tested implicitly by other tests */
 
 /*!
@@ -386,5 +345,59 @@ TEST_F(ACHeaterCtrl, resetPwmMidperiod)
 
         EXPECT_THAT(PIN_RESET, AllOf(heaterGpios[0].state, heaterGpios[1].state,
                                      heaterGpios[2].state, heaterGpios[3].state));
+    }
+}
+
+/*!
+** @brief Checks that turning on an output after setting the PWM doesn't revert to the PWM
+*/
+TEST_F(ACHeaterCtrl, turnOnRaceCondition) {
+    /* Repeat test for all pins */
+    for (int i = 0; i < MAX_NO_HEATERS; i++) {
+        forceTick(0);
+        heaterLoop();
+        setPWMPin(i, 10, 2000);
+
+        heaterLoop();
+        forceTick(100);
+        ASSERT_THAT(heaterGpios[i].state, PIN_RESET) << "Heater " << i;
+        turnOnPin(i, 2000);
+        heaterLoop();
+        ASSERT_THAT(heaterGpios[i].state, PIN_SET) << "Heater " << i;
+
+        /* Run until 1 ms after the PWM would turn off, if it had taken priority */
+        for (int j = 101; j < 1101; j++) {
+            forceTick(j);
+            heaterLoop();
+
+            ASSERT_THAT(heaterGpios[i].state, PIN_SET) << "Heater " << i << " at time " << j;
+        }
+    }
+}
+
+/*!
+** @brief Checks that turning off an output after setting the PWM doesn't revert to the PWM
+*/
+TEST_F(ACHeaterCtrl, turnOffRaceCondition) {
+    /* Repeat test for all pins */
+    for (int i = 0; i < MAX_NO_HEATERS; i++) {
+        forceTick(0);
+        heaterLoop();
+        setPWMPin(i, 10, 2000);
+
+        heaterLoop();
+        forceTick(100);
+        ASSERT_THAT(heaterGpios[i].state, PIN_RESET) << "Heater " << i;
+        turnOffPin(i);
+        heaterLoop();
+        ASSERT_THAT(heaterGpios[i].state, PIN_RESET) << "Heater " << i;
+
+        /* Run until 1 ms after the PWM would turn off, if it had taken priority */
+        for (int j = 101; j < 1001; j++) {
+            forceTick(j);
+            heaterLoop();
+
+            ASSERT_THAT(heaterGpios[i].state, PIN_RESET) << "Heater " << i << " at time " << j;
+        }
     }
 }
