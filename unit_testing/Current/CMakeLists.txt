@@ -68,4 +68,5 @@ add_executable(current_test current_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.
 target_include_directories(current_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/Current/Core/Src ${SRC}/Current/Core/Inc ${LIB}/Util/Src ${LIB}/ADCMonitor/Src ${LIB}/Filtering/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${DRIV}/../CMSIS/Include ${CaCMSISInterface}/Inc ${DSP_INC} ${UT_LIB}/Util)
 target_link_libraries(current_test GTest::gtest_main gmock_main)
 target_compile_definitions(current_test PUBLIC UNIT_TESTING __GNUC_PYTHON__)
+target_compile_options(current_test PRIVATE -Wall)
 gtest_discover_tests(current_test)
