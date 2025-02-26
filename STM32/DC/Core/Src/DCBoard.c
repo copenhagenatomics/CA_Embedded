@@ -28,7 +28,7 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS    6
+#define ADC_CHANNELS    7               // Order: Hall1 - Hall6, 24V sense
 #define ACTUATIONPORTS 6
 #define ADC_CHANNEL_BUF_SIZE    400
 
@@ -102,7 +102,6 @@ static GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_
 static const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
                                        Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
 static StmGpio buttonGpio[ACTUATIONPORTS] = {};
-static StmGpio sense24v;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -147,12 +146,12 @@ static void updateBoardStatus()
     }
 
     /* If 24V is not present */
-    if(!stmGetGpio(sense24v)) {
-        bsSetError(BS_UNDER_VOLTAGE_Msk);
-    }
-    else {
-        bsClearField(BS_UNDER_VOLTAGE_Msk);
-    }
+    // if(!stmGetGpio(sense24v)) {
+    //     bsSetError(BS_UNDER_VOLTAGE_Msk);
+    // }
+    // else {
+    //     bsClearField(BS_UNDER_VOLTAGE_Msk);
+    // }
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
     ** the (other) error bits are cleared, but doing here means it only needs to be done once */
@@ -200,11 +199,11 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
         return;
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x",
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
             meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
             meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5),
-            bsGetStatus());
+            ADCMean(pBuffer, 6), bsGetStatus());
 }
 
 static void setPWMPin(int pinNumber, int pwmState, int duration)
@@ -381,12 +380,12 @@ static volatile uint32_t* getTimerCCR(int pinNumber)
     /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.1 board */
     switch (pinNumber)
     {
-        case 0: return &(TIM4->CCR2);
-        case 1: return &(TIM4->CCR1);
-        case 2: return &(TIM5->CCR1);
-        case 3: return &(TIM5->CCR2);
-        case 4: return &(TIM5->CCR4);
-        case 5: return &(TIM5->CCR3);
+        case 0: return &(TIM2->CCR1);
+        case 1: return &(TIM1->CCR2);
+        case 2: return &(TIM1->CCR3);
+        case 3: return &(TIM1->CCR1);
+        case 4: return &(TIM2->CCR2);
+        case 5: return &(TIM2->CCR3);
         default: return (uint32_t*)0x00000000;
     }
 }
@@ -398,7 +397,6 @@ static void gpioInit () {
     for(int i = 0; i < ACTUATIONPORTS; i++) {
         stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT_PULLUP);
     }
-    stmGpioInit(&sense24v, SENSE_24V_GPIO_Port, SENSE_24V_Pin, STM_GPIO_INPUT);
 }
 
 /*!
