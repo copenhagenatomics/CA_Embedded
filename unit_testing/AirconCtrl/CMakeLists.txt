@@ -9,6 +9,12 @@ project(unit_testing)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set timestamp policy to avoid warning (default value)
+if(POLICY CMP0135)
+	cmake_policy(SET CMP0135 NEW)
+	set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
+endif()
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -46,4 +52,5 @@ add_executable(aircon_test Aircon_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cp
 target_include_directories(aircon_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/AirconCtrl/Core/Src ${SRC}/AirconCtrl/Core/Inc ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(aircon_test GTest::gtest_main gmock_main)
 target_compile_definitions(aircon_test PUBLIC UNIT_TESTING)
+target_compile_options(aircon_test PRIVATE -Wall)
 gtest_discover_tests(aircon_test)

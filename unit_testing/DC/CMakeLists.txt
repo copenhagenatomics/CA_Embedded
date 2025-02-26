@@ -52,4 +52,5 @@ add_executable(dc_test DC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}
 target_include_directories(dc_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/DC/Core/Src ${SRC}/DC/Core/Inc ${SRC}/DC/HeatCtrl/Inc ${SRC}/DC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(dc_test GTest::gtest_main gmock_main)
 target_compile_definitions(dc_test PUBLIC UNIT_TESTING)
+target_compile_options(dc_test PRIVATE -Wall)
 gtest_discover_tests(dc_test)

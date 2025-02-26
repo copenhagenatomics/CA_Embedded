@@ -79,7 +79,7 @@ class DCBoard: public ::testing::Test
 
         void setDcCurrentBuffer() {
             /* According to default calibration, 2048 yields ~0 current */
-            for(int i = 0; i < hadc.dma_length; i++) {
+            for(unsigned i = 0; i < hadc.dma_length; i++) {
                 *((int16_t*)hadc.dma_address + i) = 2048;
             }
         }
@@ -515,7 +515,7 @@ TEST_F(DCBoard, testCurrentBuffer) {
 
     for(int h = 0; h < 4096; h++) {
         /* Fill with current */
-        for(int i = 0; i < hadc.dma_length; i++) {
+        for(unsigned i = 0; i < hadc.dma_length; i++) {
             *((int16_t*)hadc.dma_address + i) = h;
         }  
 

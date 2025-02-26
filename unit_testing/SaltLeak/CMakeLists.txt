@@ -53,4 +53,5 @@ add_executable(saltleak_test saltleak_tests.cpp ${UT_STUBS}/stub_jumpToBootloade
 target_include_directories(saltleak_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/SaltLeak/Core/Src ${SRC}/SaltLeak/Core/Inc ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
 target_link_libraries(saltleak_test GTest::gtest_main gmock_main)
 target_compile_definitions(saltleak_test PUBLIC UNIT_TESTING)
+target_compile_options(saltleak_test PRIVATE -Wall)
 gtest_discover_tests(saltleak_test)

@@ -52,4 +52,5 @@ add_executable(ac_tench_test ACTenChannel_tests.cpp ${UT_STUBS}/stub_jumpToBootl
 target_include_directories(ac_tench_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/Core/Src ${SRC}/Core/Inc ${SRC}/HeatCtrl/Inc ${SRC}/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
 target_link_libraries(ac_tench_test GTest::gtest_main gmock_main)
 target_compile_definitions(ac_tench_test PUBLIC UNIT_TESTING)
+target_compile_options(ac_tench_test PRIVATE -Wall)
 gtest_discover_tests(ac_tench_test)

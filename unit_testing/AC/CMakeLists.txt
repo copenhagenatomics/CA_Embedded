@@ -56,6 +56,7 @@ target_include_directories(heatCtrl_test PRIVATE
                              ${INC_LIB} ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc 
                              ${SRC}/AC/HeatCtrl/Src ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
+target_compile_options(heatCtrl_test PRIVATE -Wall)
 gtest_discover_tests(heatCtrl_test)
 
 add_executable(ac_test AC_tests.cpp 
@@ -70,4 +71,5 @@ target_include_directories(ac_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/AC/Cor
                              ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
 target_link_libraries(ac_test GTest::gtest_main gmock_main)
 target_compile_definitions(ac_test PUBLIC UNIT_TESTING)
+target_compile_options(ac_test PRIVATE -Wall)
 gtest_discover_tests(ac_test)

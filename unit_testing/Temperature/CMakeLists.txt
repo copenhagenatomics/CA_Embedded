@@ -61,4 +61,5 @@ target_include_directories(temperature_test PRIVATE
                                 ${UT_LIB}/Util)
 target_link_libraries(temperature_test GTest::gtest_main gmock_main)
 target_compile_definitions(temperature_test PUBLIC UNIT_TESTING)
+target_compile_options(temperature_test PRIVATE -Wall)
 gtest_discover_tests(temperature_test)

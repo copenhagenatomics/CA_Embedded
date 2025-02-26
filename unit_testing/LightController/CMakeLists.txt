@@ -52,4 +52,5 @@ add_executable(lightcontroller_test LightController_tests.cpp ${UT_STUBS}/stub_j
 target_include_directories(lightcontroller_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/LightController/Core/Src ${SRC}/LightController/Core/Inc ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(lightcontroller_test GTest::gtest_main gmock_main)
 target_compile_definitions(lightcontroller_test PUBLIC UNIT_TESTING)
+target_compile_options(lightcontroller_test PRIVATE -Wall)
 gtest_discover_tests(lightcontroller_test)
