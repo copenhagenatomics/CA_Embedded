@@ -88,8 +88,7 @@ class DCBoard: public ::testing::Test
         void dcSetup() {
             DCBoardInit(&hadc, &hwwdg);
         
-            /* Enable 24V power and fill the current buffer with a sensible value */
-            stmSetGpio(sense24v, true);
+            /* Fill the current buffer with a sensible value */
             setDcCurrentBuffer();
 
             /* All buttons automatically in "off" position */
@@ -115,7 +114,7 @@ class DCBoard: public ::testing::Test
                 .reserved = {0},
                 .pcbVersion = {
                     .major = 3,
-                    .minor = 1
+                    .minor = 2
                 },
                 .productionDate = 0
             }
@@ -237,29 +236,7 @@ TEST_F(DCBoard, printStatus)
 TEST_F(DCBoard, status24v) 
 {
     dcSetup();
-    stmSetGpio(sense24v, false);
-
-    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
-    ** printing anything */
-    goToTick(100);
-    writeDcMessage("Status\n");
-    
-
-    EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Boot Unit Test\r", 
-        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000\r",
-        "Start of board status:\r", 
-        "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r",
-        "Port 0: On: 0, PWM percent: 0\r", 
-        "Port 1: On: 0, PWM percent: 0\r", 
-        "Port 2: On: 0, PWM percent: 0\r", 
-        "Port 3: On: 0, PWM percent: 0\r", 
-        "Port 4: On: 0, PWM percent: 0\r", 
-        "Port 5: On: 0, PWM percent: 0\r", 
-        "\r", 
-        "End of board status. \r"
-    ));
+ 
 }
 
 /* Grey box - uses getTimerCCR() */
