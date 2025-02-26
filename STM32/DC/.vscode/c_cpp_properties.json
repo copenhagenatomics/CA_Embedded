@@ -5,7 +5,6 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/ADCMonitor/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/I2C/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
@@ -33,7 +32,6 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/ADCMonitor/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/I2C/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",

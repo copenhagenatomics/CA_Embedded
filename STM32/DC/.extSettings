@@ -1,5 +1,5 @@
 [ProjectFiles]
-HeaderPath=../../CA_Embedded_Libraries/STM32/ADCMonitor/Inc;../../CA_Embedded_Libraries/STM32/I2C/Inc;../../CA_Embedded_Libraries/STM32/circularBuffer/Inc;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc;../../CA_Embedded_Libraries/STM32/Util/Inc;../../CA_Embedded_Libraries/STM32/USBprint/Inc;../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc;
+HeaderPath=../../CA_Embedded_Libraries/STM32/ADCMonitor/Inc;../../CA_Embedded_Libraries/STM32/circularBuffer/Inc;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc;../../CA_Embedded_Libraries/STM32/Util/Inc;../../CA_Embedded_Libraries/STM32/USBprint/Inc;../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc;
 
 [Groups]
 Core/Src=Core/Src/DCBoard.c;
@@ -9,4 +9,3 @@ Core/Src=Core/Src/DCBoard.c;
 ../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src=../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src/jumpToBootloader.c;
 ../../CA_Embedded_Libraries/STM32/USBprint/Src=../../CA_Embedded_Libraries/STM32/USBprint/Src/usb_cdc_fops.c;../../CA_Embedded_Libraries/STM32/USBprint/Src/USBprint.c;
 ../../CA_Embedded_Libraries/STM32/Util/Src=../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocol.c;../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolStm.c;../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c;../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c;../../CA_Embedded_Libraries/STM32/Util/Src/time32.c;../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolACDC.c;
-../../CA_Embedded_Libraries/STM32/I2C/Src=../../CA_Embedded_Libraries/STM32/I2C/Src/si7051.c;
