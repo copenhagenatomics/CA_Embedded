@@ -162,10 +162,10 @@ static void updateBoardStatus()
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
     // ADC to current calibration values
-    const float current_scalar = ((3.3 / 4096.0) / 0.264); // From ACS725LLCTR-05AB datasheet
-    const float current_bias   = - 6.25;                        // Offset calibrated to USB hubs.
+    const float CURRENT_SCALAR = ((3.3 / 4096.0) / 0.264); // From ACS725LLCTR-05AB datasheet
+    const float CURRENT_BIAS   = - 6.25;                        // Offset calibrated to USB hubs.
 
-    return current_scalar * ADCMean(pData, channel) + current_bias;
+    return CURRENT_SCALAR * ADCMean(pData, channel) + CURRENT_BIAS;
 }
 
 WWDG_HandleTypeDef* hwwdg_ = NULL;
