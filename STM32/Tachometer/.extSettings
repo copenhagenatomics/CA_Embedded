@@ -1,0 +1,11 @@
+[ProjectFiles]
+HeaderPath=../../CA_Embedded_Libraries/STM32/circularBuffer/Inc;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc;../../CA_Embedded_Libraries/STM32/Util/Inc;../../CA_Embedded_Libraries/STM32/USBprint/Inc;../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc
+
+[Groups]
+Core/Src/tachoInput.c
+../../CA_Embedded_Libraries/STM32/circularBuffer/Src=../../CA_Embedded_Libraries/STM32/circularBuffer/Src/circular_buffer.c;
+../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src=../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/FLASH_readwrite.c;../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/HAL_otp.c;
+../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src=../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src/jumpToBootloader.c;
+../../CA_Embedded_Libraries/STM32/USBprint/Src=../../CA_Embedded_Libraries/STM32/USBprint/Src/usb_cdc_fops.c;../../CA_Embedded_Libraries/STM32/USBprint/Src/USBprint.c;
+../../CA_Embedded_Libraries/STM32/Util/Src=../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocol.c;../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolStm.c;../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c;../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c;../../CA_Embedded_Libraries/STM32/Util/Src/time32.c;
+
