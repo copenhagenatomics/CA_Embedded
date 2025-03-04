@@ -79,7 +79,7 @@ class DCBoard: public ::testing::Test
 
         void setADCChannelBuffer(int channel, int value) {
             /* Fill channel with ADC value */
-            for(int i = 0; i < hadc.dma_length/ADC_CHANNELS; i++) {
+            for(uint32_t i = 0; i < hadc.dma_length/ADC_CHANNELS; i++) {
                 *((int16_t*)hadc.dma_address + (ADC_CHANNELS*i + channel)) = value;
             }
         }
@@ -525,7 +525,6 @@ TEST_F(DCBoard, testCurrentBuffer) {
 
     EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
 
-    const int inputVChannelIdx = 6;
     for(int h = 0; h < 4096; h++) {
         
         /* Fill with current */

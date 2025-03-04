@@ -59,7 +59,7 @@ static void updateBoardStatus();
 static double meanCurrent(const int16_t *pData, uint16_t channel);
 static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples);
 static void setPWMPin(int pinNumber, int pwmState, int duration);
-static void allOn();
+static void allOn(int duration);
 static void allOff();
 static void turnOnPin(int pinNumber);
 static void turnOnPinDuration(int pinNumber, int duration);
@@ -175,10 +175,10 @@ static void updateBoardStatus()
 static double meanCurrent(const int16_t *pData, uint16_t channel)
 {
     // ADC to current calibration values
-    const float current_scalar = ((3.3 / 4096.0) / 0.264); // From ACS725LLCTR-05AB datasheet
-    const float current_bias   = - 6.25;                        // Offset calibrated to USB hubs.
+    const float CURRENT_SCALAR = ((3.3 / 4096.0) / 0.264); // From ACS725LLCTR-05AB datasheet
+    const float CURRENT_BIAS   = - 6.25;                        // Offset calibrated to USB hubs.
 
-    return current_scalar * ADCMean(pData, channel) + current_bias;
+    return CURRENT_SCALAR * ADCMean(pData, channel) + CURRENT_BIAS;
 }
 
 WWDG_HandleTypeDef* hwwdg_ = NULL;
@@ -342,7 +342,7 @@ static void autoOff()
 
     for (int i = 0; i < ACTUATIONPORTS; i++)
     {
-        if (tdiff_u32(now, actuationStart[i]) > actuationDuration[i] && actuationDuration[i] != 0)
+        if (((int) tdiff_u32(now, actuationStart[i]) > actuationDuration[i]) && actuationDuration[i] != 0)
         {
             turnOffPin(i);
         }
