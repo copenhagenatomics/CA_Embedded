@@ -43,6 +43,9 @@
 
 #define USB_COMMS_TIMEOUT_MS 5000
 
+#define UNDER_VOLTAGE_ADC 150
+#define OVER_VOLTAGE_ADC 1000
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
@@ -103,6 +106,9 @@ static const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin,
                                        Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
 static StmGpio buttonGpio[ACTUATIONPORTS] = {};
 
+/* An ADC value of 800 ~= 24V. */
+static float inputVoltageADC = 800;
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
 ***************************************************************************************************/
@@ -145,13 +151,21 @@ static void updateBoardStatus()
         *getTimerCCR(i) != TURNOFFPWM ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i)) : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
     }
 
-    /* If 24V is not present */
-    // if(!stmGetGpio(sense24v)) {
-    //     bsSetError(BS_UNDER_VOLTAGE_Msk);
-    // }
-    // else {
-    //     bsClearField(BS_UNDER_VOLTAGE_Msk);
-    // }
+    /* Check input voltage - Values are derived from experimental data:
+    ** https://docs.google.com/spreadsheets/d/1Ol6N_XpXo1H1fYc5LJ2H3Ol09gSS1-E9HtE2mK8wYmI/edit?gid=0#gid=0 */
+    if (inputVoltageADC < UNDER_VOLTAGE_ADC) {
+        // Below ~10V
+        bsSetError(BS_UNDER_VOLTAGE_Msk);
+    }
+    else if (inputVoltageADC > OVER_VOLTAGE_ADC) {
+        // Above ~27V
+        bsSetError(BS_OVER_VOLTAGE_Msk);
+    }
+    else
+    {
+        bsClearField(BS_OVER_VOLTAGE_Msk);
+        bsClearField(BS_UNDER_VOLTAGE_Msk);
+    }
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
     ** the (other) error bits are cleared, but doing here means it only needs to be done once */
@@ -199,11 +213,13 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
         return;
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x",
+    inputVoltageADC = ADCMean(pBuffer, 6);
+
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
             meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
             meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5),
-            ADCMean(pBuffer, 6), bsGetStatus());
+            bsGetStatus());
 }
 
 static void setPWMPin(int pinNumber, int pwmState, int duration)

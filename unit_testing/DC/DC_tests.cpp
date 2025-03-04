@@ -37,7 +37,7 @@ class DCBoard: public ::testing::Test
         *******************************************************************************************/
         DCBoard()
         {
-            hadc.Init.NbrOfConversion = ACTUATIONPORTS;
+            hadc.Init.NbrOfConversion = ADC_CHANNELS;
 
             /* OTP code to allow initialisation of the board to pass */
             HAL_otpWrite(&bi);
@@ -77,10 +77,10 @@ class DCBoard: public ::testing::Test
             }
         }
 
-        void setDcCurrentBuffer() {
-            /* According to default calibration, 2048 yields ~0 current */
-            for(int i = 0; i < hadc.dma_length; i++) {
-                *((int16_t*)hadc.dma_address + i) = 2048;
+        void setADCChannelBuffer(int channel, int value) {
+            /* Fill channel with ADC value */
+            for(int i = 0; i < hadc.dma_length/ADC_CHANNELS; i++) {
+                *((int16_t*)hadc.dma_address + (ADC_CHANNELS*i + channel)) = value;
             }
         }
 
@@ -88,8 +88,14 @@ class DCBoard: public ::testing::Test
         void dcSetup() {
             DCBoardInit(&hadc, &hwwdg);
         
-            /* Fill the current buffer with a sensible value */
-            setDcCurrentBuffer();
+            /* Fill the current buffer with a sensible value
+            ** According to default calibration, 2048 yields ~0 current */
+            for (int i = 0; i < ADC_CHANNELS-1; i++) {
+                setADCChannelBuffer(i, 2048);
+            }
+
+            /* Fill the input voltage buffer with value resembling 24V input */
+            setADCChannelBuffer(inputVoltageChannelIdx, 800);
 
             /* All buttons automatically in "off" position */
             for(int i = 0; i < ACTUATIONPORTS; i++) {
@@ -105,6 +111,7 @@ class DCBoard: public ::testing::Test
         WWDG_HandleTypeDef hwwdg;
         const char * bootMsg = "Boot Unit Test";
         int tickCounter = 0;
+        const int inputVoltageChannelIdx = 6;
 
         BoardInfo bi = {
             .v2 = {
@@ -184,7 +191,7 @@ TEST_F(DCBoard, printSerial)
         "Software Version: 0\r", 
         "Compile Date: 0\r", 
         "Git SHA: 0\r", 
-        "PCB Version: 3.1\r"
+        "PCB Version: 3.2\r"
     ));
 }
 
@@ -236,10 +243,38 @@ TEST_F(DCBoard, printStatus)
 TEST_F(DCBoard, status24v) 
 {
     dcSetup();
- 
+
+    /* Fill buffer with ADC value resembling under voltage */
+    setADCChannelBuffer(inputVoltageChannelIdx, 0);
+
+    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
+    ** printing anything */
+    goToTick(200);
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000"));
+
+    writeDcMessage("Status\n");
+
+    EXPECT_FLUSH_USB(ElementsAre(
+        "\r", 
+        "Start of board status:\r", 
+        "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r",
+        "Port 0: On: 0, PWM percent: 0\r", 
+        "Port 1: On: 0, PWM percent: 0\r", 
+        "Port 2: On: 0, PWM percent: 0\r", 
+        "Port 3: On: 0, PWM percent: 0\r", 
+        "Port 4: On: 0, PWM percent: 0\r", 
+        "Port 5: On: 0, PWM percent: 0\r", 
+        "\r", 
+        "End of board status. \r"
+    ));
+
+    /* Fill buffer with ADC value resembling over voltage */
+    setADCChannelBuffer(inputVoltageChannelIdx, 1200);
+    goToTick(400);
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xb0000000"));
 }
 
-/* Grey box - uses getTimerCCR() */
+// /* Grey box - uses getTimerCCR() */
 TEST_F(DCBoard, portsNoTimeout) 
 {
     dcSetup();
@@ -273,7 +308,7 @@ TEST_F(DCBoard, portsNoTimeout)
     }
 }
 
-/* Grey box - uses getTimerCCR() */
+// /* Grey box - uses getTimerCCR() */
 TEST_F(DCBoard, portsPct) 
 {
     dcSetup();
@@ -308,7 +343,7 @@ TEST_F(DCBoard, portsPct)
     }
 }
 
-/* Grey box - uses getTimerCCR() */
+// /* Grey box - uses getTimerCCR() */
 TEST_F(DCBoard, portsTimeout) 
 {
     dcSetup();
@@ -346,7 +381,7 @@ TEST_F(DCBoard, portsTimeout)
     }
 }
 
-/* Grey box - uses getTimerCCR() */
+// /* Grey box - uses getTimerCCR() */
 TEST_F(DCBoard, onboardButtons) 
 {
     dcSetup();
@@ -396,7 +431,7 @@ TEST_F(DCBoard, onboardButtons)
     }
 }   
 
-/* Grey box - uses getTimerCCR() */
+// /* Grey box - uses getTimerCCR() */
 TEST_F(DCBoard, onboardButtonsOff) 
 {
     dcSetup();
@@ -440,7 +475,7 @@ TEST_F(DCBoard, onboardButtonsOff)
     }
 }   
 
-/* Grey box - uses getTimerCCR() */
+// /* Grey box - uses getTimerCCR() */
 TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod) 
 {
     dcSetup();
@@ -490,11 +525,13 @@ TEST_F(DCBoard, testCurrentBuffer) {
 
     EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
 
+    const int inputVChannelIdx = 6;
     for(int h = 0; h < 4096; h++) {
+        
         /* Fill with current */
-        for(int i = 0; i < hadc.dma_length; i++) {
-            *((int16_t*)hadc.dma_address + i) = h;
-        }  
+        for (int i = 0; i < ADC_CHANNELS-1; i++) {
+            setADCChannelBuffer(i, h);
+        }
 
         /* Get the next printout */
         simTick(100);
@@ -506,7 +543,6 @@ TEST_F(DCBoard, testCurrentBuffer) {
         EXPECT_FLUSH_USB(Contains(buf));
     }
 } 
-
 
 /* Test that ports are shut off when disconnecting USB */
 TEST_F(DCBoard, testPortShutOffAtUSBDisconnect) 
