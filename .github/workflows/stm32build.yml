@@ -39,6 +39,7 @@ jobs:
           OTP: STM32/OTP/**
           SaltLeak: STM32/SaltLeak/**
           Temperature: STM32/Temperature/**
+          ZirconiumOxide: STM32/ZirconiumOxide/**
   run_unittests:
     needs: changes
     if: ${{ needs.changes.outputs.packages != '[]' && needs.changes.outputs.packages != '' }}
