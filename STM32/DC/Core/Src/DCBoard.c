@@ -28,7 +28,7 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS    6
+#define ADC_CHANNELS    7               // Order: Hall1 - Hall6, 24V sense
 #define ACTUATIONPORTS 6
 #define ADC_CHANNEL_BUF_SIZE    400
 
@@ -43,6 +43,9 @@
 
 #define USB_COMMS_TIMEOUT_MS 5000
 
+#define UNDER_VOLTAGE_ADC 150
+#define OVER_VOLTAGE_ADC 1000
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
@@ -56,7 +59,7 @@ static void updateBoardStatus();
 static double meanCurrent(const int16_t *pData, uint16_t channel);
 static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples);
 static void setPWMPin(int pinNumber, int pwmState, int duration);
-static void allOn();
+static void allOn(int duration);
 static void allOff();
 static void turnOnPin(int pinNumber);
 static void turnOnPinDuration(int pinNumber, int duration);
@@ -102,7 +105,9 @@ static GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_
 static const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
                                        Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
 static StmGpio buttonGpio[ACTUATIONPORTS] = {};
-static StmGpio sense24v;
+
+/* An ADC value of 800 ~= 24V. */
+static float inputVoltageADC = 800;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -146,11 +151,19 @@ static void updateBoardStatus()
         *getTimerCCR(i) != TURNOFFPWM ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i)) : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
     }
 
-    /* If 24V is not present */
-    if(!stmGetGpio(sense24v)) {
+    /* Check input voltage - Values are derived from experimental data:
+    ** https://docs.google.com/spreadsheets/d/1Ol6N_XpXo1H1fYc5LJ2H3Ol09gSS1-E9HtE2mK8wYmI/edit?gid=0#gid=0 */
+    if (inputVoltageADC < UNDER_VOLTAGE_ADC) {
+        // Below ~10V
         bsSetError(BS_UNDER_VOLTAGE_Msk);
     }
-    else {
+    else if (inputVoltageADC > OVER_VOLTAGE_ADC) {
+        // Above ~27V
+        bsSetError(BS_OVER_VOLTAGE_Msk);
+    }
+    else
+    {
+        bsClearField(BS_OVER_VOLTAGE_Msk);
         bsClearField(BS_UNDER_VOLTAGE_Msk);
     }
 
@@ -199,6 +212,8 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
         USBnprintf("0x%08x", bsGetStatus());
         return;
     }
+
+    inputVoltageADC = ADCMean(pBuffer, 6);
 
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
@@ -327,7 +342,7 @@ static void autoOff()
 
     for (int i = 0; i < ACTUATIONPORTS; i++)
     {
-        if (tdiff_u32(now, actuationStart[i]) > actuationDuration[i] && actuationDuration[i] != 0)
+        if (((int) tdiff_u32(now, actuationStart[i]) > actuationDuration[i]) && actuationDuration[i] != 0)
         {
             turnOffPin(i);
         }
@@ -381,12 +396,12 @@ static volatile uint32_t* getTimerCCR(int pinNumber)
     /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.1 board */
     switch (pinNumber)
     {
-        case 0: return &(TIM4->CCR2);
-        case 1: return &(TIM4->CCR1);
-        case 2: return &(TIM5->CCR1);
-        case 3: return &(TIM5->CCR2);
-        case 4: return &(TIM5->CCR4);
-        case 5: return &(TIM5->CCR3);
+        case 0: return &(TIM2->CCR1);
+        case 1: return &(TIM1->CCR2);
+        case 2: return &(TIM1->CCR3);
+        case 3: return &(TIM1->CCR1);
+        case 4: return &(TIM2->CCR2);
+        case 5: return &(TIM2->CCR3);
         default: return (uint32_t*)0x00000000;
     }
 }
@@ -398,7 +413,6 @@ static void gpioInit () {
     for(int i = 0; i < ACTUATIONPORTS; i++) {
         stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT_PULLUP);
     }
-    stmGpioInit(&sense24v, SENSE_24V_GPIO_Port, SENSE_24V_Pin, STM_GPIO_INPUT);
 }
 
 /*!
