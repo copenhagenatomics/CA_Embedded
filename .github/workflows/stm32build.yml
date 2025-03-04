@@ -38,6 +38,7 @@ jobs:
           LightController: STM32/LightController/**
           OTP: STM32/OTP/**
           SaltLeak: STM32/SaltLeak/**
+          Tachometer: STM32/Tachometer/**
           Temperature: STM32/Temperature/**
   run_unittests:
     needs: changes
