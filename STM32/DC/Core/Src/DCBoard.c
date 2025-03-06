@@ -31,6 +31,7 @@
 #define ADC_CHANNELS    7               // Order: Hall1 - Hall6, 24V sense
 #define ACTUATIONPORTS 6
 #define ADC_CHANNEL_BUF_SIZE    400
+#define INPUT_V_CHANNEL_IDX    6
 
 // PWM control
 #define TURNONPWM 999
@@ -43,8 +44,8 @@
 
 #define USB_COMMS_TIMEOUT_MS 5000
 
-#define UNDER_VOLTAGE_ADC 150
-#define OVER_VOLTAGE_ADC 1000
+#define UNDER_VOLTAGE_THRESHOLD 10
+#define OVER_VOLTAGE_THRESHOLD  27
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -57,6 +58,7 @@ static volatile uint32_t* getTimerCCR(int pinNumber);
 static void printDcStatus();
 static void updateBoardStatus();
 static double meanCurrent(const int16_t *pData, uint16_t channel);
+static double adcToInputVoltage(double adcMean);
 static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples);
 static void setPWMPin(int pinNumber, int pwmState, int duration);
 static void allOn(int duration);
@@ -106,8 +108,7 @@ static const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin,
                                        Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
 static StmGpio buttonGpio[ACTUATIONPORTS] = {};
 
-/* An ADC value of 800 ~= 24V. */
-static float inputVoltageADC = 800;
+static float inputVoltage = 24;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -151,13 +152,11 @@ static void updateBoardStatus()
         *getTimerCCR(i) != TURNOFFPWM ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i)) : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
     }
 
-    /* Check input voltage - Values are derived from experimental data:
-    ** https://docs.google.com/spreadsheets/d/1Ol6N_XpXo1H1fYc5LJ2H3Ol09gSS1-E9HtE2mK8wYmI/edit?gid=0#gid=0 */
-    if (inputVoltageADC < UNDER_VOLTAGE_ADC) {
+    if (inputVoltage < UNDER_VOLTAGE_THRESHOLD) {
         // Below ~10V
         bsSetError(BS_UNDER_VOLTAGE_Msk);
     }
-    else if (inputVoltageADC > OVER_VOLTAGE_ADC) {
+    else if (inputVoltage > OVER_VOLTAGE_THRESHOLD) {
         // Above ~27V
         bsSetError(BS_OVER_VOLTAGE_Msk);
     }
@@ -179,6 +178,21 @@ static double meanCurrent(const int16_t *pData, uint16_t channel)
     const float CURRENT_BIAS   = - 6.25;                        // Offset calibrated to USB hubs.
 
     return CURRENT_SCALAR * ADCMean(pData, channel) + CURRENT_BIAS;
+}
+
+static double adcToInputVoltage(double adcMean)
+{
+    /* Check input voltage - Values are derived from experimental data:
+    ** https://docs.google.com/spreadsheets/d/1Ol6N_XpXo1H1fYc5LJ2H3Ol09gSS1-E9HtE2mK8wYmI/edit?gid=0#gid=0 
+    **
+    ** NOTE: Calibration values can vary alot from board to board meaning voltage calculation
+    **       can be as high as ±2V in the high range. Hence, the input voltage is not very 
+    **       accurate and the output should inspected more carefully if used for diagnostics. */
+    const float VOLTAGE_QUAD = -1.31e-5;
+    const float VOLTAGE_SCALAR = 0.0373;
+    const float VOLTAGE_BIAS = 3.17;
+
+    return (VOLTAGE_QUAD * adcMean + VOLTAGE_SCALAR) * adcMean + VOLTAGE_BIAS;
 }
 
 WWDG_HandleTypeDef* hwwdg_ = NULL;
@@ -213,7 +227,8 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
         return;
     }
 
-    inputVoltageADC = ADCMean(pBuffer, 6);
+    inputVoltage = adcToInputVoltage(ADCMean(pBuffer, INPUT_V_CHANNEL_IDX));
+    setBoardVoltage(inputVoltage);
 
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
@@ -393,7 +408,7 @@ static void checkButtonPress()
 */
 static volatile uint32_t* getTimerCCR(int pinNumber)
 {
-    /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.1 board */
+    /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.2 board */
     switch (pinNumber)
     {
         case 0: return &(TIM2->CCR1);
