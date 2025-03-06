@@ -34,6 +34,7 @@ jobs:
           AirconCtrl: STM32/AirconCtrl/**
           Current: STM32/Current/**
           DC: STM32/DC/**
+          FlowChip: STM32/FlowChip/**
           Humidity: STM32/Humidity/**
           LightController: STM32/LightController/**
           OTP: STM32/OTP/**
