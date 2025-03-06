@@ -6,6 +6,8 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include "caBoardUnitTests.h"
+#include "serialStatus_tests.h"
 
 /* Fakes */
 #include "fake_StmGpio.h"
@@ -29,20 +31,14 @@ using namespace std;
 ** TEST FIXTURES
 ***************************************************************************************************/
 
-class DCBoard: public ::testing::Test 
+class DCBoard: public CaBoardUnitTest
 {
     protected:
         /*******************************************************************************************
         ** METHODS
         *******************************************************************************************/
-        DCBoard()
-        {
-            hadc.Init.NbrOfConversion = ACTUATIONPORTS;
-
-            /* OTP code to allow initialisation of the board to pass */
-            HAL_otpWrite(&bi);
-            forceTick(0);
-            hostUSBConnect();
+        DCBoard() : CaBoardUnitTest(DCBoardLoop, DC_Board, {LATEST_MAJOR, LATEST_MINOR}) {
+            hadc.Init.NbrOfConversion = ADC_CHANNELS;
         }
 
         void writeDcMessage(const char * msg)
@@ -51,15 +47,10 @@ class DCBoard: public ::testing::Test
             DCBoardLoop(bootMsg);
         }
 
-        void simTick(int numTicks = 1)
+        void simTick()
         {
-            /* tickCounter indicates the current tick. forceTick(now) doesn't make any sense, so 
-            ** start from the next tick */
-            for(int i = tickCounter + 1; i <= tickCounter + numTicks; i++) 
-            {
-                forceTick(i);
-                if(i != 0 && (i % 100 == 0)) {
-                    if(i % 200 == 0) {
+            if(tickCounter != 0 && (tickCounter % 100 == 0)) {
+                if(tickCounter % 200 == 0) {
                         HAL_ADC_ConvCpltCallback(&hadc);
                     }
                     else {
@@ -67,20 +58,12 @@ class DCBoard: public ::testing::Test
                     }
                 }
                 DCBoardLoop(bootMsg);
-            }
-            tickCounter = tickCounter + numTicks;
         }
 
-        void goToTick(int tickDest) {
-            while(tickCounter < tickDest) {
-                simTick();
-            }
-        }
-
-        void setDcCurrentBuffer() {
-            /* According to default calibration, 2048 yields ~0 current */
-            for(unsigned i = 0; i < hadc.dma_length; i++) {
-                *((int16_t*)hadc.dma_address + i) = 2048;
+        void setADCChannelBuffer(int channel, int value) {
+            /* Fill channel with ADC value */
+            for(uint32_t i = 0; i < hadc.dma_length/ADC_CHANNELS; i++) {
+                *((int16_t*)hadc.dma_address + (ADC_CHANNELS*i + channel)) = value;
             }
         }
 
@@ -88,9 +71,14 @@ class DCBoard: public ::testing::Test
         void dcSetup() {
             DCBoardInit(&hadc, &hwwdg);
         
-            /* Enable 24V power and fill the current buffer with a sensible value */
-            stmSetGpio(sense24v, true);
-            setDcCurrentBuffer();
+            /* Fill the current buffer with a sensible value
+            ** According to default calibration, 2048 yields ~0 current */
+            for (int i = 0; i < ADC_CHANNELS-1; i++) {
+                setADCChannelBuffer(i, 2048);
+            }
+
+            /* Fill the input voltage buffer with value resembling 24V input */
+            setADCChannelBuffer(INPUT_V_CHANNEL_IDX, 800);
 
             /* All buttons automatically in "off" position */
             for(int i = 0; i < ACTUATIONPORTS; i++) {
@@ -105,20 +93,10 @@ class DCBoard: public ::testing::Test
         ADC_HandleTypeDef hadc;
         WWDG_HandleTypeDef hwwdg;
         const char * bootMsg = "Boot Unit Test";
-        int tickCounter = 0;
 
-        BoardInfo bi = {
-            .v2 = {
-                .otpVersion = OTP_VERSION_2,
-                .boardType  = DC_Board,
-                .subBoardType = 0,
-                .reserved = {0},
-                .pcbVersion = {
-                    .major = 3,
-                    .minor = 1
-                },
-                .productionDate = 0
-            }
+        SerialStatusTest sst = {
+            .boundInit = bind(DCBoardInit, &hadc, &hwwdg),
+            .testFixture = this
         };
 };
 
@@ -130,89 +108,26 @@ TEST_F(DCBoard, CorrectBoardParams)
 {
     dcSetup();
 
-    /* Basic test, was everything OK?  */
-    EXPECT_FALSE(bsGetStatus() && BS_VERSION_ERROR_Msk);
-
-    /* This should force a print on the USB bus */
-    goToTick(100);
-
-    /* Check the printout is correct */
-    EXPECT_READ_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
+    goldenPathTest(sst, "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000");
 }
 
 TEST_F(DCBoard, incorrectBoard) {
-    /* Update OTP with incorrect board number */
-    if(BREAKING_MINOR != 0) {
-        bi.v2.pcbVersion.minor = BREAKING_MINOR - 1;
-    }
-    else if(BREAKING_MAJOR != 0) {
-        bi.v2.pcbVersion.major = BREAKING_MAJOR - 1;
-    }
-    else {
-        FAIL() << "Oldest PCB Version must be at least v0.1";
-    }
-    
-    HAL_otpWrite(&bi);
-
-    dcSetup();
-
-    /* Basic test, was everything OK?  */
-    EXPECT_TRUE(bsGetStatus() && BS_VERSION_ERROR_Msk);
-
-    /* This should force a print on the USB bus */
-    goToTick(100);
-
-    /* Check the printout is correct */
-    EXPECT_READ_USB(Contains("0x84000000"));
+    incorrectBoardTest(sst);
 }
 
 TEST_F(DCBoard, printSerial) 
 {
-    dcSetup();
-
-    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
-    ** printing anything */
-    DCBoardLoop(bootMsg);
-    writeDcMessage("Serial\n");
-    
-    EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Boot Unit Test\r", 
-        "Serial Number: 000\r", 
-        "Product Type: DC Board\r", 
-        "Sub Product Type: 0\r", 
-        "MCU Family: Unknown 0x  0 Rev 0\r", 
-        "Software Version: 0\r", 
-        "Compile Date: 0\r", 
-        "Git SHA: 0\r", 
-        "PCB Version: 3.1\r"
-    ));
+    serialPrintoutTest(sst, "DC Board");
 }
 
 TEST_F(DCBoard, printStatus) 
 {
-    dcSetup();
-
-    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
-    ** printing anything */
-    DCBoardLoop(bootMsg);
-    writeDcMessage("Status\n");
-    
-
-    EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Boot Unit Test\r", 
-        "Start of board status:\r", 
-        "The board is operating normally.\r", 
-        "Port 0: On: 0, PWM percent: 0\r", 
+    statusPrintoutTest(sst, {"Port 0: On: 0, PWM percent: 0\r", 
         "Port 1: On: 0, PWM percent: 0\r", 
         "Port 2: On: 0, PWM percent: 0\r", 
         "Port 3: On: 0, PWM percent: 0\r", 
         "Port 4: On: 0, PWM percent: 0\r", 
-        "Port 5: On: 0, PWM percent: 0\r", 
-        "\r", 
-        "End of board status. \r"
-    ));
+                             "Port 5: On: 0, PWM percent: 0\r"});
     
     writeDcMessage("p2 on\n");
     writeDcMessage("p4 on\n");
@@ -234,32 +149,61 @@ TEST_F(DCBoard, printStatus)
     ));
 }
 
+/* Grey box - has knowledge of adc to voltage function */
 TEST_F(DCBoard, status24v) 
 {
     dcSetup();
-    stmSetGpio(sense24v, false);
 
-    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
-    ** printing anything */
-    goToTick(100);
-    writeDcMessage("Status\n");
-    
+    for (int i = 0; i < 4096; i++)
+    {
+        /* Test input voltage buffer with ADC values from under to over voltage  */
+        setADCChannelBuffer(INPUT_V_CHANNEL_IDX, i);
+        double inputVoltage = adcToInputVoltage(i); 
+        /* Get the next printout */
+        simTicks(200);
 
-    EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Boot Unit Test\r", 
-        "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000\r",
-        "Start of board status:\r", 
-        "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r",
-        "Port 0: On: 0, PWM percent: 0\r", 
-        "Port 1: On: 0, PWM percent: 0\r", 
-        "Port 2: On: 0, PWM percent: 0\r", 
-        "Port 3: On: 0, PWM percent: 0\r", 
-        "Port 4: On: 0, PWM percent: 0\r", 
-        "Port 5: On: 0, PWM percent: 0\r", 
-        "\r", 
-        "End of board status. \r"
-    ));
+        if (inputVoltage < UNDER_VOLTAGE_THRESHOLD)
+        {
+            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000"));
+        }
+        else if (inputVoltage > OVER_VOLTAGE_THRESHOLD)
+        {
+            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x90000000"));
+        }
+        else
+        {
+            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
+        }
+
+    }
+    // /* Fill buffer with ADC value resembling under voltage */
+    // setADCChannelBuffer(INPUT_V_CHANNEL_IDX, UNDER_VOLTAGE_ADC-1);
+
+    // /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
+    // ** printing anything */
+    // goToTick(200);
+    // EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000"));
+
+    // writeDcMessage("Status\n");
+
+    // EXPECT_FLUSH_USB(ElementsAre(
+    //     "\r", 
+    //     "Start of board status:\r", 
+    //     "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r",
+    //     "Port 0: On: 0, PWM percent: 0\r", 
+    //     "Port 1: On: 0, PWM percent: 0\r", 
+    //     "Port 2: On: 0, PWM percent: 0\r", 
+    //     "Port 3: On: 0, PWM percent: 0\r", 
+    //     "Port 4: On: 0, PWM percent: 0\r", 
+    //     "Port 5: On: 0, PWM percent: 0\r", 
+    //     "\r", 
+    //     "End of board status. \r"
+    // ));
+
+    // /* Fill buffer with ADC value resembling over voltage */
+    // setADCChannelBuffer(INPUT_V_CHANNEL_IDX, OVER_VOLTAGE_ADC+1);
+    // goToTick(400);
+    // EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xb0000000"));
 }
 
 /* Grey box - uses getTimerCCR() */
@@ -352,14 +296,14 @@ TEST_F(DCBoard, portsTimeout)
             EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
-            simTick(timeout_ticks);
+            simTicks(timeout_ticks);
             for(int j = 1; j <= ACTUATIONPORTS; j++) {
                 if(j != i) {
                     ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j << ", tick = " << tickCounter;
                 }
                 else {
                     ASSERT_EQ(*getTimerCCR(j-1), 999) << "j = " << j << ", tick = " << tickCounter;
-                    simTick();
+                    simTicks();
                     ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j << ", tick = " << tickCounter;
                 }
             }
@@ -383,7 +327,7 @@ TEST_F(DCBoard, onboardButtons)
 
         /* Press a button */
         stmSetGpio(buttonGpio[i], false);
-        simTick(100); /* Should respond within 100 ms */
+        simTicks(100); /* Should respond within 100 ms */
 
         /* Only the requested port should be on */
         for(int j = 0; j < ACTUATIONPORTS; j++) {
@@ -396,7 +340,7 @@ TEST_F(DCBoard, onboardButtons)
         }
 
         /* Check status bit updated correctly. Could take up to 100 ms for another print */
-        simTick(100);
+        simTicks(100);
         switch(i) {
             case 0: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000001"));
                     break;
@@ -415,7 +359,7 @@ TEST_F(DCBoard, onboardButtons)
 
         /* Release button */
         stmSetGpio(buttonGpio[i], true);
-        simTick(100); /* Should respond within 100 ms */
+        simTicks(100); /* Should respond within 100 ms */
     }
 }   
 
@@ -440,25 +384,25 @@ TEST_F(DCBoard, onboardButtonsOff)
 
         /* Press a button */
         stmSetGpio(buttonGpio[i], false);
-        simTick(100); /* Should respond within 100 ms */
+        simTicks(100); /* Should respond within 100 ms */
 
         /* There should be no effect */
         for(int j = 0; j < ACTUATIONPORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
         }
 
-        simTick(100); /* Could take up to 100 ms for another print */
+        simTicks(100); /* Could take up to 100 ms for another print */
         /* Check status bit updated correctly */
         EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f")); 
 
         /* Release button */
         stmSetGpio(buttonGpio[i], true);
-        simTick(100); /* Should respond within 100 ms */
+        simTicks(100); /* Should respond within 100 ms */
 
         /* Timer port should turn off 1 second after the start of the test */
-        simTick(700);
+        simTicks(700);
         ASSERT_EQ(*getTimerCCR(i), 999) << "i = " << i;   
-        simTick();
+        simTicks();
         ASSERT_EQ(*getTimerCCR(i), 0) << "i = " << i;   
     }
 }   
@@ -484,25 +428,25 @@ TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod)
 
         /* Press a button */
         stmSetGpio(buttonGpio[i], false);
-        simTick(100); /* Should respond within 100 ms */
+        simTicks(100); /* Should respond within 100 ms */
 
         /* There should be no effect */
         for(int j = 0; j < ACTUATIONPORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
         }
 
-        simTick(100); /* Could take up to 100 ms for another print */
+        simTicks(100); /* Could take up to 100 ms for another print */
         /* Check status bit updated correctly */
         EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f")); 
 
         /* Timer port should time out after 1 second but not turn off because button is pressed */
-        simTick(800);
-        simTick();
+        simTicks(800);
+        simTicks();
         ASSERT_EQ(*getTimerCCR(i), 999) << "i = " << i;   
 
         /* Release button */
         stmSetGpio(buttonGpio[i], true);
-        simTick(100); /* Should respond within 100 ms */
+        simTicks(100); /* Should respond within 100 ms */
         ASSERT_EQ(*getTimerCCR(i), 0) << "i = " << i;   
     }
 }   
@@ -514,13 +458,14 @@ TEST_F(DCBoard, testCurrentBuffer) {
     EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
 
     for(int h = 0; h < 4096; h++) {
+        
         /* Fill with current */
-        for(unsigned i = 0; i < hadc.dma_length; i++) {
-            *((int16_t*)hadc.dma_address + i) = h;
-        }  
+        for (int i = 0; i < ADC_CHANNELS-1; i++) {
+            setADCChannelBuffer(i, h);
+        }
 
         /* Get the next printout */
-        simTick(100);
+        simTicks(100);
 
         char buf[100] = {0};
         double curr = ((h / 4096.0) * 3.3 - 1.65) / 0.264;
@@ -529,7 +474,6 @@ TEST_F(DCBoard, testCurrentBuffer) {
         EXPECT_FLUSH_USB(Contains(buf));
     }
 } 
-
 
 /* Test that ports are shut off when disconnecting USB */
 TEST_F(DCBoard, testPortShutOffAtUSBDisconnect) 
