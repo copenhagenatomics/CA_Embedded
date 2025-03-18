@@ -21,7 +21,6 @@
 #include "StmGpio.h"
 #include "ACTenChannel.h"
 #include "pcbversion.h"
-#include "DS18B20.h"
 #include "CAProtocolACDC.h"
 
 /***************************************************************************************************
