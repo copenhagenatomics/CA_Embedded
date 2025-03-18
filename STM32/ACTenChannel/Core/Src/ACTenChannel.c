@@ -178,7 +178,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.2f, 0x%08" PRIx32, 
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, 0x%08" PRIx32, 
                 ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), ADCtoCurrent(ADCrms(pData, 2)), 
                 ADCtoCurrent(ADCrms(pData, 3)), ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)), 
                 ADCtoCurrent(ADCrms(pData, 6)), ADCtoCurrent(ADCrms(pData, 7)), ADCtoCurrent(ADCrms(pData, 8)), 

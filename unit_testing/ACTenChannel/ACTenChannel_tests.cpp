@@ -94,7 +94,7 @@ TEST_F(ACTenCh, goldenPath)
 {
     sst.boundInit();
 
-    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0.00, 0x00000000");    
+    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0x00000000");    
 }
 
 TEST_F(ACTenCh, printStatus) {
@@ -149,7 +149,6 @@ TEST_F(ACTenCh, UsbTimeout)
 
     writeBoardMessage("all on 60\n");
 
-    bool toggle = false;
     for(int i = 0; i < TEST_LENGTH_MS / 10; i++)
     {
         if(i == 0.25 * TEST_LENGTH_MS / 10) {
