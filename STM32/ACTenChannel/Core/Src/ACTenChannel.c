@@ -254,12 +254,6 @@ static void CAallOn(bool isOn, int duration)
 
 static void CAportState(int port, bool state, int percent, int duration)
 {
-    uint8_t pwmPercent = getPWMPinPercent(port-1);
-    // If heat sink has reached the maximum allowed temperature and user
-    // tries to heat the system further up then disregard the input command
-    if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
-        return;
-
     if((duration <= 0) && (percent != 0)) 
     {
         char buf[20] = {0};
