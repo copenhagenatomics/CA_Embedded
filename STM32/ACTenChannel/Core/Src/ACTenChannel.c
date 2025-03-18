@@ -31,8 +31,6 @@
 #define ADC_CHANNELS	        10
 #define ADC_CHANNEL_BUF_SIZE	400
 
-#define MAX_TEMPERATURE         70
-
 #define USB_COMMS_TIMEOUT_MS    5000
 
 /***************************************************************************************************
@@ -62,8 +60,6 @@ static void updateBoardStatus();
 
 /* GPIO settings. */
 StmGpio heaterPorts[AC_TEN_CH_NUM_PORTS];
-static StmGpio DQ1;
-static double heatSinkTemperature = 0; // Heat Sink temperature
 
 static ACDCProtocolCtx acProto =
 {
@@ -110,7 +106,10 @@ static void printAcTenChannelStatus()
 **
 ** @param input The user input string
 */
-static void ACTenChannelInputHandler(const char *input) { ACDCInputHandler(&acProto, input); }
+static void ACTenChannelInputHandler(const char *input) 
+{ 
+    ACDCInputHandler(&acProto, input); 
+}
 
 static void GpioInit()
 {
@@ -180,12 +179,11 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    heatSinkTemperature = getTemp();
     USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.2f, 0x%08" PRIx32, 
                 ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), ADCtoCurrent(ADCrms(pData, 2)), 
                 ADCtoCurrent(ADCrms(pData, 3)), ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)), 
                 ADCtoCurrent(ADCrms(pData, 6)), ADCtoCurrent(ADCrms(pData, 7)), ADCtoCurrent(ADCrms(pData, 8)), 
-                ADCtoCurrent(ADCrms(pData, 9)), heatSinkTemperature, bsGetStatus());
+                ADCtoCurrent(ADCrms(pData, 9)), bsGetStatus());
 }
 
 /*!
@@ -311,8 +309,6 @@ void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_Hand
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
     HAL_TIM_Base_Start(htim);
     GpioInit();
-
-    DS18B20Init(hDS18B20tim, &DQ1, DQ1_GPIO_Port, DQ1_Pin);
 }
 
 /*!

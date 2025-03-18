@@ -93,8 +93,7 @@ Core/Src/syscalls.c \
 Core/Src/ACTenChannel.c \
 HeatCtrl/Src/HeatCtrl.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_iwdg.c \
-../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_wwdg.c \
-Core/Src/DS18B20.c 
+../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_wwdg.c 
 
 # ASM sources
 ASM_SOURCES =  \
