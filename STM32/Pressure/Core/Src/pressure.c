@@ -25,6 +25,7 @@
 
 static void printHeader();
 static void printPressureStatus();
+static void printPressureStatusDef();
 static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration* calibrations);
 static void calibrationInfoRW(bool write);
 static void logMode(int port);
@@ -49,6 +50,7 @@ static CAProtocolCtx caProto =
     .undefined = HALundefined,
     .printHeader = printHeader,
     .printStatus = printPressureStatus,
+    .printStatusDef = printPressureStatusDef,
     .jumpToBootLoader = HALJumpToBootloader,
     .calibration = calibrateSensorOrBoard,
     .calibrationRW = calibrationInfoRW,
@@ -93,6 +95,28 @@ static void printPressureStatus()
     {
         len += snprintf(&buf[len], sizeof(buf) - len, "VCC raw is: %.2f. It should be >=4.6V \r\n", volts[7]);
     }
+    writeUSB(buf, len);
+}
+
+/*!
+ * @brief   Definition of status definition information when the 'StatusDef' command is received
+ */
+static void printPressureStatusDef() {
+    static char buf[300] = {0};
+
+    int len = 0;
+
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",VBUS FB\r\n",
+                    (uint32_t)VCC_RAW_ERROR_Msk);
+    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",5V FB\r\n",
+                 (uint32_t)VCC_ERROR_Msk);
+
+    for (int i = 5; i >= 0; i--)
+    {
+        len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port %d measure type [Voltage/Current]\r\n",
+                        (uint32_t)PORT_MEASUREMENT_TYPE(i), i+1);
+    }
+
     writeUSB(buf, len);
 }
 
