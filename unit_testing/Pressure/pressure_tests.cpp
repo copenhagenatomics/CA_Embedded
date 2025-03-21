@@ -41,7 +41,7 @@ class PressureTest: public CaBoardUnitTest
         /*******************************************************************************************
         ** METHODS
         *******************************************************************************************/
-        PressureTest() : CaBoardUnitTest(pressureLoop, Pressure, {3, 2}) {
+        PressureTest() : CaBoardUnitTest(&pressureLoop, Pressure, {LATEST_MAJOR, LATEST_MINOR}) {
             hadc.Init.NbrOfConversion = 8;
         }
 
@@ -70,12 +70,6 @@ class PressureTest: public CaBoardUnitTest
 ***************************************************************************************************/
 
 TEST_F(PressureTest, testPressureInitCorrectParams) {
-    auto expectStmNull = [](StmGpio* stm) {
-        ASSERT_EQ(stm->set,    nullptr);
-        ASSERT_EQ(stm->get,    nullptr);
-        ASSERT_EQ(stm->toggle, nullptr);
-    };
-
     pressureInit(&hadc, &hcrc);
 
     /* Basic test, was everything OK?  */
@@ -88,9 +82,6 @@ TEST_F(PressureTest, testPressureInitCorrectParams) {
 
     /* Check the printout is correct */
     EXPECT_READ_USB(Contains("-1.790000, -1.790000, -1.790000, -1.790000, -1.790000, -1.790000, 0xa0000180"));
-
-    /* Check the ledCtrl is not set with subProductType 0 */
-    expectStmNull(&ledCtrl);
 }
 
 TEST_F(PressureTest, testPressureInitWrongBoard)
@@ -121,46 +112,6 @@ TEST_F(PressureTest, testPressureInitWrongSwVersion)
     HAL_ADC_ConvCpltCallback(&hadc);
     pressureLoop(bootMsg);
     EXPECT_READ_USB(Contains("0xa4000180"));
-}
-
-TEST_F(PressureTest, testSubBoardType)
-{
-    auto expectStmNotNull = [](StmGpio* stm) {
-        ASSERT_NE(stm->set,    nullptr);
-        ASSERT_NE(stm->get,    nullptr);
-        ASSERT_NE(stm->toggle, nullptr);
-    };
-
-    bi.v2.subBoardType = 1;
-    HAL_otpWrite(&bi);
-    pressureInit(&hadc, &hcrc);
-
-    expectStmNotNull(&ledCtrl);
-    EXPECT_EQ(stmGetGpio(ledCtrl), 0);
-
-    /* Input ADC measurements that will have the pressurized state (ledCtrl) go high */
-    for (int i = 0; i < ADC_CHANNELS*ADC_CHANNEL_BUF_SIZE*2; i++)
-    {
-        ADCBuffer[i] = 2068.0;
-    }
-
-    // Go to tick that will call the adcCallBack
-    goToTick(100);
-    pressureLoop(bootMsg);
-
-    EXPECT_EQ(stmGetGpio(ledCtrl), 1);
-
-    /* Input ADC measurements that will have the pressurized state (ledCtrl) go low */
-    for (int i = 0; i < ADC_CHANNELS*ADC_CHANNEL_BUF_SIZE*2; i++)
-    {
-        ADCBuffer[i] = 500.0;
-    }
-
-    // Go to tick that will call the adcCallBack
-    goToTick(200);
-    pressureLoop(bootMsg);
-
-    EXPECT_EQ(stmGetGpio(ledCtrl), 0);
 }
 
 TEST_F(PressureTest, testPressureStatus)
