@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <inttypes.h>
 
 #include "ADCMonitor.h"
 #include "systemInfo.h"
@@ -9,13 +10,24 @@
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "StmGpio.h"
+#include "pcbversion.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS			8   // Channels: Pressure 1 - 6, VCC_FB, VCC_RAW_FB 
+#define ADC_CHANNELS			8   // Channels: Pressure 1 - 6, FB_5V, FB_VBUS 
 #define ADC_CHANNEL_BUF_SIZE	400 // 4kHz sampling rate
+
+/***************************************************************************************************
+** PRIVATE PROTOTYPE FUNCTIONS
+***************************************************************************************************/
+
+static void printHeader();
+static void printPressureStatus();
+static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration* calibrations);
+static void calibrationInfoRW(bool write);
+static void logMode(int port);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -28,26 +40,14 @@ static float volts[ADC_CHANNELS];       // port voltage readings
 static float ADCMeans[ADC_CHANNELS];    // ADC mean readings adjusted with portCalVal
 static float ADCMeansRaw[ADC_CHANNELS]; // ADC mean readings
 
-// Definition in calibration.h
 FlashCalibration cal;
-
-BoardInfo board;
-StmGpio ledCtrl;
 
 static int loggingMode = 0;
 
-// Local functions
-static void printHeader();
-static void printPressureStatus();
-static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration* calibrations);
-static void calibrationInfoRW(bool write);
-static void logMode(int port);
-
-// Local variables
 static CAProtocolCtx caProto =
 {
     .undefined = HALundefined,
-    .printHeader = printHeader, // Need this since calibrations should be included.
+    .printHeader = printHeader,
     .printStatus = printPressureStatus,
     .jumpToBootLoader = HALJumpToBootloader,
     .calibration = calibrateSensorOrBoard,
@@ -137,10 +137,6 @@ static void ADCtoPressure(float *adcMeans, int noOfChannels)
     {
         pressure[channel] = adcMeans[channel] * cal.sensorCalVal[channel*2] + cal.sensorCalVal[channel*2+1];
     }
-
-    // 6th port is used for LED indication if subtype != 0
-    if (board.v2.subBoardType != 0)
-        pressure[5] = 0;
 }
 
 static void ADCtoVolt(float *adcMeans, int noOfChannels)
@@ -159,21 +155,9 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels)
 
 static void printPorts(float *portValues)
 {
-    USBnprintf("%0.6f, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, 0x%x",
+    USBnprintf("%0.6f, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, 0x%08" PRIx32,
                 *portValues, *(portValues+1), *(portValues+2), *(portValues+3),
                 *(portValues+4), *(portValues+5), bsGetStatus());
-}
-
-static void switchLED()
-{
-    static const float PRESSURIZED_LEVEL = 0.15;
-    bool pressurized = false;
-    // Exclude the VCC and VCC raw channels
-    for (int i = 0; i < ADC_CHANNELS-2; i++)
-        if (pressure[i] > PRESSURIZED_LEVEL && cal.sensorCalVal[i*2] != 1)
-            pressurized = true;
-
-    stmSetGpio(ledCtrl, pressurized);
 }
 
 static void updateBoardStatus()
@@ -209,7 +193,7 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples)
     /* If the version is incorrect only print out status code */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
     {
-        USBnprintf("0x%x", bsGetStatus());
+        USBnprintf("0x%08" PRIx32, bsGetStatus());
         return;
     }
 
@@ -235,17 +219,6 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples)
     {
         printPorts(ADCMeans);
     }
-
-    // Turn on LED when attached that turns on when pressure > pressurizedLevel.
-    // Only relevant for modified boards with subBoardType = 1.
-    if (board.v2.subBoardType == 1)
-        switchLED();
-}
-
-static void gpioInit()
-{
-    stmGpioInit(&ledCtrl, LED1_GPIO_Port, LED1_Pin, STM_GPIO_OUTPUT);
-    stmSetGpio(ledCtrl, false);
 }
 
 /***************************************************************************************************
@@ -256,18 +229,7 @@ void pressureInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc)
 {
     initCAProtocol(&caProto, usbRx);
 
-    // Pin out has changed from PCB V3.2 - older versions need other software.
-    boardSetup(Pressure, (pcbVersion){3, 2});
-
-    /* Any reading error will already have been dealt with by boardSetup */
-    (void) HAL_otpRead(&board);
-
-    // subBoardType == 1 has an extra LED attached that turns on when pressure > pressurizedLevel.
-    // NOTE: The LED is attached to the 6th port on the board. The board has to have its 6th port
-    // soldered directly on to the LED pin trace and the ADC circuit for the 6th port has to be
-    // cut off for it to work correctly.
-    if (board.v2.subBoardType == 1)
-        gpioInit();
+    boardSetup(Pressure, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     calibrationInit(hcrc, &cal, sizeof(cal));
@@ -277,5 +239,5 @@ void pressureLoop(const char* bootMsg)
 {
     CAhandleUserInputs(&caProto, bootMsg);
     updateBoardStatus();
-    ADCMonitorLoop(adcCallback); // Monitoring loop ensures print speed of 100ms/write
+    ADCMonitorLoop(adcCallback);
 }
