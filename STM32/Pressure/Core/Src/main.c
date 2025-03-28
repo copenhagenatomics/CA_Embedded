@@ -1,23 +1,10 @@
 /* USER CODE BEGIN Header */
-/**
+/*
  ******************************************************************************
  * @file           : main.c
  * @brief          : Main program body
  ******************************************************************************
- * Pressure Board:
- *
- *ToDo
- *ToDo Swap comm method.
- *ToDo Calibration values for Membrane Sensor
- *ToDo Choose sensor types externally (stored in EEPROM)
- *ToDo Confirm differential sensor calibration across sensors.
- *
- * Versions:
- * 1.0	Stable. WIP
- *
- *
- ******************************************************************************
- */
+*/
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
