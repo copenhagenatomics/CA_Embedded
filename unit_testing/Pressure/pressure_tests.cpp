@@ -209,7 +209,7 @@ TEST_F(PressureTest, testAdcCallback)
     // Check that the pressures are scaled by the linear functions
     for (int i = 0; i < ADC_CHANNELS - 2; i++)
     {
-        EXPECT_NEAR(pressure[i], ADCMeans[i]*cal.sensorCalVal[i*2] + cal.sensorCalVal[i*2+1], 1e-3);
+        EXPECT_NEAR(pressure[i], ADCMeans[i]*VOLTAGE_SCALING*cal.sensorCalVal[i*2] + cal.sensorCalVal[i*2+1], 1e-3);
     }
 
     // Check that the volts are scaled using the correct VCCs

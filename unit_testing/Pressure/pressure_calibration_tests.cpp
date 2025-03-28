@@ -87,7 +87,7 @@ TEST_F(PressureCalibrationTest, testCalibrationInit)
     { 
         EXPECT_NEAR(cal.sensorCalVal[i*2], GANLITONG_SCALAR, 1e-5);
         EXPECT_NEAR(cal.sensorCalVal[i*2+1], GANLITONG_OFFSET, 1e-5);
-        EXPECT_NEAR(cal.portCalVal[i], 0.99, 1e-5);
+        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-5);
         EXPECT_EQ(cal.measurementType[i], 0);
     }   
 
@@ -103,7 +103,7 @@ TEST_F(PressureCalibrationTest, testCalibrateBoard)
     // Check that the port calibration value is set to its default value
     for (int i = 0; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 0.99, 1e-4);
+        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4);
     }   
 
     // Try to calibrate port 1 which is already correctly calibrated
@@ -113,7 +113,7 @@ TEST_F(PressureCalibrationTest, testCalibrateBoard)
     const CACalibration calibration[noOfCalibrations] = {port, vinput, 0, 2};
 
     // ADC value corresponding to 2.5V on ports 
-    float ADCMeansRaw[NO_CALIBRATION_CHANNELS] = {2047.5,2047.5,2047.5,2047.5,2047.5,2047.5};
+    float ADCMeansRaw[NO_CALIBRATION_CHANNELS] = {2002.64,2002.64,2002.64,2002.64,2002.64,2002.64};
 
     // Calibrate board ports 1
     calibrateBoard(noOfCalibrations, calibration, &cal, ADCMeansRaw, sizeof(cal));
@@ -122,21 +122,21 @@ TEST_F(PressureCalibrationTest, testCalibrateBoard)
     EXPECT_NEAR(cal.portCalVal[0], 1, 1e-4)  << "Channel is " << 1;
     for (int i = 1; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 0.99, 1e-4)  << "Channel is " << i+1;
+        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4)  << "Channel is " << i+1;
     }   
 
     ADCMeansRaw[0] = 2060.0;
     // Calibrate 1st port that read wrong ADC value at 2.5V input
     calibrateBoard(noOfCalibrations, calibration, &cal, ADCMeansRaw, sizeof(cal));
 
-    EXPECT_NEAR(cal.portCalVal[0], 0.993932, 1e-4)  << "Channel is " << 1;
+    EXPECT_NEAR(cal.portCalVal[0], 0.9722, 1e-4)  << "Channel is " << 1;
     for (int i = 1; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 0.99, 1e-4) << "Channel is " << i+1;
+        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
     }   
 
     // Reset the calibration
-    ADCMeansRaw[0] = 2047.5;
+    ADCMeansRaw[0] = 2002.64;
     calibrateBoard(noOfCalibrations, calibration, &cal, ADCMeansRaw, sizeof(cal));
     EXPECT_NEAR(cal.portCalVal[0], 1, 1e-4) << "Channel is " << 1;
 
@@ -149,7 +149,7 @@ TEST_F(PressureCalibrationTest, testCalibrateBoard)
     EXPECT_NEAR(cal.portCalVal[0], 1, 1e-4) << "Channel is " << 1;
     for (int i = 1; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 0.99, 1e-4) << "Channel is " << i+1;
+        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
     }   
 
     // Call the calibration function with invalid input voltages and check the calibration
@@ -161,7 +161,7 @@ TEST_F(PressureCalibrationTest, testCalibrateBoard)
     EXPECT_NEAR(cal.portCalVal[0], 1, 1e-4) << "Channel is " << 1;
     for (int i = 1; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 0.99, 1e-4) << "Channel is " << i+1;
+        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
     }   
 }
 

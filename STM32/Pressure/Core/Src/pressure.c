@@ -26,9 +26,14 @@
 static void printHeader();
 static void printPressureStatus();
 static void printPressureStatusDef();
-static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration* calibrations);
 static void calibrationInfoRW(bool write);
 static void logMode(int port);
+static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration* calibrations);
+static void ADCtoPressure(float *adcMeans, int noOfChannels);
+static void ADCtoVolt(float *adcMeans, int noOfChannels);
+static void printPorts(float *portValues);
+static void updateBoardStatus();
+static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -154,12 +159,17 @@ static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration* ca
     }
 }
 
+// Convert from ADC means to pressure via its calibration function
 static void ADCtoPressure(float *adcMeans, int noOfChannels)
 {
-    // Convert from ADC means to pressure via its calibration function
+    /*
+    cal.sensorCalVal[channel*2]     - Scale assuming [0V, 5V] range
+    VOLTAGE_SCALING                 - To go to real [0V, 5.112V] range
+    cal.sensorCalVal[channel*2+1]   - Pressure bias
+    */
     for (int channel = 0; channel < noOfChannels; channel++)
     {
-        pressure[channel] = adcMeans[channel] * cal.sensorCalVal[channel*2] + cal.sensorCalVal[channel*2+1];
+        pressure[channel] = adcMeans[channel] * VOLTAGE_SCALING * cal.sensorCalVal[channel*2] + cal.sensorCalVal[channel*2+1];
     }
 }
 
@@ -173,7 +183,17 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels)
         /*  VCC and VCC raw have a different voltage divider network to enable measuring above 5V.
          *  Hence, we divide by MAX_VCC_IN (=5.49V) rather than MAX_VIN 
          */ 
-        volts[channel] = (channel <= 5) ? adcScaled*MAX_VIN : adcScaled*MAX_VCC_IN;  
+
+        // Current measurement across shunt resistor without voltage divider
+        if (cal.measurementType[channel])
+        {
+            volts[channel] = (channel <= 5) ? adcScaled*V_REF : adcScaled*MAX_VCC_IN;
+        }
+        // Voltage measurement with voltage divider
+        else
+        {
+            volts[channel] = (channel <= 5) ? adcScaled*MAX_VIN : adcScaled*MAX_VCC_IN;
+        }
     }
 }
 
@@ -215,7 +235,7 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples)
         return;
 
     /* If the version is incorrect only print out status code */
-    if (bsGetStatus() & BS_VERSION_ERROR_Msk)
+    if (bsGetField(BS_VERSION_ERROR_Msk))
     {
         USBnprintf("0x%08" PRIx32, bsGetStatus());
         return;
@@ -253,7 +273,7 @@ void pressureInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc)
 {
     initCAProtocol(&caProto, usbRx);
 
-    boardSetup(Pressure, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
+    boardSetup(Pressure, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, PRESSURE_ERROR_Msk);
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     calibrationInit(hcrc, &cal, sizeof(cal));
