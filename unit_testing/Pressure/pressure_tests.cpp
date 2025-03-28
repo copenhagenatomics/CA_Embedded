@@ -11,6 +11,7 @@ extern "C" {
 }
 
 #include "caBoardUnitTests.h"
+#include "serialStatus_tests.h"
 
 /* Fakes */
 #include "fake_stm32xxxx_hal.h"
@@ -63,6 +64,11 @@ class PressureTest: public CaBoardUnitTest
 
         ADC_HandleTypeDef hadc;
         CRC_HandleTypeDef hcrc;
+
+        SerialStatusTest sst = {
+            .boundInit = bind(pressureInit, &hadc, &hcrc),
+            .testFixture = this
+        };
 };
 
 /***************************************************************************************************
@@ -185,6 +191,20 @@ TEST_F(PressureTest, testPressureStatus)
         "\r", 
         "End of board status. \r"
     }));
+}
+
+TEST_F(PressureTest, testPressureStatusDef)
+{
+    statusDefPrintoutTest(sst,
+        {"0x7e000180,System errors\r",},
+        {"0x00000100,VBUS FB\r",
+        "0x00000080,5V FB\r",
+        "0x00000020,Port 6 measure type [Voltage/Current]\r",
+        "0x00000010,Port 5 measure type [Voltage/Current]\r",
+        "0x00000008,Port 4 measure type [Voltage/Current]\r",
+        "0x00000004,Port 3 measure type [Voltage/Current]\r",
+        "0x00000002,Port 2 measure type [Voltage/Current]\r",
+        "0x00000001,Port 1 measure type [Voltage/Current]\r"});
 }
 
 TEST_F(PressureTest, testAdcCallback)

@@ -50,16 +50,37 @@ enable_testing()
 include(GoogleTest)
 
 # Pressure calibration tests
-add_executable(pressure_calibration_test pressure_calibration_tests.cpp ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_USBprint.cpp ${UT_FAKES}/fake_FLASH_readwrite.cpp)
-target_include_directories(pressure_calibration_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/Pressure/Core/Src ${SRC}/Pressure/Core/Inc ${INC_LIB_CAL} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
+add_executable(pressure_calibration_test pressure_calibration_tests.cpp
+                                          ${UT_FAKES}/fake_stm32xxxx_hal.cpp
+                                          ${UT_FAKES}/fake_StmGpio.cpp
+                                          ${UT_FAKES}/fake_USBprint.cpp
+                                          ${UT_FAKES}/fake_HAL_otp.cpp
+                                          ${UT_FAKES}/fake_FLASH_readwrite.cpp)
+target_include_directories(pressure_calibration_test PRIVATE
+                                          ${UT_FAKES} ${UT_STUBS} ${INC_LIB_CAL}
+                                          ${SRC}/Pressure/Core/Src ${SRC}/Pressure/Core/Inc
+                                          ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(pressure_calibration_test GTest::gtest_main gmock_main)
 target_compile_definitions(pressure_calibration_test PUBLIC UNIT_TESTING)
 target_compile_options(pressure_calibration_test PRIVATE -Wall)
 gtest_discover_tests(pressure_calibration_test)
 
 # Pressure tests
-add_executable(pressure_test pressure_tests.cpp  ${LIB}/Util/Src/systeminfo.c ${UT_STUBS}/stub_jumpToBootloader.cpp ${UT_FAKES}/fake_HAL_otp.cpp ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_USBprint.cpp ${UT_FAKES}/fake_FLASH_readwrite.cpp)
-target_include_directories(pressure_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/Pressure/Core/Src ${SRC}/Pressure/Core/Inc ${LIB}/Util/Src ${LIB}/ADCMonitor/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
+add_executable(pressure_test pressure_tests.cpp
+                                          ${LIB}/Util/Src/systeminfo.c
+                                          ${UT_LIB}/Util/serialStatus_tests.cpp
+                                          ${UT_STUBS}/stub_jumpToBootloader.cpp
+                                          ${UT_FAKES}/fake_HAL_otp.cpp
+                                          ${UT_FAKES}/fake_stm32xxxx_hal.cpp
+                                          ${UT_FAKES}/fake_StmGpio.cpp
+                                          ${UT_FAKES}/fake_USBprint.cpp
+                                          ${UT_FAKES}/fake_FLASH_readwrite.cpp)
+target_include_directories(pressure_test PRIVATE
+                                          ${UT_FAKES} ${UT_STUBS} ${INC_LIB}
+                                          ${SRC}/Pressure/Core/Src ${SRC}/Pressure/Core/Inc
+                                          ${LIB}/Util/Src ${LIB}/ADCMonitor/Src
+                                          ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
+                                          ${UT_LIB}/Util)
 target_link_libraries(pressure_test GTest::gtest_main gmock_main)
 target_compile_definitions(pressure_test PUBLIC UNIT_TESTING)
 target_compile_options(pressure_test PRIVATE -Wall)

@@ -107,7 +107,7 @@ static void printPressureStatus()
  * @brief   Definition of status definition information when the 'StatusDef' command is received
  */
 static void printPressureStatusDef() {
-    static char buf[300] = {0};
+    static char buf[400] = {0};
 
     int len = 0;
 
