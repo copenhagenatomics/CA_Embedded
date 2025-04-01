@@ -196,7 +196,7 @@ TEST_F(PressureTest, testPressureStatus)
 TEST_F(PressureTest, testPressureStatusDef)
 {
     statusDefPrintoutTest(sst,
-        {"0x7e000180,System errors\r",},
+        "0x7e000180,System errors\r",
         {"0x00000100,VBUS FB\r",
         "0x00000080,5V FB\r",
         "0x00000020,Port 6 measure type [Voltage/Current]\r",
