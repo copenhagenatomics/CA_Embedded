@@ -104,20 +104,20 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     PA2     ------> ADC1_IN2
     PA3     ------> ADC1_IN3
     PA4     ------> ADC1_IN4
-    PA5     ------> ADC1_IN5
+    PA6     ------> ADC1_IN6
     PA7     ------> ADC1_IN7
-    PB0     ------> ADC1_IN8
+    PB1     ------> ADC1_IN9
     */
-    GPIO_InitStruct.Pin = pressure_6_Pin|pressure_5_Pin|pressure_4_Pin|pressure_3_Pin
-                          |pressure_2_Pin|pressure_1_Pin|VCC_FB_Pin;
+    GPIO_InitStruct.Pin = FB_5V_Pin|FB_VBUS_Pin|pressure_6_Pin|pressure_5_Pin
+                          |pressure_4_Pin|pressure_3_Pin|pressure_2_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = VCC_RAW_FB_Pin;
+    GPIO_InitStruct.Pin = pressure_1_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(VCC_RAW_FB_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(pressure_1_GPIO_Port, &GPIO_InitStruct);
 
     /* ADC1 DMA Init */
     /* ADC1 Init */
@@ -167,14 +167,14 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     PA2     ------> ADC1_IN2
     PA3     ------> ADC1_IN3
     PA4     ------> ADC1_IN4
-    PA5     ------> ADC1_IN5
+    PA6     ------> ADC1_IN6
     PA7     ------> ADC1_IN7
-    PB0     ------> ADC1_IN8
+    PB1     ------> ADC1_IN9
     */
-    HAL_GPIO_DeInit(GPIOA, pressure_6_Pin|pressure_5_Pin|pressure_4_Pin|pressure_3_Pin
-                          |pressure_2_Pin|pressure_1_Pin|VCC_FB_Pin);
+    HAL_GPIO_DeInit(GPIOA, FB_5V_Pin|FB_VBUS_Pin|pressure_6_Pin|pressure_5_Pin
+                          |pressure_4_Pin|pressure_3_Pin|pressure_2_Pin);
 
-    HAL_GPIO_DeInit(VCC_RAW_FB_GPIO_Port, VCC_RAW_FB_Pin);
+    HAL_GPIO_DeInit(pressure_1_GPIO_Port, pressure_1_Pin);
 
     /* ADC1 DMA DeInit */
     HAL_DMA_DeInit(hadc->DMA_Handle);

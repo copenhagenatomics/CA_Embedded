@@ -11,6 +11,7 @@ extern "C" {
 }
 
 #include "caBoardUnitTests.h"
+#include "serialStatus_tests.h"
 
 /* Fakes */
 #include "fake_stm32xxxx_hal.h"
@@ -41,7 +42,7 @@ class PressureTest: public CaBoardUnitTest
         /*******************************************************************************************
         ** METHODS
         *******************************************************************************************/
-        PressureTest() : CaBoardUnitTest(pressureLoop, Pressure, {3, 2}) {
+        PressureTest() : CaBoardUnitTest(&pressureLoop, Pressure, {LATEST_MAJOR, LATEST_MINOR}) {
             hadc.Init.NbrOfConversion = 8;
         }
 
@@ -63,6 +64,11 @@ class PressureTest: public CaBoardUnitTest
 
         ADC_HandleTypeDef hadc;
         CRC_HandleTypeDef hcrc;
+
+        SerialStatusTest sst = {
+            .boundInit = bind(pressureInit, &hadc, &hcrc),
+            .testFixture = this
+        };
 };
 
 /***************************************************************************************************
@@ -70,12 +76,6 @@ class PressureTest: public CaBoardUnitTest
 ***************************************************************************************************/
 
 TEST_F(PressureTest, testPressureInitCorrectParams) {
-    auto expectStmNull = [](StmGpio* stm) {
-        ASSERT_EQ(stm->set,    nullptr);
-        ASSERT_EQ(stm->get,    nullptr);
-        ASSERT_EQ(stm->toggle, nullptr);
-    };
-
     pressureInit(&hadc, &hcrc);
 
     /* Basic test, was everything OK?  */
@@ -88,9 +88,6 @@ TEST_F(PressureTest, testPressureInitCorrectParams) {
 
     /* Check the printout is correct */
     EXPECT_READ_USB(Contains("-1.790000, -1.790000, -1.790000, -1.790000, -1.790000, -1.790000, 0xa0000180"));
-
-    /* Check the ledCtrl is not set with subProductType 0 */
-    expectStmNull(&ledCtrl);
 }
 
 TEST_F(PressureTest, testPressureInitWrongBoard)
@@ -121,46 +118,6 @@ TEST_F(PressureTest, testPressureInitWrongSwVersion)
     HAL_ADC_ConvCpltCallback(&hadc);
     pressureLoop(bootMsg);
     EXPECT_READ_USB(Contains("0xa4000180"));
-}
-
-TEST_F(PressureTest, testSubBoardType)
-{
-    auto expectStmNotNull = [](StmGpio* stm) {
-        ASSERT_NE(stm->set,    nullptr);
-        ASSERT_NE(stm->get,    nullptr);
-        ASSERT_NE(stm->toggle, nullptr);
-    };
-
-    bi.v2.subBoardType = 1;
-    HAL_otpWrite(&bi);
-    pressureInit(&hadc, &hcrc);
-
-    expectStmNotNull(&ledCtrl);
-    EXPECT_EQ(stmGetGpio(ledCtrl), 0);
-
-    /* Input ADC measurements that will have the pressurized state (ledCtrl) go high */
-    for (int i = 0; i < ADC_CHANNELS*ADC_CHANNEL_BUF_SIZE*2; i++)
-    {
-        ADCBuffer[i] = 2068.0;
-    }
-
-    // Go to tick that will call the adcCallBack
-    goToTick(100);
-    pressureLoop(bootMsg);
-
-    EXPECT_EQ(stmGetGpio(ledCtrl), 1);
-
-    /* Input ADC measurements that will have the pressurized state (ledCtrl) go low */
-    for (int i = 0; i < ADC_CHANNELS*ADC_CHANNEL_BUF_SIZE*2; i++)
-    {
-        ADCBuffer[i] = 500.0;
-    }
-
-    // Go to tick that will call the adcCallBack
-    goToTick(200);
-    pressureLoop(bootMsg);
-
-    EXPECT_EQ(stmGetGpio(ledCtrl), 0);
 }
 
 TEST_F(PressureTest, testPressureStatus)
@@ -236,6 +193,20 @@ TEST_F(PressureTest, testPressureStatus)
     }));
 }
 
+TEST_F(PressureTest, testPressureStatusDef)
+{
+    statusDefPrintoutTest(sst,
+        "0x7e000180,System errors\r",
+        {"0x00000100,VBUS FB\r",
+        "0x00000080,5V FB\r",
+        "0x00000020,Port 6 measure type [Voltage/Current]\r",
+        "0x00000010,Port 5 measure type [Voltage/Current]\r",
+        "0x00000008,Port 4 measure type [Voltage/Current]\r",
+        "0x00000004,Port 3 measure type [Voltage/Current]\r",
+        "0x00000002,Port 2 measure type [Voltage/Current]\r",
+        "0x00000001,Port 1 measure type [Voltage/Current]\r"});
+}
+
 TEST_F(PressureTest, testAdcCallback)
 {
     pressureInit(&hadc, &hcrc);
@@ -258,7 +229,7 @@ TEST_F(PressureTest, testAdcCallback)
     // Check that the pressures are scaled by the linear functions
     for (int i = 0; i < ADC_CHANNELS - 2; i++)
     {
-        EXPECT_NEAR(pressure[i], ADCMeans[i]*cal.sensorCalVal[i*2] + cal.sensorCalVal[i*2+1], 1e-3);
+        EXPECT_NEAR(pressure[i], ADCMeans[i]*VOLTAGE_SCALING*cal.sensorCalVal[i*2] + cal.sensorCalVal[i*2+1], 1e-3);
     }
 
     // Check that the volts are scaled using the correct VCCs
