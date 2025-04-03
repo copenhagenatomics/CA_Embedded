@@ -38,6 +38,7 @@ jobs:
           Humidity: STM32/Humidity/**
           LightController: STM32/LightController/**
           OTP: STM32/OTP/**
+          OTP_F411: STM32/OTP_F411/**
           Pressure: STM32/Pressure/**
           SaltLeak: STM32/SaltLeak/**
           Tachometer: STM32/Tachometer/**
