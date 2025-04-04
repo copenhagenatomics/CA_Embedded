@@ -94,7 +94,22 @@ TEST_F(ACTenCh, goldenPath)
 {
     sst.boundInit();
 
-    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0.00, 0x00000000");    
+    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0x00000000");    
+}
+
+TEST_F(ACTenCh, printStatusDef) {
+    statusDefPrintoutTest(sst, "0x7e000000,System errors\r", {
+        "0x00000001,Port 0 switching state\r", 
+        "0x00000002,Port 1 switching state\r", 
+        "0x00000004,Port 2 switching state\r", 
+        "0x00000008,Port 3 switching state\r", 
+        "0x00000010,Port 4 switching state\r", 
+        "0x00000020,Port 5 switching state\r", 
+        "0x00000040,Port 6 switching state\r", 
+        "0x00000080,Port 7 switching state\r", 
+        "0x00000100,Port 8 switching state\r",
+        "0x00000200,Port 9 switching state\r"
+    });
 }
 
 TEST_F(ACTenCh, printStatus) {
@@ -149,7 +164,6 @@ TEST_F(ACTenCh, UsbTimeout)
 
     writeBoardMessage("all on 60\n");
 
-    bool toggle = false;
     for(int i = 0; i < TEST_LENGTH_MS / 10; i++)
     {
         if(i == 0.25 * TEST_LENGTH_MS / 10) {
@@ -158,7 +172,7 @@ TEST_F(ACTenCh, UsbTimeout)
 
         goToTick(i * 10);
 
-        if(i < (0.25 * TEST_LENGTH_MS / 10 + TIMEOUT_LENGTH_MS / 10)) {
+        if(i <= (0.25 * TEST_LENGTH_MS / 10 + TIMEOUT_LENGTH_MS / 10)) {
             for (int j = 0; j < AC_TEN_CH_NUM_PORTS; j++)
             {
                 ASSERT_TRUE(stmGetGpio(heaterPorts[j])) << i;

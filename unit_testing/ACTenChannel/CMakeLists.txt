@@ -37,7 +37,7 @@ set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ../../CA_Embedded_Libraries/unit_testing/fakes)
 set(UT_STUBS ../../CA_Embedded_Libraries/unit_testing/stubs)
-set(DRIV ../../CA_Embedded_Libraries/STM32/Drivers/STM32F4xx_HAL_Driver)
+set(DRIV ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/STM32F4xx_HAL_Driver)
 
 ####################################################################################################
 ## List of tests to run
@@ -48,7 +48,7 @@ enable_testing()
 include(GoogleTest)
 
 # ACTenChannel tests
-add_executable(ac_tench_test ACTenChannel_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp ${UT_FAKES}/fake_DS18B20.cpp ${UT_LIB}/Util/serialStatus_tests.cpp)
+add_executable(ac_tench_test ACTenChannel_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp ${UT_LIB}/Util/serialStatus_tests.cpp)
 target_include_directories(ac_tench_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/Core/Src ${SRC}/Core/Inc ${SRC}/HeatCtrl/Inc ${SRC}/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
 target_link_libraries(ac_tench_test GTest::gtest_main gmock_main)
 target_compile_definitions(ac_tench_test PUBLIC UNIT_TESTING)

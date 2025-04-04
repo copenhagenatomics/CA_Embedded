@@ -21,7 +21,6 @@
 #include "StmGpio.h"
 #include "ACTenChannel.h"
 #include "pcbversion.h"
-#include "DS18B20.h"
 #include "CAProtocolACDC.h"
 
 /***************************************************************************************************
@@ -30,8 +29,6 @@
 
 #define ADC_CHANNELS	        10
 #define ADC_CHANNEL_BUF_SIZE	400
-
-#define MAX_TEMPERATURE         70
 
 #define USB_COMMS_TIMEOUT_MS    5000
 
@@ -54,6 +51,7 @@ static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
 static void ACTenChannelInputHandler(const char *input);
 static void printAcTenChannelStatus();
+static void printAcTenChannelStatusDef();
 static void updateBoardStatus();
 
 /***************************************************************************************************
@@ -62,8 +60,6 @@ static void updateBoardStatus();
 
 /* GPIO settings. */
 StmGpio heaterPorts[AC_TEN_CH_NUM_PORTS];
-static StmGpio DQ1;
-static double heatSinkTemperature = 0; // Heat Sink temperature
 
 static ACDCProtocolCtx acProto =
 {
@@ -76,6 +72,7 @@ static CAProtocolCtx caProto =
         .undefined = ACTenChannelInputHandler,
         .printHeader = CAPrintHeader,
         .printStatus = printAcTenChannelStatus,
+        .printStatusDef = printAcTenChannelStatusDef,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -84,6 +81,9 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
+/* Status printout buffer, shared */
+static char buf[600] = {0};
+
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
@@ -91,15 +91,26 @@ static CAProtocolCtx caProto =
 /*!
 ** @brief Verbose print of the AC board status
 */
-static void printAcTenChannelStatus()
-{
-    static char buf[600] = { 0 };
+static void printAcTenChannelStatus() {
     int len = 0;
 
-    for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
-    {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", 
-                        i, stmGetGpio(heaterPorts[i]), getPWMPinPercent(i));
+    for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++) {
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", i,
+                        stmGetGpio(heaterPorts[i]), getPWMPinPercent(i));
+    }
+
+    writeUSB(buf, len);
+}
+
+/*!
+** @brief Print of the AC board status definitions
+*/
+static void printAcTenChannelStatusDef() {
+    int len = 0;
+
+    for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++) {
+        len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port %d switching state\r\n",
+                        (uint32_t) AC_TEN_CH_PORT_x_STATUS_Msk(i), i);
     }
 
     writeUSB(buf, len);
@@ -180,12 +191,12 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    heatSinkTemperature = getTemp();
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.2f, 0x%08" PRIx32, 
-                ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), ADCtoCurrent(ADCrms(pData, 2)), 
-                ADCtoCurrent(ADCrms(pData, 3)), ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)), 
-                ADCtoCurrent(ADCrms(pData, 6)), ADCtoCurrent(ADCrms(pData, 7)), ADCtoCurrent(ADCrms(pData, 8)), 
-                ADCtoCurrent(ADCrms(pData, 9)), heatSinkTemperature, bsGetStatus());
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, 0x%08" PRIx32,
+               ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)),
+               ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
+               ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)),
+               ADCtoCurrent(ADCrms(pData, 6)), ADCtoCurrent(ADCrms(pData, 7)),
+               ADCtoCurrent(ADCrms(pData, 8)), ADCtoCurrent(ADCrms(pData, 9)), bsGetStatus());
 }
 
 /*!
@@ -254,12 +265,6 @@ static void CAallOn(bool isOn, int duration)
 
 static void CAportState(int port, bool state, int percent, int duration)
 {
-    uint8_t pwmPercent = getPWMPinPercent(port-1);
-    // If heat sink has reached the maximum allowed temperature and user
-    // tries to heat the system further up then disregard the input command
-    if (heatSinkTemperature > MAX_TEMPERATURE && percent > pwmPercent)
-        return;
-
     if((duration <= 0) && (percent != 0)) 
     {
         char buf[20] = {0};
@@ -298,27 +303,27 @@ static void updateBoardStatus()
 /*!
 ** @brief Setup function called at startup
 **
-** Checks the hardware matches this FW version, starts the USB communication and starts the ADC. 
+** Checks the hardware matches this FW version, starts the USB communication and starts the ADC.
 ** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
 ** link
 */
-void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_HandleTypeDef* hDS18B20tim)
-{
+void ACTenChannelInit(ADC_HandleTypeDef *hadc, TIM_HandleTypeDef *htim,
+                      TIM_HandleTypeDef *hDS18B20tim) {
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usbRx);
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
-    if(boardSetup(ACTenChannel, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}) == -1)
-    {
-        return;
-    }
+    (void)boardSetup(ACTenChannel, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
+                     AC_TEN_CH_No_Error_Msk);
 
-    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
-    ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
+    // array for all ADC readings, filled by DMA.
+    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
+    ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     HAL_TIM_Base_Start(htim);
-    GpioInit();
 
-    DS18B20Init(hDS18B20tim, &DQ1, DQ1_GPIO_Port, DQ1_Pin);
+    if (!bsGetField(BS_VERSION_ERROR_Msk)) {
+        GpioInit();
+    }
 }
 
 /*!
@@ -327,15 +332,16 @@ void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_Hand
 ** * Responds to user input
 ** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
 **   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
-** * Runs the closed loop control system for board temperature and PWMs the heaters as per user 
-**   input
+** * PWMs the heaters as per user input
 */
-void ACTenChannelLoop(const char *bootMsg)
-{
+void ACTenChannelLoop(const char *bootMsg) {
     CAhandleUserInputs(&caProto, bootMsg);
-    updateBoardStatus();
-    ADCMonitorLoop(printCurrentArray);
 
-    // Toggle pins if needed when in pwm mode
-    heaterLoop();
+    if (!bsGetField(BS_VERSION_ERROR_Msk)) {
+        // Toggle pins if needed when in pwm mode
+        heaterLoop();
+        updateBoardStatus();
+    }
+
+    ADCMonitorLoop(printCurrentArray);
 }
