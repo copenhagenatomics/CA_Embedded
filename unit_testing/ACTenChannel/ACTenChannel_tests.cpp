@@ -97,6 +97,21 @@ TEST_F(ACTenCh, goldenPath)
     goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0x00000000");    
 }
 
+TEST_F(ACTenCh, printStatusDef) {
+    statusDefPrintoutTest(sst, "0x7e000000,System errors\r", {
+        "0x00000001,Port 0 switching state\r", 
+        "0x00000002,Port 1 switching state\r", 
+        "0x00000004,Port 2 switching state\r", 
+        "0x00000008,Port 3 switching state\r", 
+        "0x00000010,Port 4 switching state\r", 
+        "0x00000020,Port 5 switching state\r", 
+        "0x00000040,Port 6 switching state\r", 
+        "0x00000080,Port 7 switching state\r", 
+        "0x00000100,Port 8 switching state\r",
+        "0x00000200,Port 9 switching state\r"
+    });
+}
+
 TEST_F(ACTenCh, printStatus) {
     statusPrintoutTest(sst, {
         "Port 0: On: 0, PWM percent: 0\r", 

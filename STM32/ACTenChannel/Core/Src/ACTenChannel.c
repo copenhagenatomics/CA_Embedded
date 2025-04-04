@@ -51,6 +51,7 @@ static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
 static void ACTenChannelInputHandler(const char *input);
 static void printAcTenChannelStatus();
+static void printAcTenChannelStatusDef();
 static void updateBoardStatus();
 
 /***************************************************************************************************
@@ -71,6 +72,7 @@ static CAProtocolCtx caProto =
         .undefined = ACTenChannelInputHandler,
         .printHeader = CAPrintHeader,
         .printStatus = printAcTenChannelStatus,
+        .printStatusDef = printAcTenChannelStatusDef,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -79,6 +81,9 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
+/* Status printout buffer, shared */
+static char buf[600] = {0};
+
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
@@ -86,15 +91,26 @@ static CAProtocolCtx caProto =
 /*!
 ** @brief Verbose print of the AC board status
 */
-static void printAcTenChannelStatus()
-{
-    static char buf[600] = { 0 };
+static void printAcTenChannelStatus() {
     int len = 0;
 
-    for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
-    {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", 
-                        i, stmGetGpio(heaterPorts[i]), getPWMPinPercent(i));
+    for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++) {
+        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", i,
+                        stmGetGpio(heaterPorts[i]), getPWMPinPercent(i));
+    }
+
+    writeUSB(buf, len);
+}
+
+/*!
+** @brief Print of the AC board status definitions
+*/
+static void printAcTenChannelStatusDef() {
+    int len = 0;
+
+    for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++) {
+        len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port %d switching state\r\n",
+                        (uint32_t) AC_TEN_CH_PORT_x_STATUS_Msk(i), i);
     }
 
     writeUSB(buf, len);
@@ -297,8 +313,8 @@ void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_Hand
     initCAProtocol(&caProto, usbRx);
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
-    if(boardSetup(ACTenChannel, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}) == -1)
-    {
+    if (boardSetup(ACTenChannel, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
+                   AC_TEN_CH_No_Error_Msk) == -1) {
         return;
     }
 
