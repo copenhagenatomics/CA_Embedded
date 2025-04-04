@@ -172,7 +172,7 @@ TEST_F(ACTenCh, UsbTimeout)
 
         goToTick(i * 10);
 
-        if(i < (0.25 * TEST_LENGTH_MS / 10 + TIMEOUT_LENGTH_MS / 10)) {
+        if(i <= (0.25 * TEST_LENGTH_MS / 10 + TIMEOUT_LENGTH_MS / 10)) {
             for (int j = 0; j < AC_TEN_CH_NUM_PORTS; j++)
             {
                 ASSERT_TRUE(stmGetGpio(heaterPorts[j])) << i;

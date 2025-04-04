@@ -316,8 +316,8 @@ void ACTenChannelInit(ADC_HandleTypeDef *hadc, TIM_HandleTypeDef *htim,
     (void)boardSetup(ACTenChannel, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
                      AC_TEN_CH_No_Error_Msk);
 
-    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE *
-                             2];  // array for all ADC readings, filled by DMA.
+    // array for all ADC readings, filled by DMA.
+    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     HAL_TIM_Base_Start(htim);
 
