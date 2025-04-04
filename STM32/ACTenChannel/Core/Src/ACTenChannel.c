@@ -303,25 +303,27 @@ static void updateBoardStatus()
 /*!
 ** @brief Setup function called at startup
 **
-** Checks the hardware matches this FW version, starts the USB communication and starts the ADC. 
+** Checks the hardware matches this FW version, starts the USB communication and starts the ADC.
 ** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
 ** link
 */
-void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_HandleTypeDef* hDS18B20tim)
-{
+void ACTenChannelInit(ADC_HandleTypeDef *hadc, TIM_HandleTypeDef *htim,
+                      TIM_HandleTypeDef *hDS18B20tim) {
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usbRx);
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
-    if (boardSetup(ACTenChannel, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
-                   AC_TEN_CH_No_Error_Msk) == -1) {
-        return;
-    }
+    (void)boardSetup(ACTenChannel, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
+                     AC_TEN_CH_No_Error_Msk);
 
-    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2]; // array for all ADC readings, filled by DMA.
-    ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
+    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE *
+                             2];  // array for all ADC readings, filled by DMA.
+    ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     HAL_TIM_Base_Start(htim);
-    GpioInit();
+
+    if (!bsGetField(BS_VERSION_ERROR_Msk)) {
+        GpioInit();
+    }
 }
 
 /*!
@@ -332,12 +334,14 @@ void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_Hand
 **   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
 ** * PWMs the heaters as per user input
 */
-void ACTenChannelLoop(const char *bootMsg)
-{
+void ACTenChannelLoop(const char *bootMsg) {
     CAhandleUserInputs(&caProto, bootMsg);
-    updateBoardStatus();
-    ADCMonitorLoop(printCurrentArray);
 
-    // Toggle pins if needed when in pwm mode
-    heaterLoop();
+    if (!bsGetField(BS_VERSION_ERROR_Msk)) {
+        // Toggle pins if needed when in pwm mode
+        heaterLoop();
+        updateBoardStatus();
+    }
+
+    ADCMonitorLoop(printCurrentArray);
 }
