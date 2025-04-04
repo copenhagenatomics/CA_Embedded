@@ -105,10 +105,7 @@ static void printAcTenChannelStatus()
 **
 ** @param input The user input string
 */
-static void ACTenChannelInputHandler(const char *input) 
-{ 
-    ACDCInputHandler(&acProto, input); 
-}
+static void ACTenChannelInputHandler(const char *input) { ACDCInputHandler(&acProto, input); }
 
 static void GpioInit()
 {
@@ -178,11 +175,12 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, 0x%08" PRIx32, 
-                ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), ADCtoCurrent(ADCrms(pData, 2)), 
-                ADCtoCurrent(ADCrms(pData, 3)), ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)), 
-                ADCtoCurrent(ADCrms(pData, 6)), ADCtoCurrent(ADCrms(pData, 7)), ADCtoCurrent(ADCrms(pData, 8)), 
-                ADCtoCurrent(ADCrms(pData, 9)), bsGetStatus());
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, 0x%08" PRIx32,
+               ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)),
+               ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
+               ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)),
+               ADCtoCurrent(ADCrms(pData, 6)), ADCtoCurrent(ADCrms(pData, 7)),
+               ADCtoCurrent(ADCrms(pData, 8)), ADCtoCurrent(ADCrms(pData, 9)), bsGetStatus());
 }
 
 /*!
@@ -316,8 +314,7 @@ void ACTenChannelInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* htim, TIM_Hand
 ** * Responds to user input
 ** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
 **   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
-** * Runs the closed loop control system for board temperature and PWMs the heaters as per user 
-**   input
+** * PWMs the heaters as per user input
 */
 void ACTenChannelLoop(const char *bootMsg)
 {
