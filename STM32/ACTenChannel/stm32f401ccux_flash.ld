@@ -62,11 +62,7 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 64K
-FLASHISR (rx)  : ORIGIN = 0x08000000, LENGTH = 16K
-FLASHCAL (r)  : ORIGIN = 0x08004000, LENGTH = 16K
-FLASHCAL2 (r) : ORIGIN = 0x08008000, LENGTH = 16K
-FLASHCAL3 (r) : ORIGIN = 0x0800C000, LENGTH = 16K
-FLASH (rx)     : ORIGIN = 0x08010000, LENGTH = 192K
+FLASH (rx)     : ORIGIN = 0x08000000, LENGTH = 256K
 }
 
 /* Main program area. Area may not be used for user data storage */
@@ -82,25 +78,7 @@ SECTIONS
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASHISR
-
-  .calData (NOLOAD) :
-  {
-    KEEP(*(.calData))
-    . = . + 0x4000;
-  } > FLASHCAL
-
-  .calData2 (NOLOAD) :
-  {
-    KEEP(*(.calData2))
-    . = . + 0x4000;
-  } > FLASHCAL2
-
-  .calData3 (NOLOAD) :
-  {
-    KEEP(*(.calData3))
-    . = . + 0x4000;
-  } > FLASHCAL3
+  } >FLASH
 
   /* The program code and other data goes into FLASH */
   .text :
