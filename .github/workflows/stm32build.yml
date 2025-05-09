@@ -123,7 +123,7 @@ jobs:
           name: ${{ matrix.package }}
           path: |
             STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf
-            STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
+            STM32/${{ matrix.package }}/build/${{ matrix.package }}*.bin
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-2
         # tag only pushes to the main branch
@@ -151,23 +151,27 @@ jobs:
       - name: Rename build files for Github release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
         # Rename .elf and .bin files to include release tag and pcb version in the Github release
+        # Supports multi .bin projects
         run: |
           RELEASENAME=${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}
           cp STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf ${RELEASENAME}.elf
-          cp STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin ${RELEASENAME}.bin
+          for f in STM32/${{ matrix.package }}/build/${{ matrix.package }}*.bin; do
+            filename=${f##*/}
+            suffix=${filename#${{ matrix.package }}}
+            cp $f ${RELEASENAME}${suffix}
       - name: Release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
         uses: softprops/action-gh-release@v0.1.15
         with:
           files: |
             **/${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}.elf
-            **/${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}.bin
+            **/${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}*.bin
           tag_name: ${{ steps.release-on-push-2.outputs.tag_name }}
           name: "${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare zip file for Azure blob
-        run: zip -j ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}.bin
+        run: zip -j ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}*.bin
         shell: bash
       - name: Set up Python 3.10
         uses: actions/setup-python@v4

@@ -131,7 +131,8 @@ CP = $(PREFIX)objcopy
 SZ = $(PREFIX)size
 endif
 HEX = $(CP) -O ihex
-BIN = $(CP) -O binary -S
+BIN_FLASHISR = $(CP) -O binary -j .isr_vector
+BIN_FLASH = $(CP) -O binary -j .text -j .rodata -j .ARM.extab -j .ARM -j .preinit_array -j .init_array -j .fini_array -j .data
  
 #######################################
 # CFLAGS
@@ -210,7 +211,7 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections -u_printf_float -u_scanf_float
 
 # default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET)_FLASHISR.bin $(BUILD_DIR)/$(TARGET)_FLASH.bin
 
 
 #######################################
@@ -235,10 +236,13 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(HEX) $< $@
-	
-$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(BIN) $< $@	
-	
+
+$(BUILD_DIR)/%_FLASHISR.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	$(BIN_FLASHISR) $< $@
+
+$(BUILD_DIR)/%_FLASH.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	$(BIN_FLASH) $< $@
+
 $(BUILD_DIR):
 	mkdir $@		
 
