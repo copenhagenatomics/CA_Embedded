@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
         try:
             os.chdir(f"STM32/{args.board}")
-            
+
             # If make has an error, raise an exception
             command = "make"
             if args.threads:
@@ -38,61 +38,56 @@ if __name__ == "__main__":
 
             subprocess.run(command, shell=True, check=True)
 
-            sector_2_address = 0x08008000
+            bin_names = [x for x in os.listdir("build") if x.endswith(".bin")]
+            # Dictionnary associating the bin files and the flashing addresses
+            bin_dict = dict.fromkeys(bin_names)
 
-            # Gets the start of the FLASH sector by looking into the .elf file (.text must be the first section)
-            with open(f"build/{args.board}.elf", "rb") as f:
-                elf = ELFFile(f)
-                text_section = elf.get_section_by_name(".text")
-                if text_section:
-                    flash_address = text_section["sh_addr"]
-                else:
-                    raise ValueError(".text section not found")
+            # 2 bin files
+            if len(bin_names) > 1:
+                # Gets the start of the FLASH sector by looking into the .elf file (.text must be the first section)
+                flash_address = 0
+                with open(f"build/{args.board}.elf", "rb") as f:
+                    elf = ELFFile(f)
+                    text_section = elf.get_section_by_name(".text")
+                    if text_section:
+                        flash_address = text_section["sh_addr"]
 
-            # If the FLASH sector starts before SECTOR 2, it means there are no CAL or UPTIME before
-            # It can thus use the entire .bin file
-            if flash_address < sector_2_address:
-                use_seperate_bins = False
+                bin_dict[f"{args.board}_FLASHISR.bin"] = "0x08000000"
+                bin_dict[f"{args.board}_FLASH.bin"] = hex(flash_address)
+
+            # 1 bin file
             else:
-                use_seperate_bins = True
+                bin_dict[f"{args.board}.bin"] = "0x08000000"
 
             if args.port or args.dfu:
                 if args.remote:
                     # Connect over SSH
                     ssh = paramiko.SSHClient()
                     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                    if os.name == "nt":
-                        ssh.connect(f"{args.remote}", username="pi", password=f"{args.password}", look_for_keys=False, allow_agent=False)
-                    else:
-                        ssh.connect(f"{args.remote}.local", username="pi", password=f"{args.password}")
+                    ssh.connect(f"{args.remote}", username="pi", password=f"{args.password}", look_for_keys=False, allow_agent=False)
 
                     ssh.exec_command("tmux kill-server")
 
-                    # Copy file over
+                    # Copy files over
                     sftp = ssh.open_sftp()
-                    if use_seperate_bins:
-                        sftp.put(f"build/{args.board}_FLASHISR.bin", f"/home/pi/{args.board}_FLASHISR.bin")
-                        sftp.put(f"build/{args.board}_FLASH.bin", f"/home/pi/{args.board}_FLASH.bin")
-                    else:
-                        sftp.put(f"build/{args.board}.bin", f"/home/pi/{args.board}.bin")
+                    for f, a in bin_dict.items():
+                        sftp.put(f"build/{f}", f"/home/pi/{f}")
                     sftp.close()
-                    
+
                     # Reset port
                     if args.port:
                         ssh.exec_command(f"echo $'DFU\n' > {args.port}")
                         sleep(1.0)
-                    
+
                     # Download files
+
                     commands = []
-                    if use_seperate_bins:
-                        commands.append(f"sudo dfu-util -a 0 -D /home/pi/{args.board}_FLASHISR.bin -s 0x08000000")
-                        commands.append(f"sudo dfu-util -a 0 -D /home/pi/{args.board}_FLASH.bin -s {hex(flash_address)}:leave")
-                        commands.append(f"sudo rm /home/pi/{args.board}_FLASHISR.bin")
-                        commands.append(f"sudo rm /home/pi/{args.board}_FLASH.bin")
-                    else:
-                        commands.append(f"sudo dfu-util -a 0 -D /home/pi/{args.board}.bin -s 0x08000000:leave")
-                        commands.append(f"rm /home/pi/{args.board}.bin")
-                    
+                    for f, a in bin_dict.items():
+                        commands.append(f"sudo dfu-util -a 0 -D /home/pi/{f} -s {a}")
+                        commands.append(f"sudo rm /home/pi/{f}")
+                    commands.append("sudo dfu-util -a 0 -s 0x08000000:leave -U temp.bin")
+                    commands.append("sudo rm -rf temp.bin", shell=True, check=True)
+
                     for command in commands:
                         stdin, stdout, stderr = ssh.exec_command(command)
 
@@ -114,7 +109,7 @@ if __name__ == "__main__":
                     ssh.exec_command("systemctl --user restart tmux.service")
 
                     ssh.close()
-                
+
                 else:
                     # Open the port and put the device in DFU mode
                     if args.port:
@@ -122,12 +117,10 @@ if __name__ == "__main__":
                             ser.write(b'DFU\n')
                         sleep(1.0)
 
-                    if use_seperate_bins:
-                        subprocess.run(f"dfu-util -a 0 -D build/{args.board}_FLASHISR.bin -s 0x08000000", shell=True, check=True)
-                        subprocess.run(f"dfu-util -a 0 -D build/{args.board}_FLASH.bin -s {hex(flash_address)}:leave", shell=True, check=True)
-                    else:
-                        subprocess.run(f"dfu-util -a 0 -D build/{args.board}.bin -s 0x08000000:leave", shell=True, check=True)
-                        
+                    for f, a in bin_dict.items():
+                        subprocess.run(f"dfu-util -a 0 -D build/{f} -s {a}", shell=True, check=True)
+                    subprocess.run("dfu-util -a 0 -s 0x08000000:leave -U temp.bin", shell=True, check=True)
+                    subprocess.run("rm -rf temp.bin", shell=True, check=True)
 
         except Exception as e:
             print(e)

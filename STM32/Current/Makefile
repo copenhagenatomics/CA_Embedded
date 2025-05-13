@@ -132,7 +132,7 @@ SZ = $(PREFIX)size
 endif
 HEX = $(CP) -O ihex
 BIN_FLASHISR = $(CP) -O binary -j .isr_vector
-BIN_FLASH = $(CP) -O binary -j .text -j .rodata -j .ARM.extab -j .ARM -j .preinit_array -j .init_array -j .fini_array -j .data
+BIN_FLASH = $(CP) -O binary -R .isr_vector -R .calData
  
 #######################################
 # CFLAGS
