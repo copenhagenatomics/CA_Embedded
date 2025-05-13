@@ -86,7 +86,7 @@ if __name__ == "__main__":
                         commands.append(f"sudo dfu-util -a 0 -D /home/pi/{f} -s {a}")
                         commands.append(f"sudo rm /home/pi/{f}")
                     commands.append("sudo dfu-util -a 0 -s 0x08000000:leave -U temp.bin")
-                    commands.append("sudo rm -rf temp.bin", shell=True, check=True)
+                    commands.append("sudo rm -rf temp.bin")
 
                     for command in commands:
                         stdin, stdout, stderr = ssh.exec_command(command)
