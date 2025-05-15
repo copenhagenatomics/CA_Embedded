@@ -31,7 +31,6 @@
 #include "usbd_cdc.h"
 
 /* USER CODE BEGIN INCLUDE */
-
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -52,6 +51,8 @@
 #define APP_RX_DATA_SIZE  1024
 #define APP_TX_DATA_SIZE  1024
 /* USER CODE BEGIN EXPORTED_DEFINES */
+/* Define size for the receive and transmit buffer over CDC */
+/* It's up to user to redefine and/or remove those define */
 
 /* USER CODE END EXPORTED_DEFINES */
 
@@ -65,7 +66,6 @@
   */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
-
 /* USER CODE END EXPORTED_TYPES */
 
 /**
@@ -94,7 +94,6 @@
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -109,7 +108,6 @@ extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
-
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**

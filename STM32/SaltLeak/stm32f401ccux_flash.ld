@@ -61,9 +61,13 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 /* Specify the memory areas */
 MEMORY
 {
-RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 64K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 256K
+  RAM      (xrw)  : ORIGIN = 0x20000000,   LENGTH = 64K
+  FLASH    (rx)   : ORIGIN = 0x08000000,   LENGTH = 256K
 }
+
+/* Main program area. Area may not be used for user data storage */
+_ProgramMemoryStart = ORIGIN(FLASH);
+_ProgramMemoryEnd = ORIGIN(FLASH) + LENGTH(FLASH);
 
 /* Define output sections */
 SECTIONS

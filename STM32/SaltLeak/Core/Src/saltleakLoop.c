@@ -27,8 +27,7 @@
 #define ADC_CHANNEL_BUF_SIZE 400
 #define LEAK_THRESHOLD 1500
 
-static StmGpio boostGpio = {};
-static StmGpio VrefGpio = {};
+static StmGpio BoostEn;
 
 // Boost controller
 static struct {
@@ -80,12 +79,12 @@ static void updateBoardStatus() {
     boostController.inSwitchBoostMode ? bsSetField(BOOST_ACTIVE_Msk)
                                       : bsClearField(BOOST_ACTIVE_Msk);
 
-    if (boostGpio.get != NULL) {
-        stmGetGpio(boostGpio) ? bsSetField(BOOST_PIN_HIGH_Msk) : bsClearField(BOOST_PIN_HIGH_Msk);
-    }
-    else {
-        bsClearField(BOOST_PIN_HIGH_Msk);
-    }
+    // if (boostGpio.get != NULL) {
+    //     stmGetGpio(boostGpio) ? bsSetField(BOOST_PIN_HIGH_Msk) : bsClearField(BOOST_PIN_HIGH_Msk);
+    // }
+    // else {
+    //     bsClearField(BOOST_PIN_HIGH_Msk);
+    // }
 
     bsClearError(SALTLEAK_NO_ERROR_Msk);
 }
@@ -99,7 +98,6 @@ static void userInput(const char *input) {
         boostController.boostOnTime = onTime * 1000;
         boostController.boostOffTime = offTime * 1000;
         boostController.inSwitchBoostMode = true;
-        boostController.isOn = stmGetGpio(boostGpio);
     }
     else if (strncmp(input, "switch off", 10) == 0) {
         boostController.inSwitchBoostMode = false;
@@ -111,10 +109,7 @@ static void userInput(const char *input) {
 
 static bool isLeakDetected(double meanADC) { return (meanADC <= LEAK_THRESHOLD) ? true : false; }
 
-WWDG_HandleTypeDef *hwwdg_ = NULL;
 static void printLeaks(int16_t *pData, int noOfChannels, int noOfSamples) {
-    HAL_WWDG_Refresh(hwwdg_);
-
     uint32_t status = bsGetStatus();
 
     if (!isUsbPortOpen()) {
@@ -140,7 +135,7 @@ static void printLeaks(int16_t *pData, int noOfChannels, int noOfSamples) {
     }
 
     // Vref ADC + board status
-    len += sprintf(&buf[len], "%d, 0x%08" PRIx32, stmGetGpio(VrefGpio), status);
+    //len += sprintf(&buf[len], "%d, 0x%08" PRIx32, stmGetGpio(VrefGpio), status);
     USBnprintf(buf);
 }
 
@@ -153,7 +148,7 @@ static void toggleBoostPin() {
     if (HAL_GetTick() - boostController.timeStamp >= switchTime) {
         boostController.isOn = switchControl;
         boostController.timeStamp = HAL_GetTick();
-        stmSetGpio(boostGpio, switchControl);
+        stmSetGpio(BoostEn, switchControl);
     }
 }
 
@@ -172,17 +167,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 }
 
 void gpioInit() {
-    stmGpioInit(&boostGpio, Power_EN_Boost_GPIO_Port, Power_EN_Boost_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&VrefGpio, Vout_ref_GPIO_Port, Vout_ref_Pin, STM_GPIO_INPUT);
-
-    stmSetGpio(boostGpio, true);
+    stmGpioInit(&BoostEn, BOOST_EN_GPIO_Port, BOOST_EN_Pin, STM_GPIO_OUTPUT);
+    //stmSetGpio(boostGpio, true);
 }
 
-void saltleakInit(ADC_HandleTypeDef *hadc1, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg) {
+void saltleakInit(ADC_HandleTypeDef *hadc1, TIM_HandleTypeDef *htim5) {
     initCAProtocol(&caProto, usbRx);
 
     /* Don't allow NULL handles to float about if its the wrong board type */
-    hwwdg_ = hwwdg;
     boostTimer = htim5;
 
     /* ADC must be initialised for USB printout to work. Doesn't matter if the
@@ -190,7 +182,7 @@ void saltleakInit(ADC_HandleTypeDef *hadc1, TIM_HandleTypeDef *htim5, WWDG_Handl
      ** the readings will just be bogus */
     ADCMonitorInit(hadc1, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
 
-    if (-1 == boardSetup(SaltLeak, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR})) {
+    if (-1 == boardSetup(SaltLeak, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, 0)) {
         return;
     }
 
