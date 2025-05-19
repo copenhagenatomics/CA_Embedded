@@ -505,7 +505,7 @@ void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, TIM_Ha
     }
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
-    if (-1 == boardSetup(Current, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}))
+    if (-1 == boardSetup(Current, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, 0))
     {
         return;
     }
