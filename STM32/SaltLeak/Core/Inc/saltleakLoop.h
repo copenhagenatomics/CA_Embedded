@@ -1,23 +1,14 @@
-/*
- * saltleak.h
- *
- *  Created on: Nov 11, 2021
- *      Author: agp
+/*!
+ * @file    saltleakLoop.h
+ * @brief   Header file of saltleakLoop.c
+ * @date    11/11/2021
+ * @author  agp
  */
 
 #ifndef SALT_LEAK_LOOP_H_
 #define SALT_LEAK_LOOP_H_
 
 #include "stm32f4xx_hal.h"
-
-/***************************************************************************************************
-** DEFINES
-***************************************************************************************************/
-
-#define BOOST_ACTIVE_Msk 0x00000001U
-#define BOOST_PIN_HIGH_Msk 0x00000002U
-
-#define SALTLEAK_NO_ERROR_Msk (BS_SYSTEM_ERRORS_Msk)
 
 /***************************************************************************************************
 ** PUBLIC FUNCTION DECLARATIONS
