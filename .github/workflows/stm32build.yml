@@ -159,6 +159,7 @@ jobs:
             filename=${f##*/}
             suffix=${filename#${{ matrix.package }}}
             cp $f ${RELEASENAME}${suffix}
+          done
       - name: Release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
         uses: softprops/action-gh-release@v0.1.15
