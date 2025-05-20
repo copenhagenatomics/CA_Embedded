@@ -111,7 +111,7 @@ int main(void)
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-  saltleakInit(&hadc1, &htim5);
+  saltleakInit(&hadc1);
   HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 

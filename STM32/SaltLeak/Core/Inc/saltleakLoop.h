@@ -14,7 +14,7 @@
 ** PUBLIC FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-void saltleakInit(ADC_HandleTypeDef* hadc1, TIM_HandleTypeDef* htim5);
+void saltleakInit(ADC_HandleTypeDef* hadc1);
 void saltleakLoop(const char* bootMsg);
 
 #endif /* SALT_LEAK_LOOP_H_ */

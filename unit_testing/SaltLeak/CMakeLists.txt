@@ -31,14 +31,23 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../../STM32)
 set(LIB ../../CA_Embedded_Libraries/STM32)
-set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Filtering/Inc 
-            ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
-            ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc 
-            ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
+
+set(INC_LIB ${LIB}/ADCMonitor/Inc
+            ${LIB}/circularBuffer/Inc
+            ${LIB}/Filtering/Inc 
+            ${LIB}/FLASH_readwrite/Inc
+            ${LIB}/I2C/Inc
+            ${LIB}/jumpToBootloader/Inc 
+            ${LIB}/Regulation/Inc
+            ${LIB}/SPI/Inc
+            ${LIB}/TransformationFunctions/Inc 
+            ${LIB}/USBprint/Inc
+            ${LIB}/Util/Inc)
+
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
 set(UT_STUBS ${UT_LIB}/stubs)
-set(DRIV ${LIB}/Drivers/STM32F4xx_HAL_Driver)
+set(DRIV ${SRC}/SaltLeak/Drivers/STM32F4xx_HAL_Driver)
 
 ####################################################################################################
 ## List of tests to run
@@ -49,9 +58,29 @@ enable_testing()
 include(GoogleTest)
 
 # SaltLeak tests
-add_executable(saltleak_test saltleak_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp ${UT_LIB}/Util/serialStatus_tests.cpp)
-target_include_directories(saltleak_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/SaltLeak/Core/Src ${SRC}/SaltLeak/Core/Inc ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
-target_link_libraries(saltleak_test GTest::gtest_main gmock_main)
-target_compile_definitions(saltleak_test PUBLIC UNIT_TESTING)
-target_compile_options(saltleak_test PRIVATE -Wall)
-gtest_discover_tests(saltleak_test)
+add_executable(saltleak_tests saltleak_tests.cpp
+                            ${UT_STUBS}/stub_jumpToBootloader.cpp
+                            ${UT_LIB}/Util/serialStatus_tests.cpp
+                            ${LIB}/Util/Src/systeminfo.c
+                            ${LIB}/Util/Src/time32.c
+                            ${UT_FAKES}/fake_HAL_otp.cpp
+                            ${UT_FAKES}/fake_stm32xxxx_hal.cpp
+                            ${UT_FAKES}/fake_StmGpio.cpp
+                            ${UT_FAKES}/fake_USBprint.cpp)
+
+target_include_directories(saltleak_tests PRIVATE
+                            ${UT_FAKES}
+                            ${UT_STUBS}
+                            ${INC_LIB}
+                            ${SRC}/SaltLeak/Core/Src
+                            ${SRC}/SaltLeak/Core/Inc
+                            ${LIB}/ADCMonitor/Src
+                            ${LIB}/Util/Src
+                            ${DRIV}/Inc
+                            ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
+                            ${UT_LIB}/Util)
+
+target_link_libraries(saltleak_tests GTest::gtest_main gmock_main)
+target_compile_definitions(saltleak_tests PUBLIC UNIT_TESTING)
+target_compile_options(saltleak_tests PRIVATE -Wall)
+gtest_discover_tests(saltleak_tests)
