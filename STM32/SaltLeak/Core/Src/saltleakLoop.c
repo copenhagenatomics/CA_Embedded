@@ -2,7 +2,7 @@
  * @file    saltleakLoop.c
  * @brief   This file contains the main program of Saltleak
  * @date    11/11/2021
- * @author  agp
+ * @authors agp, Timothé Dodin
  */
 
 #include <inttypes.h>
@@ -16,6 +16,7 @@
 #include "CAProtocolStm.h"
 #include "StmGpio.h"
 #include "USBprint.h"
+#include "calibration.h"
 #include "main.h"
 #include "pcbversion.h"
 #include "saltleakLoop.h"
@@ -32,19 +33,19 @@
 #define ANALOG_REF_VOLTAGE   3.3   // V
 
 #define NO_OF_SENSORS  6     // Number of salt leak sensors
-#define LEAK_THRESHOLD 10.0  // kOhm  - Leak threshold
+#define LEAK_THRESHOLD 10.0  // kOhm  - Leak threshold (to be tuned)
 
-#define V_BOOST_NOMINAL 48.0  // V
-#define V_BOOST_MIN     45.0  // V
-#define V_BOOST_MAX     51.0  // V
+#define V_BOOST_NOMINAL 48.0  // V  - Nominal boost voltage
+#define V_BOOST_MIN     45.0  // V  - Minimum boost voltage
+#define V_BOOST_MAX     51.0  // V  - Maximum boost voltage
 
-#define VCC_NOMINAL 5.0  // V
-#define VCC_MIN     4.8  // V
-#define VCC_MAX     5.2  // V
+#define VCC_NOMINAL 5.0  // V   - Nominal USB voltage after isolator
+#define VCC_MIN     4.8  // V   - Minimum USB voltage after isolator
+#define VCC_MAX     5.2  // V   - Maximum USB voltage after isolator
 
-#define BROKEN_NC_LIM      0.8   // V
-#define BROKEN_OK_LOW_LIM  6.95  // V
-#define BROKEN_OK_HIGH_LIM 35.7  // V
+#define BROKEN_NC_LIM      (0.8 / V_BOOST_NOMINAL)   // BROKEN/NC voltage ratio threshold
+#define BROKEN_OK_LOW_LIM  (6.95 / V_BOOST_NOMINAL)  // BROKEN/OK low voltage ratio threshold
+#define BROKEN_OK_HIGH_LIM (35.7 / V_BOOST_NOMINAL)  // BROKEN/OK high voltage ratio threshold
 
 /* Specific Board Status register definitions */
 
@@ -73,12 +74,17 @@ typedef enum { NC_OR_BROKEN_STATE, BROKEN_STATE, LEAK_STATE, NOMINAL_STATE } sen
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-static void printStatus();
-static void printStatusDef();
-static void updateBoardStatus();
-static void userInput(const char *input);
+static void saltLeakPrintHeader();
+static void saltLeakPrintStatus();
+static void saltLeakPrintStatusDef();
+static void saltLeakCalibration(int noOfCalibrations, const CACalibration *calibrations);
+static void saltLeakCalibrationRW(bool write);
+static void saltLeakLogging(int port);
 
-static float voltageToResistance(float volt);
+static void userInput(const char *input);
+static void updateBoardStatus();
+
+static void voltageToResistance();
 static void adcToFloat(int16_t *pData);
 static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples);
 
@@ -97,6 +103,9 @@ static float sensorResistances[NO_OF_SENSORS] = {0.0};  // kOhm - Resistances of
 static float voltageBoost                     = 0.0;    // V    - Output voltage applied to sensors
 static float voltageVCC                       = 0.0;    // V    - VCC voltage
 
+// To print voltages or resistances
+static bool printVoltages = false;
+
 // Boost controller
 static struct {
     uint32_t boostOnTime;
@@ -106,17 +115,24 @@ static struct {
     bool isOn;
 } boostController = {0, 0, 0, false, false};
 
-static StmGpio BoostEn;                // GPIO to activate boost converter
-static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];  // ADC circular buffer
+// GPIO to activate boost converter
+static StmGpio BoostEn;
 
+// ADC circular buffer
+static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
+
+// Calibration
+static FlashCalibration_t cal;
+
+// CA protocol handling
 static CAProtocolCtx caProto = {.undefined        = userInput,
-                                .printHeader      = CAPrintHeader,
-                                .printStatus      = printStatus,
-                                .printStatusDef   = printStatusDef,
+                                .printHeader      = saltLeakPrintHeader,
+                                .printStatus      = saltLeakPrintStatus,
+                                .printStatusDef   = saltLeakPrintStatusDef,
                                 .jumpToBootLoader = HALJumpToBootloader,
-                                .calibration      = NULL,
-                                .calibrationRW    = NULL,
-                                .logging          = NULL,
+                                .calibration      = saltLeakCalibration,
+                                .calibrationRW    = saltLeakCalibrationRW,
+                                .logging          = saltLeakLogging,
                                 .otpRead          = CAotpRead,
                                 .otpWrite         = NULL};
 
@@ -125,9 +141,17 @@ static CAProtocolCtx caProto = {.undefined        = userInput,
 ***************************************************************************************************/
 
 /*!
+ * @brief Definition of what is printed when the 'Serial' command is received
+ */
+static void saltLeakPrintHeader() {
+    CAPrintHeader();
+    saltLeakCalibrationRW(false);
+}
+
+/*!
  * @brief   Definition of status information when the 'Status' command is received
  */
-static void printStatus() {
+static void saltLeakPrintStatus() {
     int len = 0;
 
     if (bsGetField(BS_BOOST_ERROR_Msk)) {
@@ -181,7 +205,7 @@ static void printStatus() {
 /*!
  * @brief   Definition of status information definition when the 'StatusDef' command is received
  */
-static void printStatusDef() {
+static void saltLeakPrintStatusDef() {
     int len = 0;
 
     len += snprintf(&printBuffer[len], sizeof(printBuffer) - len, "0x%08" PRIx32 ",Boost error\r\n",
@@ -202,41 +226,30 @@ static void printStatusDef() {
 }
 
 /*!
- * @brief Updates the board status
+ * @brief Applies the calibration sent by the user
+ * @param noOfCalibrations Number of calibrations
+ * @param calibrations Pointer to the calibration structure
  */
-static void updateBoardStatus() {
-    // Field bits
-    bsUpdateField(BS_BOOST_SWITCH_ACTIVE_Msk, boostController.inSwitchBoostMode);
-    bsUpdateField(BS_BOOST_PIN_HIGH_Msk, stmGetGpio(BoostEn));
+static void saltLeakCalibration(int noOfCalibrations, const CACalibration *calibrations) {
+    calibration(noOfCalibrations, calibrations, &cal, sizeof(cal));
+}
 
-    // Error bits
-    bsUpdateError(BS_BOOST_ERROR_Msk,
-                  bsGetField(BS_BOOST_PIN_HIGH_Msk) &&
-                      (voltageBoost > V_BOOST_MAX || voltageBoost < V_BOOST_MIN),
-                  SALTLEAK_ERRORS_Msk);
-    bsUpdateError(BS_UNDER_VOLTAGE_Msk, voltageVCC < VCC_MIN, SALTLEAK_ERRORS_Msk);
-    bsUpdateError(BS_OVER_VOLTAGE_Msk, voltageVCC > VCC_MAX, SALTLEAK_ERRORS_Msk);
+/*!
+ * @brief Printing of the calibration information when the 'Serial' command is received
+ * @param write Write directly into the flash memory
+ */
+static void saltLeakCalibrationRW(bool write) { calibrationRW(write, &cal, sizeof(cal)); }
 
-    // Range fields
-    bool isSensing = !bsGetField(BS_BOOST_ERROR_Msk) && bsGetField(BS_BOOST_PIN_HIGH_Msk) &&
-                     !bsGetField(BS_UNDER_VOLTAGE_Msk);
-
-    for (uint8_t sensorId = 0; sensorId < NO_OF_SENSORS; sensorId++) {
-        sensorState_t state = NOMINAL_STATE;
-        if (isSensing) {
-            if (sensorVoltages[sensorId] < BROKEN_NC_LIM) {
-                state = NC_OR_BROKEN_STATE;
-            }
-            else if (sensorVoltages[sensorId] < BROKEN_OK_LOW_LIM ||
-                     sensorVoltages[sensorId] > BROKEN_OK_HIGH_LIM) {
-                state = BROKEN_STATE;
-            }
-            else if (sensorResistances[sensorId] < LEAK_THRESHOLD) {
-                state = LEAK_STATE;
-            }
-        }
-        bsSetFieldRange(state << BS_SENSOR_STATE_RANGE_Pos(sensorId),
-                        BS_SENSOR_STATE_RANGE_Msk(sensorId));
+/*!
+ * @brief The user selects voltages or resistances to be printed
+ * @param port p0 or p1
+ */
+static void saltLeakLogging(int port) {
+    if (port == 0) {
+        printVoltages = false;
+    }
+    else if (port == 1) {
+        printVoltages = true;
     }
 }
 
@@ -263,29 +276,73 @@ static void userInput(const char *input) {
 }
 
 /*!
- * @brief   Estimates the resistance between the electrodes based on the sense voltage
- * @param   volt Measured voltage
- * @return  Resistance in kOhm
+ * @brief Updates the board status
  */
-static float voltageToResistance(float volt) {
-    static const float RES_P1 = 6.2;    // kOhm  - Resistor on P1 sensor leg
-    static const float RES_P2 = 100.0;  // kOhm  - Resistor on P2 sensor leg
-    static const float RES_N1 = 18.0;   // kOhm  - Resistor on N1 sensor leg
+static void updateBoardStatus() {
+    // Field bits
+    bsUpdateField(BS_BOOST_SWITCH_ACTIVE_Msk, boostController.inSwitchBoostMode);
+    bsUpdateField(BS_BOOST_PIN_HIGH_Msk, stmGetGpio(BoostEn));
 
-    if (volt == 0.0 || voltageBoost > V_BOOST_MAX || voltageBoost < V_BOOST_MIN) {
-        return -1.0;  // Incorrect resistance value
+    // Error bits
+    bsUpdateError(BS_BOOST_ERROR_Msk,
+                  bsGetField(BS_BOOST_PIN_HIGH_Msk) &&
+                      (voltageBoost > V_BOOST_MAX || voltageBoost < V_BOOST_MIN),
+                  SALTLEAK_ERRORS_Msk);
+    bsUpdateError(BS_UNDER_VOLTAGE_Msk, voltageVCC < VCC_MIN, SALTLEAK_ERRORS_Msk);
+    bsUpdateError(BS_OVER_VOLTAGE_Msk, voltageVCC > VCC_MAX, SALTLEAK_ERRORS_Msk);
+
+    // Range fields
+    bool isSensing = !bsGetField(BS_BOOST_ERROR_Msk) && bsGetField(BS_BOOST_PIN_HIGH_Msk) &&
+                     !bsGetField(BS_UNDER_VOLTAGE_Msk);
+
+    for (uint8_t sensorId = 0; sensorId < NO_OF_SENSORS; sensorId++) {
+        sensorState_t state = NOMINAL_STATE;
+        if (isSensing) {
+            if (sensorVoltages[sensorId] < BROKEN_NC_LIM * voltageBoost) {
+                state = NC_OR_BROKEN_STATE;
+            }
+            else if (sensorVoltages[sensorId] < BROKEN_OK_LOW_LIM * voltageBoost ||
+                     sensorVoltages[sensorId] > BROKEN_OK_HIGH_LIM * voltageBoost) {
+                state = BROKEN_STATE;
+            }
+            else if (sensorResistances[sensorId] < LEAK_THRESHOLD) {
+                state = LEAK_STATE;
+            }
+        }
+        bsSetFieldRange(state << BS_SENSOR_STATE_RANGE_Pos(sensorId),
+                        BS_SENSOR_STATE_RANGE_Msk(sensorId));
     }
+}
 
-    float num = RES_P2 * (RES_P1 + RES_N1 - (RES_N1 * voltageBoost / volt));
-    float den = RES_N1 * voltageBoost / volt - (RES_P1 + RES_P2 + RES_N1);
+/*!
+ * @brief   Estimates the resistance between the electrodes based on the sense voltage
+ */
+static void voltageToResistance() {
+    for (uint8_t sensorId = 0; sensorId < NO_OF_SENSORS; sensorId++) {
+        if (sensorVoltages[sensorId] == 0.0 || voltageBoost > V_BOOST_MAX ||
+            voltageBoost < V_BOOST_MIN) {
+            sensorResistances[sensorId] = -1.0;  // Incorrect resistance value
+            continue;
+        }
 
-    if (den == 0.0) {
-        return -1.0;  // Incorrect resistance value
+        // Formulas derived from resistors network
+        float num = cal.sensorCal[sensorId].resP2 *
+                    (cal.sensorCal[sensorId].resP1 + cal.sensorCal[sensorId].resN1 -
+                     (cal.sensorCal[sensorId].resN1 * voltageBoost / sensorVoltages[sensorId]));
+        float den = cal.sensorCal[sensorId].resN1 * voltageBoost / sensorVoltages[sensorId] -
+                    (cal.sensorCal[sensorId].resP1 + cal.sensorCal[sensorId].resP2 +
+                     cal.sensorCal[sensorId].resN1);
+
+        if (den == 0.0) {
+            sensorResistances[sensorId] = -1.0;  // Incorrect resistance value
+            continue;
+        }
+
+        float res = num / den;
+
+        // Resistance <= 0 means that the sensor is NC/broken
+        sensorResistances[sensorId] = res > 0.0 ? res : -1.0;
     }
-
-    float res = num / den;
-
-    return res > 0.0 ? res : -1.0;
 }
 
 /*!
@@ -294,26 +351,21 @@ static float voltageToResistance(float volt) {
  */
 static void adcToFloat(int16_t *pData) {
     // From voltage divider on PCB - in V
-    static const float SENSE_VOLT_SCALAR =
-        ANALOG_REF_VOLTAGE * (3.9e6 + 270e3) / 270e3 / (ADC_MAX + 1);
-
-    // From voltage divider on PCB - in V
-    static const float BOOST_SCALAR = ANALOG_REF_VOLTAGE * (3.9e6 + 270e3) / 270e3 / (ADC_MAX + 1);
-
-    // From voltage divider on PCB - in V
     static const float VCC_SCALAR = ANALOG_REF_VOLTAGE * (15e3 + 21.5e3) / 21.5e3 / (ADC_MAX + 1);
 
     // Voltage feedbacks
-    voltageBoost = ADCMean(pData, 6) * BOOST_SCALAR;
+    voltageBoost = ADCMean(pData, 6) * cal.boostScalar1000 * 1e-3;
     voltageVCC   = ADCMean(pData, 7) * VCC_SCALAR;
+    setBoardVoltage(voltageVCC);
 
-    // Sense voltages and estimated resistances
+    // Sense voltages
     for (uint8_t sensorId = 0; sensorId < NO_OF_SENSORS; sensorId++) {
-        sensorVoltages[sensorId]    = ADCMean(pData, sensorId) * SENSE_VOLT_SCALAR;
-        sensorResistances[sensorId] = voltageToResistance(sensorVoltages[sensorId]);
+        sensorVoltages[sensorId] =
+            ADCMean(pData, sensorId) * cal.sensorCal[sensorId].vScalar1000 * 1e-3;
     }
 
-    setBoardVoltage(voltageVCC);
+    // Resistance estimation
+    voltageToResistance();
 }
 
 /*!
@@ -337,9 +389,14 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
     char buf[150] = {0};
     int len       = snprintf(buf, 3, "\r\n");
 
-    // Estimated sensor resistances
+    // Estimated sensor resistances/voltages
     for (uint8_t sensorId = 0; sensorId < NO_OF_SENSORS; sensorId++) {
-        len += sprintf(&buf[len], "%0.2f, ", sensorResistances[sensorId]);
+        if (printVoltages) {
+            len += sprintf(&buf[len], "%0.2f, ", sensorVoltages[sensorId]);
+        }
+        else {
+            len += sprintf(&buf[len], "%0.2f, ", sensorResistances[sensorId]);
+        }
     }
 
     // Leak detection
@@ -350,9 +407,8 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
         len += sprintf(&buf[len], "%d, ", isLeaking);
     }
 
-    // Board status
-    len +=
-        sprintf(&buf[len], "%0.2f, %0.2f, 0x%08" PRIx32, voltageVCC, voltageBoost, bsGetStatus());
+    // Boost voltage and board status
+    len += sprintf(&buf[len], "%0.2f, 0x%08" PRIx32, voltageBoost, bsGetStatus());
 
     if (isUsbPortOpen()) {
         writeUSB(buf, len);
@@ -396,7 +452,7 @@ static void updateBoostMode() {
  * @param   hadc1 Pointer to the ADC handler
  * @param   htim5 Pointer to the timer handler
  */
-void saltleakInit(ADC_HandleTypeDef *hadc1) {
+void saltleakInit(ADC_HandleTypeDef *hadc1, CRC_HandleTypeDef *hcrc) {
     initCAProtocol(&caProto, usbRx);
 
     // ADC must be initialised for USB printout to work. Doesn't matter if the board type is wrong
@@ -406,6 +462,9 @@ void saltleakInit(ADC_HandleTypeDef *hadc1) {
         0) {
         return;
     }
+
+    // Calibration
+    calibrationInit(hcrc, &cal, sizeof(cal));
 
     // GPIO
     stmGpioInit(&BoostEn, BOOST_EN_GPIO_Port, BOOST_EN_Pin, STM_GPIO_OUTPUT);

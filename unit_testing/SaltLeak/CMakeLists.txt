@@ -34,13 +34,9 @@ set(LIB ../../CA_Embedded_Libraries/STM32)
 
 set(INC_LIB ${LIB}/ADCMonitor/Inc
             ${LIB}/circularBuffer/Inc
-            ${LIB}/Filtering/Inc 
+            ${LIB}/Crc/Inc
             ${LIB}/FLASH_readwrite/Inc
-            ${LIB}/I2C/Inc
-            ${LIB}/jumpToBootloader/Inc 
-            ${LIB}/Regulation/Inc
-            ${LIB}/SPI/Inc
-            ${LIB}/TransformationFunctions/Inc 
+            ${LIB}/jumpToBootloader/Inc
             ${LIB}/USBprint/Inc
             ${LIB}/Util/Inc)
 
@@ -61,8 +57,7 @@ include(GoogleTest)
 add_executable(saltleak_tests saltleak_tests.cpp
                             ${UT_STUBS}/stub_jumpToBootloader.cpp
                             ${UT_LIB}/Util/serialStatus_tests.cpp
-                            ${LIB}/Util/Src/systeminfo.c
-                            ${LIB}/Util/Src/time32.c
+                            ${UT_FAKES}/fake_FLASH_readwrite.cpp
                             ${UT_FAKES}/fake_HAL_otp.cpp
                             ${UT_FAKES}/fake_stm32xxxx_hal.cpp
                             ${UT_FAKES}/fake_StmGpio.cpp
@@ -72,13 +67,14 @@ target_include_directories(saltleak_tests PRIVATE
                             ${UT_FAKES}
                             ${UT_STUBS}
                             ${INC_LIB}
+                            ${UT_LIB}/Util
                             ${SRC}/SaltLeak/Core/Src
                             ${SRC}/SaltLeak/Core/Inc
                             ${LIB}/ADCMonitor/Src
+                            ${LIB}/Crc/Src
                             ${LIB}/Util/Src
                             ${DRIV}/Inc
-                            ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
-                            ${UT_LIB}/Util)
+                            ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 
 target_link_libraries(saltleak_tests GTest::gtest_main gmock_main)
 target_compile_definitions(saltleak_tests PUBLIC UNIT_TESTING)

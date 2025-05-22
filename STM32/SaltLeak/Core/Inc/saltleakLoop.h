@@ -2,7 +2,7 @@
  * @file    saltleakLoop.h
  * @brief   Header file of saltleakLoop.c
  * @date    11/11/2021
- * @author  agp
+ * @authors agp, Timothé Dodin
  */
 
 #ifndef SALT_LEAK_LOOP_H_
@@ -14,7 +14,7 @@
 ** PUBLIC FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-void saltleakInit(ADC_HandleTypeDef* hadc1);
-void saltleakLoop(const char* bootMsg);
+void saltleakInit(ADC_HandleTypeDef *hadc1, CRC_HandleTypeDef *hcrc);
+void saltleakLoop(const char *bootMsg);
 
 #endif /* SALT_LEAK_LOOP_H_ */
