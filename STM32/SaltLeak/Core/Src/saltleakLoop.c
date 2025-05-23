@@ -231,7 +231,7 @@ static void saltLeakPrintStatusDef() {
  * @param calibrations Pointer to the calibration structure
  */
 static void saltLeakCalibration(int noOfCalibrations, const CACalibration *calibrations) {
-    calibration(noOfCalibrations, calibrations, &cal, sizeof(cal));
+    calibration(noOfCalibrations, calibrations, &cal, sizeof(cal), sensorVoltages, voltageBoost);
 }
 
 /*!

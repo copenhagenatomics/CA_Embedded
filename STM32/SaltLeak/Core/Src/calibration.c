@@ -82,16 +82,16 @@ static void setDefaultCalibration(FlashCalibration_t *cal) {
  * @param size Size of the calibration
  */
 void calibration(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration_t *cal,
-                 uint32_t size) {
+                 uint32_t size, float sensorVoltages[NO_OF_SENSORS], float voltageBoost) {
     /*
         Calibration command examples:
-        -----------------------------------------------------------------------
-        CAL 1,resP1_1,resP2_1 2,resN1_1,vScalar_1       |   Sensor 1
-        CAL 3,resP1_2,resP2_2 4,resN1_2,vScalar_2       |   Sensor 2
-        ...                                             |   ...
-        CAL 11,resP1_2,resP2_2 12,resN1_2,vScalar_2     |   Sensor 6
-        CAL 13,boostScalar,0                            |   Boost measurement
-        -----------------------------------------------------------------------
+        -------------------------------------------------------------------------
+        CAL 1,resP1_1,resP2_1 2,resN1_1,VoutMeasured_1     |   Sensor 1
+        CAL 3,resP1_2,resP2_2 4,resN1_2,VoutMeasured_2     |   Sensor 2
+        ...                                                |   ...
+        CAL 11,resP1_6,resP2_6 12,resN1_6,VoutMeasured_6   |   Sensor 6
+        CAL 13,VboostMeasured,0                            |   Boost measurement
+        -------------------------------------------------------------------------
     */
     for (int i = 0; i < noOfCalibrations; i++) {
         if (calibrations[i].port <= 0 || calibrations[i].port > NO_CALIBRATION) {
@@ -103,8 +103,9 @@ void calibration(int noOfCalibrations, const CACalibration *calibrations, FlashC
 
         // Vboost voltage divider calibration
         if (channel == 12) {
-            if (alpha >= MIN_BOOST_SCALAR && alpha <= MAX_BOOST_SCALAR) {
-                cal->boostScalar1000 = alpha;
+            float scalar = cal->boostScalar1000 * alpha / voltageBoost;
+            if (scalar >= MIN_BOOST_SCALAR && scalar <= MAX_BOOST_SCALAR) {
+                cal->boostScalar1000 = scalar;
             }
         }
         // P1 and P2 sensor resistors calibration
@@ -123,8 +124,9 @@ void calibration(int noOfCalibrations, const CACalibration *calibrations, FlashC
             if (alpha >= MIN_RES_N1 && alpha <= MAX_RES_N1) {
                 cal->sensorCal[sensorId].resN1 = alpha;
             }
-            if (beta >= MIN_VOLT_SCALAR && beta <= MAX_VOLT_SCALAR) {
-                cal->sensorCal[sensorId].vScalar1000 = beta;
+            float scalar = cal->sensorCal[sensorId].vScalar1000 * beta / sensorVoltages[sensorId];
+            if (scalar >= MIN_VOLT_SCALAR && scalar <= MAX_VOLT_SCALAR) {
+                cal->sensorCal[sensorId].vScalar1000 = scalar;
             }
         }
     }

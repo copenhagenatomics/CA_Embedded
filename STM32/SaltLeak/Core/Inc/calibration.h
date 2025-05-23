@@ -36,7 +36,7 @@ typedef struct FlashCalibration {
 ***************************************************************************************************/
 
 void calibration(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration_t *cal,
-                 uint32_t size);
+                 uint32_t size, float sensorVoltages[NO_OF_SENSORS], float voltageBoost);
 void calibrationInit(CRC_HandleTypeDef *hcrc, FlashCalibration_t *cal, uint32_t size);
 void calibrationRW(bool write, FlashCalibration_t *cal, uint32_t size);
 
