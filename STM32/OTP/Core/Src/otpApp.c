@@ -4,6 +4,7 @@
  *  Created on: Dec 30, 2021
  *      Author: agp
  */
+
 #include "otpApp.h"
 #include "usb_cdc_fops.h"
 #include "systemInfo.h"
