@@ -58,36 +58,24 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define ADC10_Pin GPIO_PIN_0
-#define ADC10_GPIO_Port GPIOA
-#define ADC9_Pin GPIO_PIN_1
-#define ADC9_GPIO_Port GPIOA
-#define ADC8_Pin GPIO_PIN_2
-#define ADC8_GPIO_Port GPIOA
-#define ADC7_Pin GPIO_PIN_3
-#define ADC7_GPIO_Port GPIOA
-#define ADC6_Pin GPIO_PIN_4
-#define ADC6_GPIO_Port GPIOA
-#define ADC5_Pin GPIO_PIN_5
-#define ADC5_GPIO_Port GPIOA
-#define ADC4_Pin GPIO_PIN_6
-#define ADC4_GPIO_Port GPIOA
-#define ADC3_Pin GPIO_PIN_7
-#define ADC3_GPIO_Port GPIOA
-#define ADC2_Pin GPIO_PIN_0
-#define ADC2_GPIO_Port GPIOB
-#define ADC1_Pin GPIO_PIN_1
-#define ADC1_GPIO_Port GPIOB
-#define Vout_ref_Pin GPIO_PIN_12
-#define Vout_ref_GPIO_Port GPIOB
-#define Power_EN_Boost_Pin GPIO_PIN_10
-#define Power_EN_Boost_GPIO_Port GPIOA
-#define LED_Pin GPIO_PIN_3
-#define LED_GPIO_Port GPIOB
-#define test1_Pin GPIO_PIN_4
-#define test1_GPIO_Port GPIOB
-#define test2_Pin GPIO_PIN_5
-#define test2_GPIO_Port GPIOB
+#define SENSE_OUT1_Pin GPIO_PIN_0
+#define SENSE_OUT1_GPIO_Port GPIOA
+#define SENSE_OUT2_Pin GPIO_PIN_1
+#define SENSE_OUT2_GPIO_Port GPIOA
+#define SENSE_OUT3_Pin GPIO_PIN_2
+#define SENSE_OUT3_GPIO_Port GPIOA
+#define SENSE_OUT4_Pin GPIO_PIN_3
+#define SENSE_OUT4_GPIO_Port GPIOA
+#define SENSE_OUT5_Pin GPIO_PIN_4
+#define SENSE_OUT5_GPIO_Port GPIOA
+#define SENSE_OUT6_Pin GPIO_PIN_5
+#define SENSE_OUT6_GPIO_Port GPIOA
+#define VOUT_REF_Pin GPIO_PIN_6
+#define VOUT_REF_GPIO_Port GPIOA
+#define VCC_FB_Pin GPIO_PIN_7
+#define VCC_FB_GPIO_Port GPIOA
+#define BOOST_EN_Pin GPIO_PIN_10
+#define BOOST_EN_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

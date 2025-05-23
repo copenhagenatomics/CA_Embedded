@@ -1,9 +1,9 @@
 #ifndef PCB_VERSION_H_
 #define PCB_VERSION_H_ 
 
-#define LATEST_MAJOR    1
-#define LATEST_MINOR    3
-#define BREAKING_MAJOR  1
-#define BREAKING_MINOR  3
+#define LATEST_MAJOR    2
+#define LATEST_MINOR    0
+#define BREAKING_MAJOR  2
+#define BREAKING_MINOR  0
 
 #endif // PCB_VERSION_H_

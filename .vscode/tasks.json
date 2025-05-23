@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run unitTests.py debug",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "${workspaceFolder}/unit_testing/unitTests.py",
+                "-d",
+                "-D",
+                "${fileDirname}"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}
