@@ -36,13 +36,13 @@ extern uint32_t _FlashAddrCal;  // Starting address of calibration values in FLA
 #define MAX_RES_N1     18.4  // kOhm
 #define DEFAULT_RES_N1 18.0  // kOhm - PCB ideal value
 
-#define MIN_VOLT_SCALAR     12.0       // x1000
-#define MAX_VOLT_SCALAR     13.0       // x1000
-#define DEFAULT_VOLT_SCALAR 12.443034  // x1000 - PCB ideal voltage divider
+#define MIN_VOLT_SCALAR     0.012
+#define MAX_VOLT_SCALAR     0.013
+#define DEFAULT_VOLT_SCALAR 0.012443  // PCB ideal voltage divider
 
-#define MIN_BOOST_SCALAR     12.0       // x1000
-#define MAX_BOOST_SCALAR     13.0       // x1000
-#define DEFAULT_BOOST_SCALAR 12.443034  // x1000 - PCB ideal voltage divider
+#define MIN_BOOST_SCALAR     0.012
+#define MAX_BOOST_SCALAR     0.013
+#define DEFAULT_BOOST_SCALAR 0.012443  // PCB ideal voltage divider
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -61,13 +61,13 @@ CRC_HandleTypeDef *hcrc_ = NULL;
 ***************************************************************************************************/
 
 static void setDefaultCalibration(FlashCalibration_t *cal) {
-    for (uint8_t sensorId = 0; sensorId < NO_OF_SENSORS; sensorId++) {
-        cal->sensorCal[sensorId].resP1       = DEFAULT_RES_P1;
-        cal->sensorCal[sensorId].resP2       = DEFAULT_RES_P2;
-        cal->sensorCal[sensorId].resN1       = DEFAULT_RES_N1;
-        cal->sensorCal[sensorId].vScalar1000 = DEFAULT_VOLT_SCALAR;
+    for (uint8_t i = 0; i < NO_OF_SENSORS; i++) {
+        cal->sensorCal[i].resP1   = DEFAULT_RES_P1;
+        cal->sensorCal[i].resP2   = DEFAULT_RES_P2;
+        cal->sensorCal[i].resN1   = DEFAULT_RES_N1;
+        cal->sensorCal[i].vScalar = DEFAULT_VOLT_SCALAR;
     }
-    cal->boostScalar1000 = DEFAULT_BOOST_SCALAR;
+    cal->boostScalar = DEFAULT_BOOST_SCALAR;
 }
 
 /***************************************************************************************************
@@ -103,30 +103,30 @@ void calibration(int noOfCalibrations, const CACalibration *calibrations, FlashC
 
         // Vboost voltage divider calibration
         if (channel == 12) {
-            float scalar = cal->boostScalar1000 * alpha / voltageBoost;
+            float scalar = cal->boostScalar * alpha / voltageBoost;
             if (scalar >= MIN_BOOST_SCALAR && scalar <= MAX_BOOST_SCALAR) {
-                cal->boostScalar1000 = scalar;
+                cal->boostScalar = scalar;
             }
         }
         // P1 and P2 sensor resistors calibration
         else if (channel % 2 == 0) {
-            uint8_t sensorId = channel / 2;
+            uint8_t i = channel / 2;
             if (alpha >= MIN_RES_P1 && alpha <= MAX_RES_P1) {
-                cal->sensorCal[sensorId].resP1 = alpha;
+                cal->sensorCal[i].resP1 = alpha;
             }
             if (beta >= MIN_RES_P2 && beta <= MAX_RES_P2) {
-                cal->sensorCal[sensorId].resP2 = beta;
+                cal->sensorCal[i].resP2 = beta;
             }
         }
         // N1 sensor resistor and voltage divider calibration
         else {
-            uint8_t sensorId = (channel - 1) / 2;
+            uint8_t i = (channel - 1) / 2;
             if (alpha >= MIN_RES_N1 && alpha <= MAX_RES_N1) {
-                cal->sensorCal[sensorId].resN1 = alpha;
+                cal->sensorCal[i].resN1 = alpha;
             }
-            float scalar = cal->sensorCal[sensorId].vScalar1000 * beta / sensorVoltages[sensorId];
+            float scalar = cal->sensorCal[i].vScalar * beta / sensorVoltages[i];
             if (scalar >= MIN_VOLT_SCALAR && scalar <= MAX_VOLT_SCALAR) {
-                cal->sensorCal[sensorId].vScalar1000 = scalar;
+                cal->sensorCal[i].vScalar = scalar;
             }
         }
     }
@@ -165,13 +165,13 @@ void calibrationRW(bool write, FlashCalibration_t *cal, uint32_t size) {
         int len = 0;
 
         len += snprintf(&buf[len], sizeof(buf) - len, "Calibration: CAL");
-        for (uint8_t sensorId = 0; sensorId < NO_OF_SENSORS; sensorId++) {
-            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%0.3f,%0.3f", 2 * (sensorId + 1) - 1,
-                            cal->sensorCal[sensorId].resP1, cal->sensorCal[sensorId].resP2);
-            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%0.3f,%0.3f", 2 * (sensorId + 1),
-                            cal->sensorCal[sensorId].resN1, cal->sensorCal[sensorId].vScalar1000);
+        for (uint8_t i = 0; i < NO_OF_SENSORS; i++) {
+            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%0.3f,%0.3f", 2 * i + 1,
+                            cal->sensorCal[i].resP1, cal->sensorCal[i].resP2);
+            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%0.3f,%0.3f", 2 * (i + 1),
+                            cal->sensorCal[i].resN1, cal->sensorCal[i].vScalar * 1e3);
         }
-        len += snprintf(&buf[len], sizeof(buf) - len, " 13,%0.3f,0", cal->boostScalar1000);
+        len += snprintf(&buf[len], sizeof(buf) - len, " 13,%0.3f,0", cal->boostScalar * 1e3);
         len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
 
         writeUSB(buf, len);

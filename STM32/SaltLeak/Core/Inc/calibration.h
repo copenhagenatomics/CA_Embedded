@@ -20,15 +20,15 @@
 #define NO_OF_SENSORS 6
 
 typedef struct sensorCalibration {
-    float resP1;        // kOhm     - Resistance in serie with P1 terminal
-    float resP2;        // kOhm     - Resistance in serie with P2 terminal
-    float resN1;        // kOhm     - Resistance in serie with N1 terminal
-    float vScalar1000;  // x1000    - Resistive divider ratio multiplied by 1000
+    float resP1;    // kOhm     - Resistance in series with P1 terminal
+    float resP2;    // kOhm     - Resistance in series with P2 terminal
+    float resN1;    // kOhm     - Resistance in serie with N1 terminal
+    float vScalar;  // Resistive divider ratio
 } sensorCalibration_t;
 
 typedef struct FlashCalibration {
     sensorCalibration_t sensorCal[NO_OF_SENSORS];
-    float boostScalar1000;  // x1000 - Resistive divider ratio multiplied by 1000
+    float boostScalar;  // Resistive divider ratio
 } FlashCalibration_t;
 
 /***************************************************************************************************
