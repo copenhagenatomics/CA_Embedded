@@ -82,7 +82,7 @@ static void updateBoostMode();
 ** PRIVATE OBJECTS
 ***************************************************************************************************/
 
-// bufffer shared by printStatus and printStatusDef
+// Buffer shared by printStatus and printStatusDef
 static char buff[300];
 
 static sensorState_t sensorStates[NO_OF_SENSORS] = {NOMINAL_STATE};  // Sensor states
