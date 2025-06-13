@@ -441,7 +441,7 @@ static void updateBoardStatus()
 void ACBoardInit(ADC_HandleTypeDef* hadc)
 {
     // Pin out has changed from PCB V6.4 - older versions need other software.
-    boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
+    boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, AC_BOARD_No_Error_Msk);
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usbRx);
