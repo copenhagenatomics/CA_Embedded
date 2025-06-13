@@ -31,10 +31,19 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../../STM32)
 set(LIB ../../CA_Embedded_Libraries/STM32)
-set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Filtering/Inc 
-            ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
-            ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc 
-            ${LIB}/USBprint/Inc ${LIB}/Util/Inc ${LIB}/Util/Src)
+set(INC_LIB ${LIB}/ADCMonitor/Inc 
+            ${LIB}/circularBuffer/Inc 
+            ${LIB}/Crc/Inc 
+            ${LIB}/Filtering/Inc 
+            ${LIB}/FLASH_readwrite/Inc 
+            ${LIB}/I2C/Inc 
+            ${LIB}/jumpToBootloader/Inc 
+            ${LIB}/Regulation/Inc 
+            ${LIB}/SPI/Inc 
+            ${LIB}/TransformationFunctions/Inc 
+            ${LIB}/USBprint/Inc 
+            ${LIB}/Util/Inc 
+            ${LIB}/Util/Src)
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
 set(UT_STUBS ${UT_LIB}/stubs)
@@ -49,25 +58,45 @@ enable_testing()
 include(GoogleTest)
 
 # AC tests
-add_executable(heatCtrl_test heatCtrl_tests.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
-                             ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_FLASH_readwrite.cpp 
-                             ${UT_FAKES}/fake_USBprint.cpp)
+add_executable(heatCtrl_test heatCtrl_tests.cpp 
+                ${LIB}/Util/Src/time32.c 
+                ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
+                ${UT_FAKES}/fake_StmGpio.cpp 
+                ${UT_FAKES}/fake_USBprint.cpp)
 target_include_directories(heatCtrl_test PRIVATE 
-                             ${INC_LIB} ${UT_FAKES} ${LIB}/Util/Inc ${SRC}/AC/Core/Inc ${SRC}/AC/HeatCtrl/Inc 
-                             ${SRC}/AC/HeatCtrl/Src ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
+                             ${INC_LIB} 
+                             ${UT_FAKES} 
+                             ${LIB}/Util/Inc 
+                             ${SRC}/AC/Core/Inc 
+                             ${SRC}/AC/HeatCtrl/Inc 
+                             ${SRC}/AC/HeatCtrl/Src 
+                             ${DRIV}/Inc
+                             ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
 target_compile_options(heatCtrl_test PRIVATE -Wall)
 gtest_discover_tests(heatCtrl_test)
 
 add_executable(ac_test AC_tests.cpp 
-                             ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c 
-                             ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c 
-                             ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp 
-                             ${UT_FAKES}/fake_HAL_otp.cpp  ${UT_FAKES}/fake_FLASH_readwrite.cpp 
-                             ${UT_LIB}/Util/serialStatus_tests.cpp)
-target_include_directories(ac_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/AC/Core/Src ${SRC}/AC/Core/Inc 
-                             ${SRC}/AC/HeatCtrl/Inc ${SRC}/AC/HeatCtrl/Src ${LIB}/ADCMonitor/Src 
-                             ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc 
+                 ${UT_STUBS}/stub_jumpToBootloader.cpp 
+                 ${LIB}/Util/Src/systeminfo.c 
+                 ${UT_FAKES}/fake_USBprint.cpp
+                 ${LIB}/Util/Src/time32.c 
+                 ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
+                 ${UT_FAKES}/fake_StmGpio.cpp 
+                 ${UT_FAKES}/fake_HAL_otp.cpp  
+                 ${UT_FAKES}/fake_FLASH_readwrite.cpp 
+                 ${UT_LIB}/Util/serialStatus_tests.cpp)
+target_include_directories(ac_test PRIVATE 
+                             ${UT_FAKES} 
+                             ${UT_STUBS} 
+                             ${SRC}/AC/Core/Src 
+                             ${SRC}/AC/Core/Inc 
+                             ${SRC}/AC/HeatCtrl/Inc 
+                             ${SRC}/AC/HeatCtrl/Src 
+                             ${LIB}/ADCMonitor/Src 
+                             ${LIB}/Util/Src 
+                             ${INC_LIB} 
+                             ${DRIV}/Inc 
                              ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
 target_link_libraries(ac_test GTest::gtest_main gmock_main)
 target_compile_definitions(ac_test PUBLIC UNIT_TESTING)
