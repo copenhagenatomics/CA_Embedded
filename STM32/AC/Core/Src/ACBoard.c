@@ -29,8 +29,8 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS	            8   // 4 current + 4 temperature
-#define ADC_CHANNEL_BUF_SIZE	  400
+#define ADC_CHANNELS                8   // 4 current + 4 temperature
+#define ADC_CHANNEL_BUF_SIZE      400
 #define NUM_CURRENT_CHANNELS        4
 #define NUM_TEMP_CHANNELS           4
 
@@ -119,19 +119,17 @@ static void printAcHeader() {
 /*!
 ** @brief Verbose print of the AC board status
 */
-static void printAcStatus()
-{
-    static char buf[600] = { 0 };
-    int len = 0;
+static void printAcStatus() {
+    static char buf[600] = {0};
+    int len              = 0;
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "Fan     On: %d\r\n", stmGetGpio(fanCtrl));
-    for (int i = 0; i < AC_BOARD_NUM_PORTS; i++)
-    {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", 
-                        i, stmGetGpio(heaterPorts[i].heater), getPWMPinPercent(i));
+    CA_SNPRINTF(buf, len, "Fan     On: %d\r\n", stmGetGpio(fanCtrl));
+    for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
+        CA_SNPRINTF(buf, len, "Port %d: On: %d, PWM percent: %d\r\n", i,
+                    stmGetGpio(heaterPorts[i].heater), getPWMPinPercent(i));
     }
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "Power   On: %d\r\n", (int) round(isMainsConnected));
+    CA_SNPRINTF(buf, len, "Power   On: %d\r\n", (int)round(isMainsConnected));
 
     writeUSB(buf, len);
 }
@@ -139,18 +137,17 @@ static void printAcStatus()
 /*!
  * @brief Definition of status definition information when the 'StatusDef' command is received
 */
-static void printAcStatusDef()
-{
-	static char buf[300] = {0};
-	int len = 0;
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Mains not-connected error\r\n", AC_POWER_ERROR_Msk);
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 4 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(4));
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 3 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(3));
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 2 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(2));
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port 1 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(1));
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Fan state\r\n", AC_BOARD_PORT_x_STATUS_Msk(0));
+static void printAcStatusDef() {
+    static char buf[300] = {0};
+    int len              = 0;
+    CA_SNPRINTF(buf, len, "0x%08lx,Mains not-connected error\r\n", AC_POWER_ERROR_Msk);
+    CA_SNPRINTF(buf, len, "0x%08lx,Port 4 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(4));
+    CA_SNPRINTF(buf, len, "0x%08lx,Port 3 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(3));
+    CA_SNPRINTF(buf, len, "0x%08lx,Port 2 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(2));
+    CA_SNPRINTF(buf, len, "0x%08lx,Port 1 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(1));
+    CA_SNPRINTF(buf, len, "0x%08lx,Fan state\r\n", AC_BOARD_PORT_x_STATUS_Msk(0));
 
-	writeUSB(buf, len);
+    writeUSB(buf, len);
 }
 
 static void ACInputHandler(const char *input)
@@ -441,7 +438,7 @@ static void updateBoardStatus()
 void ACBoardInit(ADC_HandleTypeDef* hadc)
 {
     // Pin out has changed from PCB V6.4 - older versions need other software.
-    boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
+    boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, AC_BOARD_No_Error_Msk);
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usbRx);

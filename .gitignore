@@ -6,5 +6,6 @@ build/
 githash.h
 /**/settings.json
 
-# Compiled python files
+# Python files
 *.pyc
+.venv

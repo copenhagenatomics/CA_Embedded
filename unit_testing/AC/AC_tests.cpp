@@ -133,6 +133,16 @@ TEST_F(ACBoard, printStatus) {
     ** heatCtrl module */
 }
 
+TEST_F(ACBoard, printStatusDef) {
+    statusDefPrintoutTest(sst, "0x7e000020,System errors\r", 
+                          {"0x00000020,Mains not-connected error\r", 
+                           "0x00000010,Port 4 switching state\r", 
+                           "0x00000008,Port 3 switching state\r", 
+                           "0x00000004,Port 2 switching state\r", 
+                           "0x00000002,Port 1 switching state\r", 
+                           "0x00000001,Fan state\r"});
+}
+
 TEST_F(ACBoard, printSerial) {
     serialPrintoutTest(sst, "AC Board");
 }
