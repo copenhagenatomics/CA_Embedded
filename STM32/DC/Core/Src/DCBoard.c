@@ -457,7 +457,7 @@ static void handlePorts() {
 
 void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 {
-    boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
+    boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, DC_BOARD_No_Error_Msk);
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
     initCAProtocol(&caProto, usbRx);
 
