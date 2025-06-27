@@ -167,7 +167,7 @@ HAL_StatusTypeDef flowChipInit(I2C_HandleTypeDef *hi2c_, WWDG_HandleTypeDef *hww
     HAL_StatusTypeDef ret = honeywellZephyrSerial(hi2c, &serialNB);
     if (ret); // TBD: What should be done with the serial??. Why read it during init ??
 
-    if(-1 == boardSetup(GasFlow, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, FLOWCHIP_ERROR_Msk)) {
+    if(-1 == boardSetup(GasFlow, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR})) {
         return HAL_BUSY;
     }
 

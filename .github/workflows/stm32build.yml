@@ -127,7 +127,7 @@ jobs:
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-2
         # tag only pushes to the main branch
-        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
           bump_version_scheme: minor
           use_github_release_notes: true
@@ -148,7 +148,7 @@ jobs:
             echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion breaking both")" >> $GITHUB_OUTPUT
           fi
       - name: Rename build files for Github release
-        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
         # Rename .elf and .bin files to include release tag and pcb version in the Github release
         # Supports multi .bin projects
         run: |
@@ -184,7 +184,7 @@ jobs:
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
-        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # File only updated on merge into main (not on pull-request)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # File only updated on merge into main (not on pull-request)
         run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.latest }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.pcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
         env :
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
