@@ -5,6 +5,7 @@ build/
 *.mxproject
 githash.h
 /**/settings.json
+*.log
 
 # Python files
 *.pyc

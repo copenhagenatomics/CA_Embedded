@@ -3,7 +3,7 @@ import json
 import argparse
 from pcbVersion import PCBVersion
 import subprocess
-from blobMgmt import getFileFromBlob, uploadFileToBlob
+from blob_mgmt import get_file_from_blob, upload_file_to_blob
 
 # To use this file correctly, the following environment variables must be set:
 #   - MODULE_NAME - project name (e.g. AC, DC)
@@ -28,7 +28,9 @@ PCB_VERSIONS_LOCAL_FILENAME = "pcbVersions.json"
 def makeNewPcbVersionFile():
     data = {
         "pcbVersions": {},
-        "latestVersions": {}
+        "latestVersions": {},
+        "latestStagingVersions": {},
+        "stagingVersions": {}
     }
     data = json.dumps(data, indent=4)
     with open(PCB_VERSIONS_LOCAL_FILENAME, "w") as outfile:
@@ -97,7 +99,7 @@ def isValidVersionFormat(version) -> bool:
 
 
 def getOrMakePcbVersionsList(module):
-    res = getFileFromBlob(f"{module}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME)
+    res = get_file_from_blob(f"{module}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME)
     if res == 22:
         makeNewPcbVersionFile()
     elif res == 0:
@@ -135,7 +137,7 @@ if __name__ == "__main__":
         for version in args.pcb_versions:
             addPcbVersionIntoFile(PCBVersion(fullString=version))
 
-    if not uploadFileToBlob(f"{module}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME):
+    if upload_file_to_blob(f"{module}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME) < 0:
         raise AssertionError("Could not set the pcb on the server correctly")
     
     try:

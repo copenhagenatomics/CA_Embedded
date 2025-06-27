@@ -117,7 +117,7 @@ jobs:
         working-directory: "STM32/${{ matrix.package }}/"
         env:
           VERSION_TAG: ${{ steps.tagfilter.outputs.version }}
-        # Upload the .elf and .bin file under the summary tab
+      # Upload the .elf and .bin file under the summary tab
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.package }}
@@ -134,7 +134,6 @@ jobs:
           tag_prefix: "${{ matrix.package }}-"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Read PCB version
         id: pcbversion
         # Checks if the file pcbversion exists and that the first line is configured as a version number with v<number>.number and returns the first line, otherwise it returns v0.0.
@@ -147,7 +146,7 @@ jobs:
             echo "versionfile=STM32/${{ matrix.package }}/pcbversion" >> $GITHUB_OUTPUT
             echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion latest both")" >> $GITHUB_OUTPUT
             echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion breaking both")" >> $GITHUB_OUTPUT
-          fi 
+          fi
       - name: Rename build files for Github release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
         # Rename .elf and .bin files to include release tag and pcb version in the Github release
@@ -178,6 +177,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+      - run: pip install -r release_mgmt/requirements.txt
       - name: Test PCB file
         run: python release_mgmt/updatePcbVersionList.py "${{ steps.pcbversion.outputs.versionfile }}"
         env :
