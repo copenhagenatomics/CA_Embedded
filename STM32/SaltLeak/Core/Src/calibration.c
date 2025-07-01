@@ -124,8 +124,11 @@ void calibration(int noOfCalibrations, const CACalibration *calibrations, FlashC
             if (alpha >= MIN_RES_N1 && alpha <= MAX_RES_N1) {
                 cal->sensorCal[i].resN1 = alpha;
             }
-            float scalar = cal->sensorCal[i].vScalar * beta / sensorVoltages[i];
-            if (scalar >= MIN_VOLT_SCALAR && scalar <= MAX_VOLT_SCALAR) {
+            // When calibrating the voltage divider, 0 ohm is connected so the voltage is known
+            float scalar = cal->sensorCal[i].vScalar *
+                           (DEFAULT_RES_N1 / (DEFAULT_RES_N1 + DEFAULT_RES_P1)) * voltageBoost /
+                           sensorVoltages[i];
+            if (beta == 1.0 && scalar >= MIN_VOLT_SCALAR && scalar <= MAX_VOLT_SCALAR) {
                 cal->sensorCal[i].vScalar = scalar;
             }
         }
