@@ -86,11 +86,17 @@ void calibration(int noOfCalibrations, const CACalibration *calibrations, FlashC
     /*
         Calibration command examples:
         -------------------------------------------------------------------------
-        CAL 1,resP1_1,resP2_1 2,resN1_1,VoutMeasured_1     |   Sensor 1
-        CAL 3,resP1_2,resP2_2 4,resN1_2,VoutMeasured_2     |   Sensor 2
-        ...                                                |   ...
-        CAL 11,resP1_6,resP2_6 12,resN1_6,VoutMeasured_6   |   Sensor 6
-        CAL 13,VboostMeasured,0                            |   Boost measurement
+        CAL 2,0,1                              |     Voltage     |   Sensor 1
+        CAL 4,0,1                              |     Divider     |   Sensor 2
+        ...                                    |   Calibration   |     ...
+        CAL 12,0,1                             |                 |   Sensor 6
+        -------------------------------------------------------------------------
+        CAL 1,resP1_1,resP2_1 2,resN1_1,0      |    Resistive    |   Sensor 1
+        CAL 3,resP1_2,resP2_2 4,resN1_2,0      |     Network     |   Sensor 2
+        ...                                    |   Calibration   |     ...
+        CAL 11,resP1_6,resP2_6 12,resN1_6,0    |                 |   Sensor 6
+        -------------------------------------------------------------------------
+        CAL 13,VboostMeasured,0                |   Boost voltage calibration
         -------------------------------------------------------------------------
     */
     for (int i = 0; i < noOfCalibrations; i++) {
@@ -124,7 +130,12 @@ void calibration(int noOfCalibrations, const CACalibration *calibrations, FlashC
             if (alpha >= MIN_RES_N1 && alpha <= MAX_RES_N1) {
                 cal->sensorCal[i].resN1 = alpha;
             }
-            // When calibrating the voltage divider, 0 ohm is connected so the voltage is known
+            /*
+            When calibrating the voltage divider,
+            the electrodes are shorted,
+            so the sensed voltage is considered to be
+            Vboost * RES_N1 / (RES_N1 + RES_P1)
+            */
             float scalar = cal->sensorCal[i].vScalar *
                            (DEFAULT_RES_N1 / (DEFAULT_RES_N1 + DEFAULT_RES_P1)) * voltageBoost /
                            sensorVoltages[i];
