@@ -67,6 +67,7 @@ static void MX_CRC_Init(void);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -402,8 +403,8 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -415,7 +416,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, CH6_Ctrl_Pin|CH5_Ctrl_Pin|CH4_Ctrl_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2|CH3_Ctrl_Pin|CH2_Ctrl_Pin|CH1_Ctrl_Pin
+  HAL_GPIO_WritePin(GPIOB, BOOST_EN_Pin|CH3_Ctrl_Pin|CH2_Ctrl_Pin|CH1_Ctrl_Pin
                           |CTRL_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : CH6_Ctrl_Pin CH5_Ctrl_Pin CH4_Ctrl_Pin */
@@ -425,17 +426,17 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB2 CH3_Ctrl_Pin CH2_Ctrl_Pin CH1_Ctrl_Pin
+  /*Configure GPIO pins : BOOST_EN_Pin CH3_Ctrl_Pin CH2_Ctrl_Pin CH1_Ctrl_Pin
                            CTRL_LED_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|CH3_Ctrl_Pin|CH2_Ctrl_Pin|CH1_Ctrl_Pin
+  GPIO_InitStruct.Pin = BOOST_EN_Pin|CH3_Ctrl_Pin|CH2_Ctrl_Pin|CH1_Ctrl_Pin
                           |CTRL_LED_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */

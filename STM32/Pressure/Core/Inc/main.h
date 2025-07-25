@@ -80,6 +80,8 @@ void Error_Handler(void);
 #define pressure_2_GPIO_Port GPIOA
 #define pressure_1_Pin GPIO_PIN_1
 #define pressure_1_GPIO_Port GPIOB
+#define BOOST_EN_Pin GPIO_PIN_10
+#define BOOST_EN_GPIO_Port GPIOB
 #define CH3_Ctrl_Pin GPIO_PIN_12
 #define CH3_Ctrl_GPIO_Port GPIOB
 #define CH2_Ctrl_Pin GPIO_PIN_13
