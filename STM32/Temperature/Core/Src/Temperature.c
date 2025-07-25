@@ -273,7 +273,7 @@ void initSensorCalibration()
             for (int i = 0; i < 1; i++) 
             {
                 portCalVal[i][0] = 2.7e3;
-                portCalVal[i][1] = 0.48;
+                portCalVal[i][1] = 0.60;
             }
             for (int i = 1; i < NO_SPI_DEVICES*2; i++) 
             {
