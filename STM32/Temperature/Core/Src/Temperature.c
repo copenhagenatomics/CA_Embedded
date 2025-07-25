@@ -20,13 +20,27 @@
 #include "FLASH_readwrite.h"
 #include "pcbversion.h"
 
-// Local functions
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
+// Set all SPI pins high to be enable for communication
+#define NO_SPI_DEVICES 5
+#define CALIMEMSIZE NO_SPI_DEVICES*2
+
+/***************************************************************************************************
+** PRIVATE FUNCTION DECLARATIONS
+***************************************************************************************************/
+
 static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations);
 static void calibrateReadWrite(bool write);
 static void printTempHeader();
 static void printTempStatus();
 
-// Local variables
+/***************************************************************************************************
+** PRIVATE OBJECTS
+***************************************************************************************************/
+
 static CAProtocolCtx caProto =
 {
         .undefined = HALundefined,
@@ -40,11 +54,13 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-// Set all SPI pins high to be enable for communication
-#define NO_SPI_DEVICES 5
-#define CALIMEMSIZE NO_SPI_DEVICES*2
 static ADS1120Device ads1120[ NO_SPI_DEVICES ];
 float portCalVal[NO_SPI_DEVICES*2][2];
+SubBoardType subtype = 0;
+
+/***************************************************************************************************
+** PRIVATE FUNCTION DEFINITIONS
+***************************************************************************************************/
 
 static void printTempHeader()
 {
@@ -126,6 +142,7 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi)
     {
         initConnection(&ads1120[i], i);
     }
+    ads1120[0].sensor_type = ST_RTD; // Set the first device to be a rtd
 }
 
 static void monitorBoardStatus()
@@ -198,12 +215,13 @@ static WWDG_HandleTypeDef* hwwdg = NULL;
 static CRC_HandleTypeDef* hcrc = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
 {
-    boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
+    boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, TEMP_No_Error_Msk);
     initCAProtocol(&caProto, usbRx);
 
     hspi = hspi_;
     hwwdg = hwwdg_;
     hcrc = hcrc_;
+    getBoardInfo(NULL, &subtype);
 
     initSensorCalibration();
     initSpiDevices(hspi);
@@ -248,13 +266,27 @@ void LoopTemperature(const char* bootMsg)
 
 void initSensorCalibration()
 {
-    if (readFromFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0)
-    {
-        // If nothing is stored in FLASH default to type K thermocouple
-        for (int i = 0; i < NO_SPI_DEVICES*2; i++)
-        {
-            portCalVal[i][0] = TYPE_K_DELTA;
-            portCalVal[i][1] = TYPE_K_CJ_DELTA;
+    if (readFromFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0) {
+        // If nothing is stored in FLASH defaults are:
+        if (/* subtype = */ 1) {
+            // 2.7 kOhm resistor on the board, 0.48 total measured lead resistance.
+            for (int i = 0; i < 1; i++) 
+            {
+                portCalVal[i][0] = 2.7e3;
+                portCalVal[i][1] = 0.48;
+            }
+            for (int i = 1; i < NO_SPI_DEVICES*2; i++) 
+            {
+                portCalVal[i][0] = TYPE_K_DELTA;
+                portCalVal[i][1] = TYPE_K_CJ_DELTA;
+            }
+        }
+        else {
+            for (int i = 0; i < NO_SPI_DEVICES*2; i++) 
+            {
+                portCalVal[i][0] = TYPE_K_DELTA;
+                portCalVal[i][1] = TYPE_K_CJ_DELTA;
+            }
         }
     }
 }
