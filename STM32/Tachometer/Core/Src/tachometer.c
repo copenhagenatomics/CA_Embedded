@@ -31,12 +31,17 @@
 /* Maximum frequency is limited by hardware on the board. As of V3.2, this is ~1.5 kHz */
 
 #define NUM_CHANNELS 6
-#define CH1_GPIO    GPIO_PIN_5
-#define CH2_GPIO    GPIO_PIN_4
-#define CH3_GPIO    GPIO_PIN_3
-#define CH4_GPIO    GPIO_PIN_2
-#define CH5_GPIO    GPIO_PIN_1
-#define CH6_GPIO    GPIO_PIN_0
+
+/* Macro to make setting pin layouts quicker */
+#define SET_GPIO_PINS(x, a, b, c, d, e, f) \
+    do { \
+        x[0] = a; \
+        x[1] = b; \
+        x[2] = c; \
+        x[3] = d; \
+        x[4] = e; \
+        x[5] = f; \
+    } while(0)
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -73,7 +78,10 @@ static const float REF_CLOCK = TIMCLOCK / PRESCALAR;
 static const BoardType  BOARD = Tachometer;
 static const pcbVersion PCB   = {BREAKING_MAJOR, BREAKING_MINOR};
 
-static bool reverse = false;
+/* For determining pin layout */
+/* Channels are different on different board versions */ 
+static pcbVersion ver;
+static uint8_t gpio_pins[NUM_CHANNELS] = {0};
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -82,6 +90,7 @@ static bool reverse = false;
 static void computeTachoFrequency(int channel);
 static void printFrequencies();
 static void resetFlow();
+static void initGpio(void);
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -159,6 +168,80 @@ static void resetFlow()
     }
 }
 
+/*!
+** @brief Sets up the STM32 GPIO low-level HAL for the tachometer
+**
+** Different PCB versions have different pin layouts
+*/
+static void initGpio(void)
+{
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    /* GPIO Ports Clock Enable */
+    __HAL_RCC_GPIOH_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    
+    if(ver.major == 3 && ver.minor == 1) {
+        GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
+        SET_GPIO_PINS(gpio_pins, GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5);
+    }
+    else if(ver.major == 3 && ver.minor == 2) {
+        GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
+        SET_GPIO_PINS(gpio_pins, GPIO_PIN_5, GPIO_PIN_4, GPIO_PIN_3, GPIO_PIN_2, GPIO_PIN_1, GPIO_PIN_0);
+    }
+    else if(ver.major == 3 && ver.minor >= 3) {
+        GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7;
+        SET_GPIO_PINS(gpio_pins, GPIO_PIN_1, GPIO_PIN_7, GPIO_PIN_6, GPIO_PIN_4, GPIO_PIN_3, GPIO_PIN_2);
+    }
+    else {
+        bsSetError(BS_VERSION_ERROR_Msk);
+        return;
+    }
+
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    if(ver.major == 3 && ver.minor >= 3) {
+        __HAL_RCC_GPIOB_CLK_ENABLE();
+        GPIO_InitStruct.Pin = GPIO_PIN_1;
+        HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    }
+
+    if(ver.major == 3 && ver.minor == 1) {
+        GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
+        SET_GPIO_PINS(gpio_pins, GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5);
+    }
+    else if(ver.major == 3 && ver.minor == 2) {
+        GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
+        SET_GPIO_PINS(gpio_pins, GPIO_PIN_5, GPIO_PIN_4, GPIO_PIN_3, GPIO_PIN_2, GPIO_PIN_1, GPIO_PIN_0);
+    }
+    else if(ver.major == 3 && ver.minor >= 3) {
+        GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7;
+        SET_GPIO_PINS(gpio_pins, GPIO_PIN_1, GPIO_PIN_7, GPIO_PIN_6, GPIO_PIN_4, GPIO_PIN_3, GPIO_PIN_2);
+    }
+    /* Enable interrupts */
+    if(ver.minor <= 2) {
+        HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+        HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+    }
+
+    HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
+    HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI2_IRQn);
+
+    HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+    HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI4_IRQn);
+
+    HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+}
+
 /***************************************************************************************************
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
@@ -175,23 +258,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
     int channel = 0;
     
-    switch(GPIO_Pin) {
-        case CH1_GPIO:  channel = 0;
-                        break;
-        case CH2_GPIO:  channel = 1;
-                        break;
-        case CH3_GPIO:  channel = 2;
-                        break;
-        case CH4_GPIO:  channel = 3;
-                        break;
-        case CH5_GPIO:  channel = 4;
-                        break;
-        case CH6_GPIO:  channel = 5;
-                        break;
-        default:        return;
+    for(int i = 0; i < NUM_CHANNELS; i++) {
+        if (gpio_pins[i] == GPIO_Pin) {
+            channel = i;
+            break;
+        }
     }
 
-    computeTachoFrequency(reverse ? 5 - channel : channel);
+    computeTachoFrequency(channel);
 }
 
 void tachoInputLoop(const char* bootMsg)
@@ -202,17 +276,13 @@ void tachoInputLoop(const char* bootMsg)
 void tachoInputInit(TIM_HandleTypeDef* htimIC, TIM_HandleTypeDef* printTim)
 {
     /* Since this is sensors only, it isn't dangerous just to continue setup */
-    (void) boardSetup(BOARD, PCB);
+    (void) boardSetup(BOARD, PCB, BS_SYSTEM_ERRORS_Msk);
     initCAProtocol(&caProto, usbRx);
 
     /* If this fails, the version error flag will have been set previously */
-    pcbVersion ver;
     (void) getPcbVersion(&ver);
 
-    /* Channels are reversed on older versions of the board */ 
-    if(ver.major == 3 && ver.minor < 2) {
-        reverse = true;
-    }
+    initGpio();
 
     _tachoTim = htimIC;
     HAL_TIM_Base_Start(_tachoTim);
