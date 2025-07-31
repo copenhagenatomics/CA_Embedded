@@ -93,22 +93,7 @@ TEST_P(TachoUnitTest, testTacho) {
         pulse_train[i] = pulse_train[i-1] + 100 * i;
     }
 
-    uint32_t gpio_param;
-    switch(GetParam()) {
-        case 0: gpio_param = GPIO_PIN_5;
-                break;
-        case 1: gpio_param = GPIO_PIN_4;
-                break;
-        case 2: gpio_param = GPIO_PIN_3;
-                break;
-        case 3: gpio_param = GPIO_PIN_2;
-                break;
-        case 4: gpio_param = GPIO_PIN_1;
-                break;
-        case 5: gpio_param = GPIO_PIN_0;
-                break;
-        default:FAIL();
-    }
+    uint32_t gpio_param = gpio_pins[GetParam()];
 
     for(int i = 0; i < len_pulse_train; i++) {
         /* Set the timer to the latest count and generate the event */
