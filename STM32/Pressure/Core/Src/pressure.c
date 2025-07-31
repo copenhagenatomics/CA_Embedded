@@ -18,11 +18,13 @@
 #include "pcbversion.h"
 #include "pressure.h"
 #include "systemInfo.h"
+#include "mcp4x.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
 
+#define NUM_SENSORS 6  // Number of pressure sensors
 #define ADC_CHANNELS         8    // Channels: Pressure 1 - 6, FB_5V, FB_VBUS
 #define ADC_CHANNEL_BUF_SIZE 400  // 4kHz sampling rate
 
@@ -68,6 +70,11 @@ static CAProtocolCtx caProto = {.undefined        = HALundefined,
                                 .logging          = logMode,
                                 .otpRead          = CAotpRead,
                                 .otpWrite         = NULL};
+
+/* Handles for each potentiometer */
+mcp4x_handle_t mcp4x_handle[NUM_SENSORS * 2] = {0};
+
+StmGpio boost_gpio;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
@@ -204,11 +211,14 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels) {
 
         // Current measurement across shunt resistor without voltage divider
         if (cal.measurementType[channel]) {
-            volts[channel] = (channel <= 5) ? adcScaled * V_REF : adcScaled * MAX_VCC_IN;
+            volts[channel] = (channel <= 5) ? adcScaled * V_REF / (5120.0/(150.0*52)) : adcScaled * MAX_VCC_IN;
+            
+            /* Convert to current */
+            volts[channel] /= 160;
         }
         // Voltage measurement with voltage divider
         else {
-            volts[channel] = (channel <= 5) ? adcScaled * MAX_VIN : adcScaled * MAX_VCC_IN;
+            volts[channel] = (channel <= 5) ? adcScaled * V_REF / (5120.0/(150.0*52)) : adcScaled * MAX_VCC_IN;
         }
     }
 }
@@ -295,13 +305,29 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
  * @param   hadc Pointer to ADC handler
  * @param   hcrc Pointer to CRC handler
  */
-void pressureInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc) {
+void pressureInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_HandleTypeDef *hi2c) {
     initCAProtocol(&caProto, usbRx);
 
     boardSetup(Pressure, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, PRESSURE_ERROR_Msk);
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     calibrationInit(hcrc, &cal, sizeof(cal));
+
+    // Enable the boost converter
+    stmGpioInit(&boost_gpio, BOOST_EN_GPIO_Port, BOOST_EN_Pin, STM_GPIO_OUTPUT);
+    boost_gpio.set(&boost_gpio, true);  
+
+    // Initialize MCP4x handles for each sensor
+    for (int i = 0; i < 2 * NUM_SENSORS; i++) {
+        int p = i % 2;
+        int res = mcp4x_init(&mcp4x_handle[i], hi2c, 0x28 + (uint8_t)(i / 2), 8, p);
+        if (res != 0) {
+            bsSetError(I2C_ERROR_Msk(i / 2));
+        }
+        else {
+            mcp4x_setWiperPos(&mcp4x_handle[i], 52);  // 5V range
+        }
+    }
 }
 
 /*!

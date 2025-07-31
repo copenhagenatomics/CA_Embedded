@@ -80,16 +80,16 @@ void Error_Handler(void);
 #define pressure_2_GPIO_Port GPIOA
 #define pressure_1_Pin GPIO_PIN_1
 #define pressure_1_GPIO_Port GPIOB
-#define BOOST_EN_Pin GPIO_PIN_10
-#define BOOST_EN_GPIO_Port GPIOB
 #define CH3_Ctrl_Pin GPIO_PIN_12
 #define CH3_Ctrl_GPIO_Port GPIOB
 #define CH2_Ctrl_Pin GPIO_PIN_13
 #define CH2_Ctrl_GPIO_Port GPIOB
 #define CH1_Ctrl_Pin GPIO_PIN_14
 #define CH1_Ctrl_GPIO_Port GPIOB
-#define CTRL_LED_Pin GPIO_PIN_4
-#define CTRL_LED_GPIO_Port GPIOB
+#define BOOST_EN_Pin GPIO_PIN_10
+#define BOOST_EN_GPIO_Port GPIOA
+#define CTRL_LED_Pin GPIO_PIN_15
+#define CTRL_LED_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

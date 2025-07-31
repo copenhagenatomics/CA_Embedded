@@ -35,6 +35,8 @@ typedef struct FlashCalibration {
     float sensorCalVal[NO_CHANNELS * 2];
     float portCalVal[NO_CHANNELS];
     int measurementType[NO_CHANNELS];
+    uint16_t powerIdx[NO_CALIBRATION_CHANNELS];
+    uint16_t sensorIdx[NO_CALIBRATION_CHANNELS];
 } FlashCalibration;
 
 /***************************************************************************************************

@@ -9,6 +9,7 @@
             "type": "cortex-debug",
             "servertype": "openocd",
             "device": "STM32F401CCU6",
+            "preLaunchCommands": ["make -j12"],
             "configFiles": [
                 "interface/stlink-v2.cfg",
                 "target/stm32f4x.cfg"
