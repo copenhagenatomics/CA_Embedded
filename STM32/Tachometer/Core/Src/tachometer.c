@@ -208,18 +208,6 @@ static void initGpio(void)
         HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
     }
 
-    if(ver.major == 3 && ver.minor == 1) {
-        GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
-        SET_GPIO_PINS(gpio_pins, GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5);
-    }
-    else if(ver.major == 3 && ver.minor == 2) {
-        GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
-        SET_GPIO_PINS(gpio_pins, GPIO_PIN_5, GPIO_PIN_4, GPIO_PIN_3, GPIO_PIN_2, GPIO_PIN_1, GPIO_PIN_0);
-    }
-    else if(ver.major == 3 && ver.minor >= 3) {
-        GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_6|GPIO_PIN_7;
-        SET_GPIO_PINS(gpio_pins, GPIO_PIN_1, GPIO_PIN_7, GPIO_PIN_6, GPIO_PIN_4, GPIO_PIN_3, GPIO_PIN_2);
-    }
     /* Enable interrupts */
     if(ver.minor <= 2) {
         HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
