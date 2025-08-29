@@ -139,7 +139,7 @@ def main(args):
                 changeLatestStagingVersion(pcbVersion.fullVersion, fw_version, release_entry)
                 upload_file_to_blob(f"{module_name}-{pcbVersion.fullVersion}-{release_type}", f"{module_name}.zip")
                 if release_entry == "latestStagingVersion":
-                    updateStagingVersionsList(breaking_pcb_version.fullVersion, fw_version)
+                    updateStagingVersionsList(pcbVersion.fullVersion, fw_version)
         
     upload_file_to_blob(f"{module_name}-pcb_versions_list.json", PCB_VERSIONS_LOCAL_FILENAME)
     
