@@ -43,6 +43,7 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels);
 static void printPorts(float *portValues);
 static void updateBoardStatus();
 static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples);
+static void pressureInputHandler(const char *input);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -60,7 +61,7 @@ FlashCalibration cal;
 
 static int loggingMode = 0;
 
-static CAProtocolCtx caProto = {.undefined        = HALundefined,
+static CAProtocolCtx caProto = {.undefined        = pressureInputHandler,
                                 .printHeader      = printHeader,
                                 .printStatus      = printPressureStatus,
                                 .printStatusDef   = printPressureStatusDef,
@@ -75,10 +76,27 @@ static CAProtocolCtx caProto = {.undefined        = HALundefined,
 mcp4x_handle_t mcp4x_handle[NUM_SENSORS * 2] = {0};
 
 StmGpio boost_gpio;
+StmGpio ctrl_led;
+
+int wiper_pos = 128;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
+
+static void pressureInputHandler(const char *input) {
+    int channel = 0;
+    int wiper = 0;
+    if(sscanf(input, "p%d %d", &channel, &wiper) == 2) {
+        if(channel < NUM_SENSORS * 2) {
+            wiper_pos = wiper;
+            mcp4x_setWiperPos(&mcp4x_handle[channel], (uint16_t)wiper_pos); 
+        }
+    }
+    else {
+        HALundefined(input);
+    }
+}
 
 /*!
  * @brief   Definition of what is printed when the 'Serial' command is received
@@ -211,14 +229,14 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels) {
 
         // Current measurement across shunt resistor without voltage divider
         if (cal.measurementType[channel]) {
-            volts[channel] = (channel <= 5) ? adcScaled * V_REF / (5120.0/(150.0*52)) : adcScaled * MAX_VCC_IN;
+            volts[channel] = (channel <= 5) ? adcScaled * V_REF / (5120.0/(150.0*wiper_pos)) : adcScaled * MAX_VCC_IN;
             
             /* Convert to current */
             volts[channel] /= 160;
         }
         // Voltage measurement with voltage divider
         else {
-            volts[channel] = (channel <= 5) ? adcScaled * V_REF / (5120.0/(150.0*52)) : adcScaled * MAX_VCC_IN;
+            volts[channel] = (channel <= 5) ? adcScaled * V_REF / (5120.0/(150.0*wiper_pos)) : adcScaled * MAX_VCC_IN;
         }
     }
 }
@@ -316,6 +334,9 @@ void pressureInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_HandleTy
     // Enable the boost converter
     stmGpioInit(&boost_gpio, BOOST_EN_GPIO_Port, BOOST_EN_Pin, STM_GPIO_OUTPUT);
     boost_gpio.set(&boost_gpio, true);  
+
+    stmGpioInit(&ctrl_led, CTRL_LED_GPIO_Port, CTRL_LED_Pin, STM_GPIO_OUTPUT);
+    stmSetGpio(ctrl_led, true);
 
     // Initialize MCP4x handles for each sensor
     for (int i = 0; i < 2 * NUM_SENSORS; i++) {
