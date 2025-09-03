@@ -60,7 +60,7 @@ static CAProtocolCtx caProto = {.undefined = userInput,
                                 .otpWrite = NULL};
 
 /*!
-** @brief Verbose prints the board status
+** @brief Verbosely prints the board status
 */
 static void printStatus() {
     static char buf[600] = {0};
