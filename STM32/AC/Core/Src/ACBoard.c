@@ -417,6 +417,6 @@ void ACBoardLoop(const char *bootMsg)
     ADCMonitorLoop(printCurrentArray);
     heatSinkLoop();
 
-    // Toggle pins if needed when in pwm mode
+    // Toggle pins if needed when in PWM mode
     heaterLoop();
 }
