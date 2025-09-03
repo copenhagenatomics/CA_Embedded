@@ -190,7 +190,8 @@ void saltleakInit(ADC_HandleTypeDef *hadc1, TIM_HandleTypeDef *htim5, WWDG_Handl
      ** the readings will just be bogus */
     ADCMonitorInit(hadc1, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
 
-    if (-1 == boardSetup(SaltLeak, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR})) {
+    if (-1 == boardSetup(SaltLeak, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
+        SALTLEAK_NO_ERROR_Msk)) {
         return;
     }
 
