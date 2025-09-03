@@ -17,6 +17,7 @@
 #include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
+#include "CAProtocolACDC.c"
 
 /* UUT */
 #include "ACBoard.c"
@@ -307,7 +308,7 @@ TEST_F(ACBoard, InvalidCommands)
     writeAcMessage("p4 on 80%\n");
     EXPECT_FLUSH_USB(Contains("MISREAD: p4 on -1"));
     writeAcMessage("all on\n");
-    EXPECT_FLUSH_USB(Contains("MISREAD: all on -1"));
+    EXPECT_FLUSH_USB(Contains("MISREAD: all on"));
 }
 
 TEST_F(ACBoard, UsbTimeout)

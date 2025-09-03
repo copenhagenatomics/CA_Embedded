@@ -19,6 +19,7 @@
 #include "CAProtocolStm.h"
 #include "StmGpio.h"
 #include "ACBoard.h"
+#include "CAProtocolACDC.h"
 
 
 
@@ -68,6 +69,12 @@ static StmGpio fanCtrl;
 static double heatSinkTemperature = 0; // Heat Sink temperature
 static bool isFanForceOn = false;
 
+static ACDCProtocolCtx acProto =
+{
+        .allOn = CAallOn,
+        .portState = CAportState
+};
+
 static CAProtocolCtx caProto =
 {
         .undefined = userInput,
@@ -78,9 +85,7 @@ static CAProtocolCtx caProto =
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
-        .otpWrite = NULL,
-        .allOn = CAallOn,
-        .portState = CAportState,
+        .otpWrite = NULL
 };
 
 /***************************************************************************************************
@@ -119,7 +124,7 @@ static void userInput(const char *input)
     }
     else 
     {
-        HALundefined(input);
+        ACDCInputHandler(&acProto, input);
     }
 }
 
@@ -371,7 +376,7 @@ static void updateBoardStatus()
 void ACBoardInit(ADC_HandleTypeDef* hadc, WWDG_HandleTypeDef* hwwdg)
 {
     // Pin out has changed from PCB V6.4 - older versions need other software.
-    boardSetup(AC_Board, (pcbVersion){6, 4});
+    boardSetup(AC_Board, (pcbVersion){6, 4}, AC_BOARD_No_Error_Msk);
 
     // Always allow for DFU also if programmed on non-matching board or PCB version.
     initCAProtocol(&caProto, usbRx);
