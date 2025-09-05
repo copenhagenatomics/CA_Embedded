@@ -212,7 +212,7 @@ static void updateLEDs()
     // Interrupt speed of ledUpdateTimer is 25 kHz.
     // For each 25 kHz update, the counter is incremented from 0-255 and reset
     // Hence, the update speed of the led channels are 25 kHz/256 ~= 98Hz.
-    static int count = 0;
+    static unsigned int count = 0;
     for (int i = 0; i < LED_CHANNELS*NO_COLORS; i++)
     {
         stmSetGpio(*ChCtrl[i], (count < rgbwControl[i]));
@@ -406,8 +406,8 @@ void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWD
     hwwdg_ = hwwdg;
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
-    if(boardSetup(LightController, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}) == -1)
-    {
+    if (boardSetup(LightController, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
+                   BS_SYSTEM_ERRORS_Msk) == -1) {
         return;
     }
 
