@@ -20,6 +20,7 @@
 #include "HAL_otp.h"
 #include "StmGpio.h"
 #include "ACBoard.h"
+#include "CAProtocolACDC.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -67,6 +68,12 @@ static StmGpio fanCtrl;
 static double heatSinkTemperature = 0; // Heat Sink temperature
 static bool isFanForceOn = false;
 
+static ACDCProtocolCtx acProto =
+{
+        .allOn = CAallOn,
+        .portState = CAportState
+};
+
 static CAProtocolCtx caProto =
 {
         .undefined = userInput,
@@ -77,9 +84,7 @@ static CAProtocolCtx caProto =
         .calibrationRW = NULL,
         .logging = NULL,
         .otpRead = CAotpRead,
-        .otpWrite = NULL,
-        .allOn = CAallOn,
-        .portState = CAportState,
+        .otpWrite = NULL
 };
 
 /***************************************************************************************************
@@ -118,7 +123,7 @@ static void userInput(const char *input)
     }
     else 
     {
-        HALundefined(input);
+        ACDCInputHandler(&acProto, input);
     }
 }
 
@@ -412,6 +417,6 @@ void ACBoardLoop(const char *bootMsg)
     ADCMonitorLoop(printCurrentArray);
     heatSinkLoop();
 
-    // Toggle pins if needed when in pwm mode
+    // Toggle pins if needed when in PWM mode
     heaterLoop();
 }
