@@ -16,26 +16,32 @@
 ** DEFINES
 ***************************************************************************************************/
 
-// Default pressure sensors
-#define GANLITONG_OFFSET -1.79    // in bar
-#define GANLITONG_SCALAR 0.00188  // in bar/ADCstep assuming the ADC range is [0V, 5V]
-
 #define PORTCALVAL_DEFAULT 1.0
 
 #define NO_CALIBRATION_CHANNELS 6      // 6 Sensors
-#define NO_CHANNELS             8      // 6 sensors + VCC + Vbus
 #define ADC_MAX                 4095   // 12-bits
-#define MAX_VIN                 5.112  // Maximum input voltage on channels (after voltage divider)
-#define MAX_VCC_IN              5.49   // Maximum measurable VCC (after voltage divider)
+#define MAX_VBUS_IN             5.7750 // Maximum measurable VCC (due to voltage divider)
+#define MAX_28V_IN              33.0   // Maximum measurable 28V rail (due to voltage divider)
 #define V_REF                   3.3    // ADC internal voltage reference
-#define VOLTAGE_SCALING         MAX_VIN / 5.0  // Necessary because LoopControl assumes [0V, 5V]
 
 // Variables that need to be stored in flash memory.
 typedef struct FlashCalibration {
-    float sensorCalVal[NO_CHANNELS * 2];
-    float portCalVal[NO_CHANNELS];
-    int measurementType[NO_CHANNELS];
+    float sensorCalVal[NUM_CHANNELS * 2];
+    float portCalVal[NUM_CHANNELS];
+    int measurementType[NUM_CHANNELS];
 } FlashCalibration;
+
+enum adc_channels {
+    ADC_CHANNEL_PORT_1 = 0,
+    ADC_CHANNEL_PORT_2,
+    ADC_CHANNEL_PORT_3,
+    ADC_CHANNEL_PORT_4,
+    ADC_CHANNEL_PORT_5,
+    ADC_CHANNEL_PORT_6,
+    ADC_CHANNEL_28V,
+    ADC_CHANNEL_VBUS,
+    NUM_CHANNELS,
+};
 
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS

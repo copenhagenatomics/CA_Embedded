@@ -30,6 +30,18 @@
 
 /* Transform for addressing 6x digipots on single I2C bus */
 #define I2C_MUX(x) ((uint8_t) 0x28 + ((x) & 0x7U)) 
+#define NUM_DIGIPOT_BITS 7U
+#define DIGIPOT_MAX (2 ^ NUM_DIGIPOT_BITS)
+
+/* Circuit constants */
+#define MEASURE_VOLTAGE_DIVIDER (2.0 / 15.0) 
+#define POWER_VOLTAGE_DIVIDER   (4.3 / 134.3) 
+
+typedef struct {
+    float voltage_range;
+    uint16_t wiperPos;
+    mcp4531_handle_t handle;
+} digipot_t;
 
 /***************************************************************************************************
 ** PRIVATE PROTOTYPE FUNCTIONS
@@ -41,12 +53,15 @@ static void printAnalogInputStatusDef();
 static void calibrationInfoRW(bool write);
 static void logMode(int port);
 static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *calibrations);
-static void ADCtoAnalog(float *adcMeans, int noOfChannels);
+static void voltsToAnalog(float *adcMeans, int noOfChannels);
 static void ADCtoVolt(float *adcMeans, int noOfChannels);
 static void printPorts(float *portValues);
 static void updateBoardStatus();
 static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples);
 static void initDigiPots();
+static void analogInputCommandHandler(const char* input);
+static uint16_t measureVoltageToDigipotIdx(float measure_volt);
+static uint16_t powerVoltageToDigipotIdx(float power_volt);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -64,7 +79,7 @@ FlashCalibration cal;
 
 static int loggingMode = 0;
 
-static CAProtocolCtx caProto = {.undefined        = HALundefined,
+static CAProtocolCtx caProto = {.undefined        = analogInputCommandHandler,
                                 .printHeader      = printHeader,
                                 .printStatus      = printAnalogInputStatus,
                                 .printStatusDef   = printAnalogInputStatusDef,
@@ -75,14 +90,78 @@ static CAProtocolCtx caProto = {.undefined        = HALundefined,
                                 .otpRead          = CAotpRead,
                                 .otpWrite         = NULL};
 
-static mcp4531_handle_t power_pots[NO_CALIBRATION_CHANNELS] = {0};
-static mcp4531_handle_t measure_pots[NO_CALIBRATION_CHANNELS] = {0};
+static digipot_t power_pots[NO_CALIBRATION_CHANNELS] = {0};
+static digipot_t measure_pots[NO_CALIBRATION_CHANNELS] = {0};
 static I2C_HandleTypeDef *hi2c = NULL;
 static StmGpio boost_en = {0};
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
+
+/*!
+** @brief Converts a selected voltage range to digital potentiometer index
+*/
+static uint16_t measureVoltageToDigipotIdx(float measure_volt) {
+    // 2/15 because of voltage divider
+    uint16_t idx = (uint16_t) ((DIGIPOT_MAX / V_REF) * MEASURE_VOLTAGE_DIVIDER * measure_volt);
+
+    /* Note: output goes from 0 to 128 or 256 (NOT 128 - 1 or 256 - 1) */
+    return idx <= DIGIPOT_MAX ? idx : DIGIPOT_MAX;
+}
+
+/*!
+** @brief Converts a digital potentiometer index to a voltage range
+*/
+static float digipotIdxToMeasureVoltage(uint16_t idx) {
+    return ((float) idx) * (V_REF / DIGIPOT_MAX) / MEASURE_VOLTAGE_DIVIDER;
+}
+
+/*!
+** @brief Converts a power voltage range to digital potentiometer index
+*/
+static uint16_t powerVoltageToDigipotIdx(float power_volt) {
+    /* 4.3/134.3 because of voltage divider */
+    /* 0.8 is feedback voltage of buck converter (AP64060) */
+    uint16_t idx = (uint16_t) ((DIGIPOT_MAX / 0.8) * POWER_VOLTAGE_DIVIDER * power_volt);
+
+    /* Note: output goes from 0 to 128 or 256 (NOT 128 - 1 or 256 - 1) */
+    return idx <= DIGIPOT_MAX ? idx : DIGIPOT_MAX;
+}
+
+/*!
+** @brief Converts a digital potentiometer index to a voltage range
+*/
+static float digipotIdxToPowerVoltage(uint16_t idx) {
+    return ((float) idx) * (0.8 / DIGIPOT_MAX) / POWER_VOLTAGE_DIVIDER;
+}
+
+/*!
+** @brief Handles communication from the serial interface
+*/
+static void analogInputCommandHandler(const char* input) {
+    unsigned int channel = 0;
+    float volt_range = 0;
+    if (sscanf(input, "measure set %d %f", &channel, &volt_range) == 2) {
+        if(channel >= 1 && channel <= NO_CALIBRATION_CHANNELS) {
+            setDigipotWiper(&measure_pots[channel - 1], channel - 1, measureVoltageToDigipotIdx(volt_range), false);
+        }
+        else {
+            HALundefined(input);
+        }
+    }
+    else if (sscanf(input, "power set %d %f", &channel, &volt_range) == 2) {
+        if(channel >= 1 && channel <= NO_CALIBRATION_CHANNELS) {
+            setDigipotWiper(&power_pots[channel - 1], channel - 1, powerVoltageToDigipotIdx(volt_range), true);
+        }
+        else {
+            HALundefined(input);
+        }
+    }
+    else {
+        HALundefined(input);
+    }
+}
 
 /*!
  * @brief   Definition of what is printed when the 'Serial' command is received
@@ -99,25 +178,28 @@ static void printAnalogInputStatus() {
     static char buf[600] = {0};
     int len              = 0;
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        if(bsGetField(I2C_ERROR_Msk(i))) {
+            CA_SNPRINTF(buf, len, "Error on I2C Channel %d\r\n", i + 1);
+        }
+
         if (bsGetField(PORT_MEASUREMENT_TYPE(i))) {
-            len += snprintf(&buf[len], sizeof(buf) - len, "Port %d measures current [4-20mA]\r\n",
-                            i + 1);
+            CA_SNPRINTF(buf, len, "Port %d measures current [4-20mA]\r\n", i + 1);
         }
         else {
-            len += snprintf(&buf[len], sizeof(buf) - len, "Port %d measures voltage [0-5V]\r\n",
-                            i + 1);
+            CA_SNPRINTF(buf, len, "Port %d measures voltage [0-%.0fV]\r\n", i + 1, 
+                        measure_pots[i].voltage_range);
         }
     }
 
-    if (bsGetField(VCC_ERROR_Msk)) {
-        len += snprintf(&buf[len], sizeof(buf) - len, "VCC is: %.2f. It should be >=5.05V \r\n",
-                        volts[6]);
+    if (bsGetField(VCC_28V_ERROR_Msk)) {
+        CA_SNPRINTF(buf, len, "VCC_28V is: %.2f. It should be >=%.2fV \r\n", volts[ADC_CHANNEL_28V], 
+                    MIN_28V);
     }
 
     if (bsGetField(VCC_RAW_ERROR_Msk)) {
-        len += snprintf(&buf[len], sizeof(buf) - len, "VCC raw is: %.2f. It should be >=4.6V \r\n",
-                        volts[7]);
+        CA_SNPRINTF(buf, len, "VBUS is: %.2f. It should be >=%.1fV \r\n", 
+                    volts[ADC_CHANNEL_VBUS], MIN_VBUS);
     }
     writeUSB(buf, len);
 }
@@ -130,15 +212,17 @@ static void printAnalogInputStatusDef() {
 
     int len = 0;
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",VBUS FB\r\n",
-                    (uint32_t)VCC_RAW_ERROR_Msk);
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",5V FB\r\n",
-                    (uint32_t)VCC_ERROR_Msk);
+    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Error I2C Channel %d\r\n", 
+                    (uint32_t)I2C_ERROR_Msk(i), i + 1);
+    }
+
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",VBUS FB\r\n", (uint32_t)VCC_RAW_ERROR_Msk);
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",5V FB\r\n", (uint32_t)VCC_28V_ERROR_Msk);
 
     for (int i = 5; i >= 0; i--) {
-        len += snprintf(&buf[len], sizeof(buf) - len,
-                        "0x%08" PRIx32 ",Port %d measure type [Voltage/Current]\r\n",
-                        (uint32_t)PORT_MEASUREMENT_TYPE(i), i + 1);
+        CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Port %d measure type [Voltage/Current]\r\n",
+                    (uint32_t)PORT_MEASUREMENT_TYPE(i), i + 1);
     }
 
     writeUSB(buf, len);
@@ -183,25 +267,8 @@ static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *ca
 }
 
 /*!
- * @brief   Convert from ADC means to analog via its calibration function
- * @param   adcMeans Array of ADC means
- * @param   noOfChannels Number of ADC channels to convert
- */
-static void ADCtoAnalog(float *adcMeans, int noOfChannels) {
-    /*
-    cal.sensorCalVal[channel*2]     - Scale assuming [0V, 5V] range
-    VOLTAGE_SCALING                 - To go to real [0V, 5.112V] range
-    cal.sensorCalVal[channel*2+1]   - Analog bias
-    */
-    for (int channel = 0; channel < noOfChannels; channel++) {
-        analog_input[channel] = adcMeans[channel] * VOLTAGE_SCALING * cal.sensorCalVal[channel * 2] +
-                            cal.sensorCalVal[channel * 2 + 1];
-    }
-}
-
-/*!
- * @brief   Convert from ADC means to voltages
- * @param   adcMeans Array of ADC means
+ * @brief   Convert from ADC means to voltages. 
+ * @param   adcMeans Array of ADC means (already calibrated)
  * @param   noOfChannels Number of ADC channels to convert
  */
 static void ADCtoVolt(float *adcMeans, int noOfChannels) {
@@ -209,18 +276,35 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels) {
     for (int channel = 0; channel < noOfChannels; channel++) {
         float adcScaled = adcMeans[channel] / (ADC_MAX + 1);
 
-        /*  VCC and VCC raw have a different voltage divider network to enable measuring above 5V.
-         *  Hence, we divide by MAX_VCC_IN (=5.49V) rather than MAX_VIN
-         */
+        /* Calculate voltage first */
+        if(channel < NO_CALIBRATION_CHANNELS) {
+            volts[channel] = adcScaled * measure_pots[channel].voltage_range;
+        }
+        else if (channel == ADC_CHANNEL_28V) {
+            volts[channel] = adcScaled * MAX_28V_IN;
+        }
+        else { /* channel == ADC_CHANNEL_VBUS */
+            volts[channel] = adcScaled * MAX_VBUS_IN;
+        }
 
-        // Current measurement across shunt resistor without voltage divider
-        if (cal.measurementType[channel]) {
-            volts[channel] = (channel <= 5) ? adcScaled * V_REF : adcScaled * MAX_VCC_IN;
+        /* If doing current measurement, convert voltage to current through shunt resistor */
+        if(cal.measurementType[channel]) {
+            /* 160 Ohm shunt resistor */
+            volts[channel] = volts[channel] / 160.0;
         }
-        // Voltage measurement with voltage divider
-        else {
-            volts[channel] = (channel <= 5) ? adcScaled * MAX_VIN : adcScaled * MAX_VCC_IN;
-        }
+    }
+}
+
+/*!
+ * @brief   Convert from ADC voltages to sensor analog via its calibration function
+ * @param   noOfChannels Number of ADC channels to convert
+ */
+static void voltsToAnalog(int noOfChannels) {
+    /* cal.sensorCalVal[channel*2]   - Scalar
+    ** cal.sensorCalVal[channel*2+1] - Analog bias */
+    for (int channel = 0; channel < noOfChannels; channel++) {
+        analog_input[channel] = volts[channel] * cal.sensorCalVal[channel * 2] + 
+                                cal.sensorCalVal[channel * 2 + 1];
     }
 }
 
@@ -238,18 +322,24 @@ static void printPorts(float *portValues) {
  * @brief   Update status bits
  */
 static void updateBoardStatus() {
+    // Check all I2C channels and attempt to reconnect if one is down
+    for (int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        if (0 == initDigiPots(i)) {
+            bsClearField(I2C_ERROR_Msk(i));
+        }
+    }
+
     // Check whether a port is set to measure voltage (=0) or current (=1)
     for (int i = 0; i < 6; i++) {
-        (cal.measurementType[i]) ? bsSetField(PORT_MEASUREMENT_TYPE(i))
-                                 : bsClearField(PORT_MEASUREMENT_TYPE(i));
+        bsUpdateField(PORT_MEASUREMENT_TYPE(i), cal.measurementType[i]);
     }
 
     // Check input voltages
-    (volts[6] <= MIN_VCC) ? bsSetError(VCC_ERROR_Msk) : bsClearField(VCC_ERROR_Msk);
-    (volts[7] <= MIN_RAW_VCC) ? bsSetError(VCC_RAW_ERROR_Msk) : bsClearField(VCC_RAW_ERROR_Msk);
+    bsUpdateField(VCC_28V_ERROR_Msk, volts[ADC_CHANNEL_28V]  <= MIN_28V);
+    bsUpdateField(VCC_RAW_ERROR_Msk, volts[ADC_CHANNEL_VBUS] <= MIN_VBUS);
 
-    setBoardVoltage(volts[6]);
-    if (bsGetField(VCC_ERROR_Msk) || bsGetField(VCC_RAW_ERROR_Msk)) {
+    setBoardVoltage(volts[ADC_CHANNEL_28V]);
+    if (bsGetField(VCC_28V_ERROR_Msk) || bsGetField(VCC_RAW_ERROR_Msk)) {
         bsSetError(BS_UNDER_VOLTAGE_Msk);
     }
     else {
@@ -276,14 +366,15 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
         return;
     }
 
+    /* Apply calibration to make ADC means match calibration station (e.g. account for errors in the divider/reference voltage) */
     for (int channel = 0; channel < noOfChannels; channel++) {
         ADCMeansRaw[channel] = ADCMean(pData, channel);
         ADCMeans[channel]    = ADCMeansRaw[channel] * cal.portCalVal[channel];
     }
 
-    // We exclude the last two channels (VCC and VCC raw) when converting the ADC to analog.
-    ADCtoAnalog(ADCMeans, noOfChannels - 2);
+    // We exclude the last two channels (28V rail and VBUS) when converting the voltages to analog.
     ADCtoVolt(ADCMeans, noOfChannels);
+    voltsToAnalog(noOfChannels - 2);
 
     if (loggingMode == 0) {
         printPorts(analog_input);
@@ -298,24 +389,39 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
 
 /*!
 ** @brief  Initialize the digital potentiometers
+**
+** @param  i Index of the digital potentiometer to initialize
 */
-static void initDigiPots() {
-    for(unsigned int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
-        if (0 == mcp4531_init(&measure_pots[i], &hi2c, I2C_MUX(i), 7, 0)) {
-            // Set wiper to 5V range by default
-            mcp4531_setValue(&measure_pots[i], 26);
-        }
-        else {
-            bsSetError(I2C_ERROR_Msk(i));
-        }
+static bool initDigiPots(unsigned int i) {
+    if (0 == mcp4531_init(&measure_pots[i].handle, &hi2c, I2C_MUX(i), 7, 0)) {
+        // Set wiper to 5V range by default
+        setDigipotWiper(&measure_pots[i], i, measureVoltageToDigipotIdx(5.1), false);
+    }
+    else {
+        bsSetError(I2C_ERROR_Msk(i));
+    }
 
-        if (0 == mcp4531_init(&power_pots[i], &hi2c, I2C_MUX(i), 7, 1)) {
-            // Set wiper to 5V (5.1V) power output by default
-            mcp4531_setValue(&power_pots[i], 26);
-        }
-        else {
-            bsSetError(I2C_ERROR_Msk(i));
-        }
+    if (0 == mcp4531_init(&power_pots[i].handle, &hi2c, I2C_MUX(i), 7, 1)) {
+        // Set wiper to 5V (5.1V) power output by default
+        setDigipotWiper(&power_pots[i], i, powerVoltageToDigipotIdx(5.1), true);
+    }
+    else {
+        bsSetError(I2C_ERROR_Msk(i));
+    }
+
+    return bsGetField(I2C_ERROR_Msk(i));
+}
+
+/*!
+** @brief Set the wiper position of a digital potentiometer and update the local copy
+*/
+static void setDigipotWiper(digipot_t* digipot, unsigned int channel, uint16_t pos, bool power) {
+    if (0 == mcp4531_setWiperPos(&digipot->handle, pos)) {
+        digipot->wiperPos = pos;
+        digipot->voltage_range = power ? digipotIdxToPowerVoltage(pos) : digipotIdxToMeasureVoltage(pos);
+    }
+    else {
+        bsSetError(I2C_ERROR_Msk(channel));
     }
 }
 
@@ -346,7 +452,9 @@ void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_Handl
         return;
     }
 
-    initDigiPots();
+    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        (void) initDigiPots(i);
+    }
     stmGpioInit(&boost_en, BOOST_EN_GPIO_Port, BOOST_EN_Pin, STM_GPIO_OUTPUT);
     setStmGpio(boost_en, true); // Enable boost converter
 }

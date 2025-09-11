@@ -72,15 +72,13 @@ static void channelGpioInit(FlashCalibration *cal) {
  * @param   cal Calibration
  */
 static void setDefaultCalibration(FlashCalibration *cal) {
-    for (int i = 0; i < NO_CHANNELS; i++) {
+    for (int i = 0; i < NUM_CHANNELS; i++) {
+        /* Default "Sensor calibration" simply outputs voltage */
         if (i < NO_CALIBRATION_CHANNELS) {
-            cal->sensorCalVal[i * 2]     = GANLITONG_SCALAR;
-            cal->sensorCalVal[i * 2 + 1] = GANLITONG_OFFSET;
-        }
-        else {
-            cal->sensorCalVal[i * 2]     = 0;
+            cal->sensorCalVal[i * 2]     = 1.0;
             cal->sensorCalVal[i * 2 + 1] = 0;
         }
+
         // The voltage divider prior to the ADC is made such that 5.112V becomes 3.33V i.e. above
         // the measurement range. This port calibration accounts for this such that 5.112V becomes
         // exactly 3.3V at the ADC input.

@@ -30,19 +30,19 @@
 #define VCC_RAW_ERROR_Msk (1U << VCC_RAW_ERROR_Pos)
 
 #define VCC_ERROR_Pos 7U
-#define VCC_ERROR_Msk (1U << VCC_ERROR_Pos)
+#define VCC_28V_ERROR_Msk (1U << VCC_ERROR_Pos)
 
 /* Status bits showing whether a port is in voltage or current measurement mode.
    0 = Voltage, 1 = Current  */
 #define PORT_MEASUREMENT_TYPE(x) (1U << (x))
 
 /* Define showing which bits are "errors" and which are only for information */
-#define ANALOG_INPUT_ERROR_Msk (BS_SYSTEM_ERRORS_Msk | I2C_ERROR_Range | VCC_ERROR_Msk | \
+#define ANALOG_INPUT_ERROR_Msk (BS_SYSTEM_ERRORS_Msk | I2C_ERROR_Range | VCC_28V_ERROR_Msk | \
                                 VCC_RAW_ERROR_Msk)
 
 /* Common definitions for AnalogInput Board */
-#define MIN_VCC     5.0
-#define MIN_RAW_VCC 4.6
+#define MIN_28V  26.0
+#define MIN_VBUS 4.6
 
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS
