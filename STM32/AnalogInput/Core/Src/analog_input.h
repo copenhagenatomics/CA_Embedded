@@ -19,6 +19,12 @@
 
 /* AnalogInput board status register definitions */
 
+/* One error bit per chip (per channel would be preferable, but there aren't enough bits) */
+#define I2C_ERROR_Pos 9U 
+#define I2C_ERROR_Msk(x) (1U << (I2C_ERROR_Pos + (x)))
+#define I2C_ERROR_Range (I2C_ERROR_Msk(0) | I2C_ERROR_Msk(1) | I2C_ERROR_Msk(2) | \
+                         I2C_ERROR_Msk(3) | I2C_ERROR_Msk(4) | I2C_ERROR_Msk(5))
+
 /* VCC / VCC Raw monitoring bits. These are set when the input voltage is off. */
 #define VCC_RAW_ERROR_Pos 8U
 #define VCC_RAW_ERROR_Msk (1U << VCC_RAW_ERROR_Pos)
@@ -31,7 +37,8 @@
 #define PORT_MEASUREMENT_TYPE(x) (1U << (x))
 
 /* Define showing which bits are "errors" and which are only for information */
-#define ANALOG_INPUT_ERROR_Msk (BS_SYSTEM_ERRORS_Msk | VCC_ERROR_Msk | VCC_RAW_ERROR_Msk)
+#define ANALOG_INPUT_ERROR_Msk (BS_SYSTEM_ERRORS_Msk | I2C_ERROR_Range | VCC_ERROR_Msk | \
+                                VCC_RAW_ERROR_Msk)
 
 /* Common definitions for AnalogInput Board */
 #define MIN_VCC     5.0
@@ -41,7 +48,7 @@
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc);
+void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_HandleTypeDef *_hi2c);
 void analogInputLoop(const char *bootMsg);
 
 #endif /* INC_ANALOG_INPUT_H_ */

@@ -64,8 +64,8 @@ void Error_Handler(void);
 #define CH5_Ctrl_GPIO_Port GPIOC
 #define CH4_Ctrl_Pin GPIO_PIN_15
 #define CH4_Ctrl_GPIO_Port GPIOC
-#define FB_5V_Pin GPIO_PIN_0
-#define FB_5V_GPIO_Port GPIOA
+#define FB_25V_Pin GPIO_PIN_0
+#define FB_25V_GPIO_Port GPIOA
 #define FB_VBUS_Pin GPIO_PIN_1
 #define FB_VBUS_GPIO_Port GPIOA
 #define analog_input_6_Pin GPIO_PIN_2
@@ -86,8 +86,10 @@ void Error_Handler(void);
 #define CH2_Ctrl_GPIO_Port GPIOB
 #define CH1_Ctrl_Pin GPIO_PIN_14
 #define CH1_Ctrl_GPIO_Port GPIOB
-#define CTRL_LED_Pin GPIO_PIN_4
-#define CTRL_LED_GPIO_Port GPIOB
+#define BOOST_EN_Pin GPIO_PIN_10
+#define BOOST_EN_GPIO_Port GPIOA
+#define CTRL_LED_Pin GPIO_PIN_15
+#define CTRL_LED_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

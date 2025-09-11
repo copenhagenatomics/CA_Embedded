@@ -19,6 +19,7 @@
 #include "analog_input.h"
 #include "systemInfo.h"
 #include "calibration.h"
+#include "MCP4531.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -26,6 +27,9 @@
 
 #define ADC_CHANNELS         8    // Channels: AnalogInput 1 - 6, FB_5V, FB_VBUS
 #define ADC_CHANNEL_BUF_SIZE 400  // 4kHz sampling rate
+
+/* Transform for addressing 6x digipots on single I2C bus */
+#define I2C_MUX(x) ((uint8_t) 0x28 + ((x) & 0x7U)) 
 
 /***************************************************************************************************
 ** PRIVATE PROTOTYPE FUNCTIONS
@@ -42,6 +46,7 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels);
 static void printPorts(float *portValues);
 static void updateBoardStatus();
 static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples);
+static void initDigiPots();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -69,6 +74,11 @@ static CAProtocolCtx caProto = {.undefined        = HALundefined,
                                 .logging          = logMode,
                                 .otpRead          = CAotpRead,
                                 .otpWrite         = NULL};
+
+static mcp4531_handle_t power_pots[NO_CALIBRATION_CHANNELS] = {0};
+static mcp4531_handle_t measure_pots[NO_CALIBRATION_CHANNELS] = {0};
+static I2C_HandleTypeDef *hi2c = NULL;
+static StmGpio boost_en = {0};
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
@@ -286,6 +296,29 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
     }
 }
 
+/*!
+** @brief  Initialize the digital potentiometers
+*/
+static void initDigiPots() {
+    for(unsigned int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        if (0 == mcp4531_init(&measure_pots[i], &hi2c, I2C_MUX(i), 7, 0)) {
+            // Set wiper to 5V range by default
+            mcp4531_setValue(&measure_pots[i], 26);
+        }
+        else {
+            bsSetError(I2C_ERROR_Msk(i));
+        }
+
+        if (0 == mcp4531_init(&power_pots[i], &hi2c, I2C_MUX(i), 7, 1)) {
+            // Set wiper to 5V (5.1V) power output by default
+            mcp4531_setValue(&power_pots[i], 26);
+        }
+        else {
+            bsSetError(I2C_ERROR_Msk(i));
+        }
+    }
+}
+
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
@@ -296,13 +329,26 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
  * @param   hadc Pointer to ADC handler
  * @param   hcrc Pointer to CRC handler
  */
-void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc) {
-    initCAProtocol(&caProto, usbRx);
+void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_HandleTypeDef *_hi2c) {
+    assert_param(hadc != NULL);
+    assert_param(hi2c != NULL);
+    assert_param(hcrc != NULL);
 
-    boardSetup(AnalogInput, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, ANALOG_INPUT_ERROR_Msk);
+    initCAProtocol(&caProto, usbRx);
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     calibrationInit(hcrc, &cal, sizeof(cal));
+
+    hi2c = _hi2c;
+
+    if(0 != boardSetup(AnalogInput, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, ANALOG_INPUT_ERROR_Msk)) {
+        // Don't allow initialising outputs if there is a version error
+        return;
+    }
+
+    initDigiPots();
+    stmGpioInit(&boost_en, BOOST_EN_GPIO_Port, BOOST_EN_Pin, STM_GPIO_OUTPUT);
+    setStmGpio(boost_en, true); // Enable boost converter
 }
 
 /*!
