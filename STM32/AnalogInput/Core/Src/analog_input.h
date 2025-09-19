@@ -20,16 +20,16 @@
 /* AnalogInput board status register definitions */
 
 /* One error bit per chip (per channel would be preferable, but there aren't enough bits) */
-#define I2C_ERROR_Pos 9U 
+#define I2C_ERROR_Pos 8U 
 #define I2C_ERROR_Msk(x) (1U << (I2C_ERROR_Pos + (x)))
 #define I2C_ERROR_Range (I2C_ERROR_Msk(0) | I2C_ERROR_Msk(1) | I2C_ERROR_Msk(2) | \
                          I2C_ERROR_Msk(3) | I2C_ERROR_Msk(4) | I2C_ERROR_Msk(5))
 
 /* VCC / VCC Raw monitoring bits. These are set when the input voltage is off. */
-#define VCC_RAW_ERROR_Pos 8U
+#define VCC_RAW_ERROR_Pos 7U
 #define VCC_RAW_ERROR_Msk (1U << VCC_RAW_ERROR_Pos)
 
-#define VCC_ERROR_Pos 7U
+#define VCC_ERROR_Pos 6U
 #define VCC_28V_ERROR_Msk (1U << VCC_ERROR_Pos)
 
 /* Status bits showing whether a port is in voltage or current measurement mode.

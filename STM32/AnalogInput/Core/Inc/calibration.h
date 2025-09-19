@@ -23,6 +23,7 @@
 #define MAX_VBUS_IN             5.7750 // Maximum measurable VCC (due to voltage divider)
 #define MAX_28V_IN              33.0   // Maximum measurable 28V rail (due to voltage divider)
 #define V_REF                   3.3    // ADC internal voltage reference
+#define MAX_VCAL                5.0    // Maximum calibration voltage
 
 // Variables that need to be stored in flash memory.
 typedef struct FlashCalibration {

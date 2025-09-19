@@ -3,6 +3,15 @@
  * @brief   Header file of calibration.c
  * @date    05/12/2022
  * @author  Matias
+ * 
+ * The calibration for the AnalogInput board is made up of 2 parts:
+ * - Board calibration: this calibration is done with a precise voltage source
+ *   connected to the input ports. It is used to correct for inaccuracies in the
+ *   ADC and voltage dividers. It is stored in cal.portCalVal[].
+ * - Sensor calibration: this "calibration" is really a user applied linear transformation between
+ *   the measurement output of the sensor (e.g. voltage or current) and the physical value (e.g. 
+ *   pressure). It is stored in cal.sensorCalVal[] (even indices are scalars, odd indices are 
+ *   biases).
  */
 
 #include <math.h>
@@ -63,7 +72,7 @@ static void channelGpioInit(FlashCalibration *cal) {
     stmGpioInit(&CH_Ctrl[5], CH6_Ctrl_GPIO_Port, CH6_Ctrl_Pin, STM_GPIO_OUTPUT);
 
     for (int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
-        stmSetGpio(CH_Ctrl[i], cal->measurementType[i]);
+        setMeasurementType(i, cal->measurementType[i]);
     }
 }
 
@@ -79,9 +88,7 @@ static void setDefaultCalibration(FlashCalibration *cal) {
             cal->sensorCalVal[i * 2 + 1] = 0;
         }
 
-        // The voltage divider prior to the ADC is made such that 5.112V becomes 3.33V i.e. above
-        // the measurement range. This port calibration accounts for this such that 5.112V becomes
-        // exactly 3.3V at the ADC input.
+        // When the "sensor" is uncalibrated, output calibrated voltage 
         cal->portCalVal[i]      = PORTCALVAL_DEFAULT;
         cal->measurementType[i] = 0;
     }
@@ -110,12 +117,12 @@ void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, Fla
         const int channel = calibrations[i].port - 1;
 
         // Current input voltage on channel to calibrate against
-        if (calibrations[i].alpha < 0 || calibrations[i].alpha >= MAX_VIN) {
+        if (calibrations[i].alpha < 0 || calibrations[i].alpha >= MAX_VCAL) {
             continue;
         }
 
         const float Vinput       = calibrations[i].alpha;
-        float targetADC          = Vinput * ADC_MAX / MAX_VIN;
+        float targetADC          = Vinput * ADC_MAX / MAX_VCAL;
         cal->portCalVal[channel] = (targetADC / ADCMeansRaw[channel]);
     }
     // Calibrations are stored in flash

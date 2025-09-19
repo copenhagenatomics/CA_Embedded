@@ -37,6 +37,8 @@
 #define MEASURE_VOLTAGE_DIVIDER (2.0 / 15.0) 
 #define POWER_VOLTAGE_DIVIDER   (4.3 / 134.3) 
 
+#define AMPS_TO_MILLIAMPS 1000.0f
+
 typedef struct {
     float voltage_range;
     uint16_t wiperPos;
@@ -62,6 +64,7 @@ static void initDigiPots();
 static void analogInputCommandHandler(const char* input);
 static uint16_t measureVoltageToDigipotIdx(float measure_volt);
 static uint16_t powerVoltageToDigipotIdx(float power_volt);
+static void forceCurrentMeasurementRange();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -142,15 +145,19 @@ static float digipotIdxToPowerVoltage(uint16_t idx) {
 static void analogInputCommandHandler(const char* input) {
     unsigned int channel = 0;
     float volt_range = 0;
-    if (sscanf(input, "measure set %d %f", &channel, &volt_range) == 2) {
-        if(channel >= 1 && channel <= NO_CALIBRATION_CHANNELS) {
+    if (sscanf(input, "p%d inmax %f", &channel, &volt_range) == 2) {
+        /* Only for channels within range and set to measure voltage. Current measurement is forced
+        * to 20 mA max. */
+        if(channel >= 1 && 
+           channel <= NO_CALIBRATION_CHANNELS && 
+           cal.measurementType[channel - 1] == 0) {
             setDigipotWiper(&measure_pots[channel - 1], channel - 1, measureVoltageToDigipotIdx(volt_range), false);
         }
         else {
             HALundefined(input);
         }
     }
-    else if (sscanf(input, "power set %d %f", &channel, &volt_range) == 2) {
+    else if (sscanf(input, "p%d volt %f", &channel, &volt_range) == 2) {
         if(channel >= 1 && channel <= NO_CALIBRATION_CHANNELS) {
             setDigipotWiper(&power_pots[channel - 1], channel - 1, powerVoltageToDigipotIdx(volt_range), true);
         }
@@ -252,8 +259,8 @@ static void logMode(int port) {
 static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *calibrations) {
     // Overload of threshold value to switch between sensor calibration
     // and board calibration mode.
-    //		calibrations->threshold == 0 -> sensor calibration
-    // 		calibrations->threshold == 1 -> board port calibration
+    //   calibrations->threshold == 0 -> sensor calibration
+    //   calibrations->threshold == 2 -> board port calibration
     if (calibrations->threshold == 2) {
         if (loggingMode != 1) {
             USBnprintf("To calibrate board, first enter voltLogging mode by typing: 'LOG p1'");
@@ -263,6 +270,7 @@ static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *ca
     }
     else {
         calibrateSensor(noOfCalibrations, calibrations, &cal, sizeof(cal));
+        forceCurrentMeasurementRange();
     }
 }
 
@@ -290,7 +298,7 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels) {
         /* If doing current measurement, convert voltage to current through shunt resistor */
         if(cal.measurementType[channel]) {
             /* 160 Ohm shunt resistor */
-            volts[channel] = volts[channel] / 160.0;
+            volts[channel] = AMPS_TO_MILLIAMPS * volts[channel] / 160.0;
         }
     }
 }
@@ -425,6 +433,17 @@ static void setDigipotWiper(digipot_t* digipot, unsigned int channel, uint16_t p
     }
 }
 
+/*!
+** @brief Forces the measurement range to be suitable for 4 - 20 mA for current measurement channels
+*/
+static void forceCurrentMeasurementRange() {
+    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        if(cal.measurementType[i]) {
+            setDigipotWiper(&measure_pots[i], i, measureVoltageToDigipotIdx(V_REF), false);
+        }
+    }
+}
+
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
@@ -444,6 +463,7 @@ void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_Handl
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     calibrationInit(hcrc, &cal, sizeof(cal));
+    forceCurrentMeasurementRange();
 
     hi2c = _hi2c;
 
