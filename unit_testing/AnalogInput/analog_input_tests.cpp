@@ -8,6 +8,7 @@
 
 extern "C" {
     uint32_t _FlashAddrCal = 0;
+    uint32_t _FlashAddrUptime = 0;
 }
 
 #include "caBoardUnitTests.h"
@@ -23,6 +24,8 @@ extern "C" {
 #include "CAProtocolStm.c"
 #include "calibration.c"
 #include "ADCmonitor.c"
+#include "MCP4531.c"
+#include "uptime.c"
 
 /* UUT */
 #include "analog_input.c"
@@ -64,9 +67,10 @@ class AnalogInputTest: public CaBoardUnitTest
 
         ADC_HandleTypeDef hadc;
         CRC_HandleTypeDef hcrc;
+        I2C_HandleTypeDef hi2c;
 
         SerialStatusTest sst = {
-            .boundInit = bind(analogInputInit, &hadc, &hcrc),
+            .boundInit = bind(analogInputInit, &hadc, &hcrc, &hi2c, bootMsg),
             .testFixture = this
         };
 };
@@ -76,7 +80,7 @@ class AnalogInputTest: public CaBoardUnitTest
 ***************************************************************************************************/
 
 TEST_F(AnalogInputTest, testanalogInputInitCorrectParams) {
-    analogInputInit(&hadc, &hcrc);
+    analogInputInit(&hadc, &hcrc, &hi2c, bootMsg);
 
     /* Basic test, was everything OK?  */
     EXPECT_FALSE(bsGetStatus() && BS_VERSION_ERROR_Msk);
@@ -94,7 +98,7 @@ TEST_F(AnalogInputTest, testanalogInputInitWrongBoard)
 {
     bi.v2.boardType = AC_Board; 
     HAL_otpWrite(&bi);
-    analogInputInit(&hadc, &hcrc);
+    analogInputInit(&hadc, &hcrc, &hi2c, bootMsg);
     /* Wrong board type expect version error  */
     EXPECT_TRUE(bsGetStatus() && BS_VERSION_ERROR_Msk);
 
@@ -109,7 +113,7 @@ TEST_F(AnalogInputTest, testanalogInputInitWrongSwVersion)
 {
     bi.v2.pcbVersion.minor = 1; 
     HAL_otpWrite(&bi);
-    analogInputInit(&hadc, &hcrc);
+    analogInputInit(&hadc, &hcrc, &hi2c, bootMsg);
     /* Wrong sw version type expect version error  */
     EXPECT_TRUE(bsGetStatus() && BS_VERSION_ERROR_Msk);
 
@@ -122,7 +126,7 @@ TEST_F(AnalogInputTest, testanalogInputInitWrongSwVersion)
 
 TEST_F(AnalogInputTest, testAnalogInputStatus)
 {
-    analogInputInit(&hadc, &hcrc);
+    analogInputInit(&hadc, &hcrc, &hi2c, bootMsg);
 
     /* This should force a print on the USB bus */
     analogInputLoop(bootMsg);
@@ -209,7 +213,7 @@ TEST_F(AnalogInputTest, testAnalogInputStatusDef)
 
 TEST_F(AnalogInputTest, testAdcCallback)
 {
-    analogInputInit(&hadc, &hcrc);
+    analogInputInit(&hadc, &hcrc, &hi2c, bootMsg);
 
     for (int i = 0; i < ADC_CHANNELS*ADC_CHANNEL_BUF_SIZE*2; i++)
     {
@@ -229,7 +233,7 @@ TEST_F(AnalogInputTest, testAdcCallback)
     // Check that the values are scaled by the linear functions
     for (int i = 0; i < ADC_CHANNELS - 2; i++)
     {
-        EXPECT_NEAR(analog_input[i], ADCMeans[i]*VOLTAGE_SCALING*cal.sensorCalVal[i*2] + cal.sensorCalVal[i*2+1], 1e-3);
+        EXPECT_NEAR(analog_input[i], ADCMeans[i]*cal.sensorCalVal[i*2] + cal.sensorCalVal[i*2+1], 1e-3);
     }
 
     // Check that the volts are scaled using the correct VCCs
@@ -237,11 +241,11 @@ TEST_F(AnalogInputTest, testAdcCallback)
     {
         if (i < NO_CALIBRATION_CHANNELS)
         {
-            EXPECT_NEAR(volts[i], ADCMeans[i]/(ADC_MAX+1)*MAX_VIN, 1e-3);
+            EXPECT_NEAR(volts[i], ADCMeans[i]/(ADC_MAX+1)*5.0, 1e-3);
         }
         else
         {
-            EXPECT_NEAR(volts[i], ADCMeans[i]/(ADC_MAX+1)*MAX_VCC_IN, 1e-3);
+            EXPECT_NEAR(volts[i], ADCMeans[i]/(ADC_MAX+1)*3.3, 1e-3);
         }   
     }
 }

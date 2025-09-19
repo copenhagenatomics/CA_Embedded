@@ -31,8 +31,11 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../../STM32)
 set(LIB ../../CA_Embedded_Libraries/STM32)
-set(INC_LIB_CAL  ${LIB}/FLASH_readwrite/Inc ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
-set(INC_LIB   ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Filtering/Inc 
+set(INC_LIB_CAL  ${LIB}/Crc/Inc 
+                 ${LIB}/FLASH_readwrite/Inc 
+                 ${LIB}/USBprint/Inc 
+                 ${LIB}/Util/Inc)
+set(INC_LIB   ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Crc/Inc ${LIB}/Filtering/Inc 
               ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
               ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc 
               ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
@@ -55,7 +58,8 @@ add_executable(analog_calibration_test analog_calibration_tests.cpp
                                           ${UT_FAKES}/fake_StmGpio.cpp
                                           ${UT_FAKES}/fake_USBprint.cpp
                                           ${UT_FAKES}/fake_HAL_otp.cpp
-                                          ${UT_FAKES}/fake_FLASH_readwrite.cpp)
+                                          ${UT_FAKES}/fake_FLASH_readwrite.cpp
+                                          ${LIB}/Crc/Src/crc.c)
 target_include_directories(analog_calibration_test PRIVATE
                                           ${UT_FAKES} ${UT_STUBS} ${INC_LIB_CAL}
                                           ${SRC}/AnalogInput/Core/Src ${SRC}/AnalogInput/Core/Inc
@@ -68,19 +72,22 @@ gtest_discover_tests(analog_calibration_test)
 # AnalogInput tests
 add_executable(analog_input_test analog_input_tests.cpp
                                           ${LIB}/Util/Src/systeminfo.c
+                                          ${LIB}/Util/Src/time32.c
                                           ${UT_LIB}/Util/serialStatus_tests.cpp
                                           ${UT_STUBS}/stub_jumpToBootloader.cpp
                                           ${UT_FAKES}/fake_HAL_otp.cpp
                                           ${UT_FAKES}/fake_stm32xxxx_hal.cpp
                                           ${UT_FAKES}/fake_StmGpio.cpp
                                           ${UT_FAKES}/fake_USBprint.cpp
-                                          ${UT_FAKES}/fake_FLASH_readwrite.cpp)
+                                          ${UT_FAKES}/fake_FLASH_readwrite.cpp
+                                          ${LIB}/Crc/Src/crc.c)
 target_include_directories(analog_input_test PRIVATE
                                           ${UT_FAKES} ${UT_STUBS} ${INC_LIB}
                                           ${SRC}/AnalogInput/Core/Src ${SRC}/AnalogInput/Core/Inc
                                           ${LIB}/Util/Src ${LIB}/ADCMonitor/Src
                                           ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
-                                          ${UT_LIB}/Util)
+                                          ${UT_LIB}/Util
+                                          ${LIB}/I2C/Src)
 target_link_libraries(analog_input_test GTest::gtest_main gmock_main)
 target_compile_definitions(analog_input_test PUBLIC UNIT_TESTING)
 target_compile_options(analog_input_test PRIVATE -Wall)

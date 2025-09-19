@@ -85,8 +85,8 @@ TEST_F(AnalogCalibrationTest, testCalibrationInit)
     // Check default calibration values have been set
     for (int i = 0; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.sensorCalVal[i*2], GANLITONG_SCALAR, 1e-5);
-        EXPECT_NEAR(cal.sensorCalVal[i*2+1], GANLITONG_OFFSET, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2], 1.0, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2+1], 0.0, 1e-5);
         EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-5);
         EXPECT_EQ(cal.measurementType[i], 0);
     }   
@@ -172,8 +172,8 @@ TEST_F(AnalogCalibrationTest, testCalibrateSensor)
     // Check default calibration values have been set
     for (int i = 0; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.sensorCalVal[i*2], GANLITONG_SCALAR, 1e-5);
-        EXPECT_NEAR(cal.sensorCalVal[i*2+1], GANLITONG_OFFSET, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2], 1.0, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2+1], 0.0, 1e-5);
         EXPECT_EQ(cal.measurementType[i], 0);
     }   
 
@@ -202,8 +202,8 @@ TEST_F(AnalogCalibrationTest, testCalibrateSensor)
         }
 
         // The remaining channels should not have changed.
-        EXPECT_NEAR(cal.sensorCalVal[i*2], GANLITONG_SCALAR, 1e-5);
-        EXPECT_NEAR(cal.sensorCalVal[i*2+1], GANLITONG_OFFSET, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2], 1.0, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2+1], 0.0, 1e-5);
         EXPECT_EQ(cal.measurementType[i], 0);
     }   
 
@@ -227,15 +227,15 @@ TEST_F(AnalogCalibrationTest, testCalibrateSensor)
     CACalibration defaultCal[NO_CALIBRATION_CHANNELS] = {0};
     for (int i = 0; i<NO_CALIBRATION_CHANNELS; i++)
     {
-        defaultCal[i] = {i, GANLITONG_SCALAR, GANLITONG_OFFSET, 0};
+        defaultCal[i] = {i, 1.0, 0.0, 0};
     }
     calibrateSensor(NO_CALIBRATION_CHANNELS, defaultCal, &cal, sizeof(cal));
 
     // Check default calibration values have been set
     for (int i = 0; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.sensorCalVal[i*2], GANLITONG_SCALAR, 1e-5);
-        EXPECT_NEAR(cal.sensorCalVal[i*2+1], GANLITONG_OFFSET, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2], 1.0, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2+1], 0.0, 1e-5);
         EXPECT_EQ(cal.measurementType[i], 0);
     }       
 
@@ -247,8 +247,8 @@ TEST_F(AnalogCalibrationTest, testCalibrateSensor)
     // Check default calibration values are still set
     for (int i = 0; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.sensorCalVal[i*2], GANLITONG_SCALAR, 1e-5);
-        EXPECT_NEAR(cal.sensorCalVal[i*2+1], GANLITONG_OFFSET, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2], 1.0, 1e-5);
+        EXPECT_NEAR(cal.sensorCalVal[i*2+1], 0.0, 1e-5);
         EXPECT_EQ(cal.measurementType[i], 0);
     }       
 }
@@ -259,7 +259,7 @@ TEST_F(AnalogCalibrationTest, testCalibrationRW)
 
     // Should read out standard calibration
     calibrationRW(false, &cal, sizeof(cal));
-    EXPECT_FLUSH_USB(Contains("Calibration: CAL 1,0.0018800000,-1.7899999619,0 2,0.0018800000,-1.7899999619,0 3,0.0018800000,-1.7899999619,0 4,0.0018800000,-1.7899999619,0 5,0.0018800000,-1.7899999619,0 6,0.0018800000,-1.7899999619,0\r"));
+    EXPECT_FLUSH_USB(Contains("Calibration: CAL 1,1.0000000000,0.0000000000,0 2,1.0000000000,0.0000000000,0 3,1.0000000000,0.0000000000,0 4,1.0000000000,0.0000000000,0 5,1.0000000000,0.0000000000,0 6,1.0000000000,0.0000000000,0\r"));
 
     // Update port 1 with new calibration values
     int port = 1;
@@ -272,5 +272,5 @@ TEST_F(AnalogCalibrationTest, testCalibrationRW)
 
     // The calibration should read out the updated values
     calibrationRW(false, &cal, sizeof(cal));
-    EXPECT_FLUSH_USB(Contains("Calibration: CAL 1,0.5000000000,1.5000000000,1 2,0.0018800000,-1.7899999619,0 3,0.0018800000,-1.7899999619,0 4,0.0018800000,-1.7899999619,0 5,0.0018800000,-1.7899999619,0 6,0.0018800000,-1.7899999619,0\r"));
+    EXPECT_FLUSH_USB(Contains("Calibration: CAL 1,0.5000000000,1.5000000000,1 2,1.0000000000,0.0000000000,0 3,1.0000000000,0.0000000000,0 4,1.0000000000,0.0000000000,0 5,1.0000000000,0.0000000000,0 6,1.0000000000,0.0000000000,0\r"));
 }

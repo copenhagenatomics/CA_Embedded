@@ -101,7 +101,7 @@ static CAProtocolCtx caProto = {.undefined        = analogInputCommandHandler,
 static digipot_t power_pots[NO_CALIBRATION_CHANNELS] = {0};
 static digipot_t measure_pots[NO_CALIBRATION_CHANNELS] = {0};
 static I2C_HandleTypeDef *hi2c = NULL;
-static StmGpio boost_en = {0};
+static StmGpio boost_en;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
