@@ -25,13 +25,6 @@
 #define V_REF                   3.3    // ADC internal voltage reference
 #define MAX_VCAL                5.0    // Maximum calibration voltage
 
-// Variables that need to be stored in flash memory.
-typedef struct FlashCalibration {
-    float sensorCalVal[NUM_CHANNELS * 2];
-    float portCalVal[NUM_CHANNELS];
-    int measurementType[NUM_CHANNELS];
-} FlashCalibration;
-
 enum adc_channels {
     ADC_CHANNEL_PORT_1 = 0,
     ADC_CHANNEL_PORT_2,
@@ -43,6 +36,13 @@ enum adc_channels {
     ADC_CHANNEL_VBUS,
     NUM_CHANNELS,
 };
+
+// Variables that need to be stored in flash memory.
+typedef struct FlashCalibration {
+    float sensorCalVal[NUM_CHANNELS * 2];
+    float portCalVal[NUM_CHANNELS];
+    int measurementType[NUM_CHANNELS];
+} FlashCalibration;
 
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS

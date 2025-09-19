@@ -103,7 +103,7 @@ int main(void)
   MX_CRC_Init();
   MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
-  analogInputInit(&hadc1, &hcrc, &hi2c3);
+  analogInputInit(&hadc1, &hcrc, &hi2c3, bootMsg);
   HAL_TIM_Base_Start_IT(&htim2);
   /* USER CODE END 2 */
 

@@ -27,7 +27,7 @@ TARGET = AnalogInput
 # building variables
 ######################################
 # debug build?
-DEBUG = 1
+DEBUG = 0
 # optimization
 OPT = -O2
 
@@ -81,6 +81,7 @@ Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
 ../../CA_Embedded_Libraries/STM32/ADCMonitor/Src/ADCmonitor.c \
 ../../CA_Embedded_Libraries/STM32/circularBuffer/Src/circular_buffer.c \
 ../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Src/HAL_otp.c \
+../../CA_Embedded_Libraries/STM32/I2C/Src/MCP4531.c \
 ../../CA_Embedded_Libraries/STM32/jumpToBootloader/Src/jumpToBootloader.c \
 ../../CA_Embedded_Libraries/STM32/USBprint/Src/USBprint.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/time32.c \
@@ -89,6 +90,7 @@ Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/CAProtocolStm.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/uptime.c \
 Core/Src/analog_input.c \
 Core/Src/calibration.c \
 Core/Src/syscalls.c \
@@ -162,6 +164,7 @@ C_INCLUDES =  \
 -I../../CA_Embedded_Libraries/STM32/ADCMonitor/Inc \
 -I../../CA_Embedded_Libraries/STM32/circularBuffer/Inc \
 -I../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc \
+-I../../CA_Embedded_Libraries/STM32/I2C/Inc \
 -I../../CA_Embedded_Libraries/STM32/Util/Inc \
 -I../../CA_Embedded_Libraries/STM32/USBprint/Inc \
 -I../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc

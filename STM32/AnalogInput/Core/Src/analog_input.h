@@ -48,7 +48,8 @@
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_HandleTypeDef *_hi2c);
+void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_HandleTypeDef *_hi2c, 
+                     const char *bootMsg);
 void analogInputLoop(const char *bootMsg);
 
 #endif /* INC_ANALOG_INPUT_H_ */

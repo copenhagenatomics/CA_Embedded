@@ -20,6 +20,8 @@
 #include "systemInfo.h"
 #include "calibration.h"
 #include "MCP4531.h"
+#include "uptime.h"
+#include "githash.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -55,16 +57,18 @@ static void printAnalogInputStatusDef();
 static void calibrationInfoRW(bool write);
 static void logMode(int port);
 static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *calibrations);
-static void voltsToAnalog(float *adcMeans, int noOfChannels);
+static void voltsToAnalog(int noOfChannels);
 static void ADCtoVolt(float *adcMeans, int noOfChannels);
 static void printPorts(float *portValues);
 static void updateBoardStatus();
 static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples);
-static void initDigiPots();
+static bool initDigiPots(unsigned int i);
 static void analogInputCommandHandler(const char* input);
 static uint16_t measureVoltageToDigipotIdx(float measure_volt);
 static uint16_t powerVoltageToDigipotIdx(float power_volt);
 static void forceCurrentMeasurementRange();
+static void setDigipotWiper(digipot_t* digipot, unsigned int channel, uint16_t pos, bool power);
+static void analogInputUptimeHandler(const char* input);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -91,7 +95,8 @@ static CAProtocolCtx caProto = {.undefined        = analogInputCommandHandler,
                                 .calibrationRW    = calibrationInfoRW,
                                 .logging          = logMode,
                                 .otpRead          = CAotpRead,
-                                .otpWrite         = NULL};
+                                .otpWrite         = NULL,
+                                .uptime           = analogInputUptimeHandler};
 
 static digipot_t power_pots[NO_CALIBRATION_CHANNELS] = {0};
 static digipot_t measure_pots[NO_CALIBRATION_CHANNELS] = {0};
@@ -101,6 +106,13 @@ static StmGpio boost_en = {0};
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
+
+/*!
+** @brief Handles the "uptime" command
+*/
+static void analogInputUptimeHandler(const char* input) {
+    uptime_inputHandler(input, printHeader);
+}
 
 /*!
 ** @brief Converts a selected voltage range to digital potentiometer index
@@ -401,7 +413,7 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
 ** @param  i Index of the digital potentiometer to initialize
 */
 static bool initDigiPots(unsigned int i) {
-    if (0 == mcp4531_init(&measure_pots[i].handle, &hi2c, I2C_MUX(i), 7, 0)) {
+    if (0 == mcp4531_init(&measure_pots[i].handle, hi2c, I2C_MUX(i), 7, 0)) {
         // Set wiper to 5V range by default
         setDigipotWiper(&measure_pots[i], i, measureVoltageToDigipotIdx(5.1), false);
     }
@@ -409,7 +421,7 @@ static bool initDigiPots(unsigned int i) {
         bsSetError(I2C_ERROR_Msk(i));
     }
 
-    if (0 == mcp4531_init(&power_pots[i].handle, &hi2c, I2C_MUX(i), 7, 1)) {
+    if (0 == mcp4531_init(&power_pots[i].handle, hi2c, I2C_MUX(i), 7, 1)) {
         // Set wiper to 5V (5.1V) power output by default
         setDigipotWiper(&power_pots[i], i, powerVoltageToDigipotIdx(5.1), true);
     }
@@ -454,7 +466,8 @@ static void forceCurrentMeasurementRange() {
  * @param   hadc Pointer to ADC handler
  * @param   hcrc Pointer to CRC handler
  */
-void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_HandleTypeDef *_hi2c) {
+void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_HandleTypeDef *_hi2c, 
+                     const char *bootMsg) {
     assert_param(hadc != NULL);
     assert_param(hi2c != NULL);
     assert_param(hcrc != NULL);
@@ -464,6 +477,9 @@ void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_Handl
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     calibrationInit(hcrc, &cal, sizeof(cal));
     forceCurrentMeasurementRange();
+
+    /* Initialise basic uptime counters */
+    uptime_init(hcrc, 0, NULL, bootMsg, GIT_VERSION);
 
     hi2c = _hi2c;
 
@@ -476,7 +492,7 @@ void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_Handl
         (void) initDigiPots(i);
     }
     stmGpioInit(&boost_en, BOOST_EN_GPIO_Port, BOOST_EN_Pin, STM_GPIO_OUTPUT);
-    setStmGpio(boost_en, true); // Enable boost converter
+    stmSetGpio(boost_en, true); // Enable boost converter
 }
 
 /*!
@@ -487,4 +503,5 @@ void analogInputLoop(const char *bootMsg) {
     CAhandleUserInputs(&caProto, bootMsg);
     updateBoardStatus();
     ADCMonitorLoop(adcCallback);
+    uptime_update();
 }
