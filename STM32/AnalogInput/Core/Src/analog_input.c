@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "ADCMonitor.h"
 #include "CAProtocol.h"
@@ -33,7 +34,7 @@
 /* Transform for addressing 6x digipots on single I2C bus */
 #define I2C_MUX(x) ((uint8_t) 0x28 + ((x) & 0x7U)) 
 #define NUM_DIGIPOT_BITS 7U
-#define DIGIPOT_MAX (2 ^ NUM_DIGIPOT_BITS)
+#define DIGIPOT_MAX (pow(2, NUM_DIGIPOT_BITS))
 
 /* Circuit constants */
 #define MEASURE_VOLTAGE_DIVIDER (2.0 / 15.0) 
@@ -119,7 +120,7 @@ static void analogInputUptimeHandler(const char* input) {
 */
 static uint16_t measureVoltageToDigipotIdx(float measure_volt) {
     // 2/15 because of voltage divider
-    uint16_t idx = (uint16_t) ((DIGIPOT_MAX / V_REF) * MEASURE_VOLTAGE_DIVIDER * measure_volt);
+    uint16_t idx = (uint16_t) ceil((DIGIPOT_MAX / V_REF) * MEASURE_VOLTAGE_DIVIDER * measure_volt);
 
     /* Note: output goes from 0 to 128 or 256 (NOT 128 - 1 or 256 - 1) */
     return idx <= DIGIPOT_MAX ? idx : DIGIPOT_MAX;
@@ -278,7 +279,11 @@ static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *ca
             USBnprintf("To calibrate board, first enter voltLogging mode by typing: 'LOG p1'");
             return;
         }
-        calibrateBoard(noOfCalibrations, calibrations, &cal, ADCMeansRaw, sizeof(cal));
+
+        /* Note: Assume the same potentiometer setup is applied across the entire board during 
+        ** calibration */
+        calibrateBoard(noOfCalibrations, calibrations, &cal, ADCMeansRaw, sizeof(cal), 
+                       digipotIdxToMeasureVoltage(measure_pots[0].wiperPos));
     }
     else {
         calibrateSensor(noOfCalibrations, calibrations, &cal, sizeof(cal));

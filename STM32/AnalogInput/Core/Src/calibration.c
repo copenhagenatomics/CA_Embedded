@@ -106,9 +106,10 @@ static void setDefaultCalibration(FlashCalibration *cal) {
  * @param   cal Calibration
  * @param   ADCMeansRaw Array of ADC means
  * @param   calSize Calibration size
+ * @param   vref Maximum possible input voltage for a given potentiometer setup
  */
 void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration *cal,
-                    float *ADCMeansRaw, uint32_t calSize) {
+                    float *ADCMeansRaw, uint32_t calSize, float vref) {
     for (int i = 0; i < noOfCalibrations; i++) {
         // Channel to be calibrated
         if (calibrations[i].port <= 0 || calibrations[i].port > NO_CALIBRATION_CHANNELS) {
@@ -117,12 +118,12 @@ void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, Fla
         const int channel = calibrations[i].port - 1;
 
         // Current input voltage on channel to calibrate against
-        if (calibrations[i].alpha < 0 || calibrations[i].alpha >= MAX_VCAL) {
+        if (calibrations[i].alpha < 0 || calibrations[i].alpha >= vref) {
             continue;
         }
 
         const float Vinput       = calibrations[i].alpha;
-        float targetADC          = Vinput * ADC_MAX / MAX_VCAL;
+        float targetADC          = Vinput * ADC_MAX / vref;
         cal->portCalVal[channel] = (targetADC / ADCMeansRaw[channel]);
     }
     // Calibrations are stored in flash
