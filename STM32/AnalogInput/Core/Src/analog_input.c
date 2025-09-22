@@ -228,17 +228,17 @@ static void printAnalogInputStatus() {
  * @brief   Definition of status definition information when the 'StatusDef' command is received
  */
 static void printAnalogInputStatusDef() {
-    static char buf[400] = {0};
+    static char buf[600] = {0};
 
     int len = 0;
 
-    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+    for(int i = NO_CALIBRATION_CHANNELS - 1; i >= 0; i--) {
         CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Error I2C Channel %d\r\n", 
                     (uint32_t)I2C_ERROR_Msk(i), i + 1);
     }
 
-    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",VBUS FB\r\n", (uint32_t)VCC_RAW_ERROR_Msk);
-    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",5V FB\r\n", (uint32_t)VCC_28V_ERROR_Msk);
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",VBUS Error\r\n", (uint32_t)VCC_RAW_ERROR_Msk);
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",VCC_28V Error\r\n", (uint32_t)VCC_28V_ERROR_Msk);
 
     for (int i = 5; i >= 0; i--) {
         CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Port %d measure type [Voltage/Current]\r\n",
@@ -348,9 +348,11 @@ static void printPorts(float *portValues) {
  */
 static void updateBoardStatus() {
     // Check all I2C channels and attempt to reconnect if one is down
-    for (int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
-        if (0 == initDigiPots(i)) {
-            bsClearField(I2C_ERROR_Msk(i));
+    if(!bsGetField(BS_VERSION_ERROR_Msk)) {
+        for (int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+            if (0 == initDigiPots(i)) {
+                bsClearField(I2C_ERROR_Msk(i));
+            }
         }
     }
 
