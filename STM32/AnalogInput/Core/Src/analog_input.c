@@ -350,8 +350,10 @@ static void updateBoardStatus() {
     // Check all I2C channels and attempt to reconnect if one is down
     if(!bsGetField(BS_VERSION_ERROR_Msk)) {
         for (int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
-            if (0 == initDigiPots(i)) {
-                bsClearField(I2C_ERROR_Msk(i));
+            if (bsGetField(I2C_ERROR_Msk(i))) {
+                if (0 == initDigiPots(i)) {
+                    bsClearField(I2C_ERROR_Msk(i));
+                }
             }
         }
     }

@@ -5,6 +5,7 @@
 */
 
 #include <inttypes.h>
+#include <cstdio>
 
 extern "C" {
     uint32_t _FlashAddrCal = 0;
@@ -55,16 +56,28 @@ class mockMcp4531 : public stm32I2cTestDevice {
         HAL_StatusTypeDef transmit(uint8_t* buf, uint8_t size) {
             _reg_addr = (buf[0] >> 4) & 0x0FU;
             _cmd      = buf[0] & 0x0CU;
+
+            if(_cmd == MCP4X_WRITE_CMD) {
+                if( _reg_addr == MCP4X_WIPER_0_ADDR) {
+                    wipers[0] = ((uint16_t)(buf[0] & 0x01)) << 8U | buf[1];
+                }
+                else if( _reg_addr == MCP4X_WIPER_1_ADDR) {
+                    wipers[1] = ((uint16_t)(buf[0] & 0x01)) << 8U | buf[1];
+                }
+            }
+
             return _error;
         }
         
         HAL_StatusTypeDef recv(uint8_t* buf, uint8_t size) {
             if(size >= 2) {
                 if(_reg_addr == MCP4X_WIPER_0_ADDR) {
-                    /* Not implemented */
+                    buf[0] = (wipers[0] & 0x100) >> 8U;
+                    buf[1] = (wipers[0] & 0x0FF);
                 }
                 else if(_reg_addr == MCP4X_WIPER_1_ADDR) {
-                    /* Not implemented */
+                    buf[0] = (wipers[1] & 0x100) >> 8U;
+                    buf[1] = (wipers[1] & 0x0FF);
                 }
                 else if (_reg_addr == MCP4X_STATUS_ADDR) {
                     buf[0] = 0x01U;
@@ -74,6 +87,9 @@ class mockMcp4531 : public stm32I2cTestDevice {
 
             return HAL_OK;
         }
+
+        /* Wipers to verify data has been written correctly */
+        uint16_t wipers[2U] = {64, 64};
 
     private:
         uint32_t _serial;
@@ -221,4 +237,41 @@ TEST_F(AnalogInputTest, testAnalogInputStatusDef) {
         "0x00000002,Port 2 measure type [Voltage/Current]\r",
         "0x00000001,Port 1 measure type [Voltage/Current]\r"
     });
+}
+
+TEST_F(AnalogInputTest, testAnalogInputSerial) {
+    serialPrintoutTest(sst, "AnalogInput", 
+        "Calibration: CAL 1,1.0000000000,0.0000000000,0 2,1.0000000000,0.0000000000,0 3,1.0000000000,0.0000000000,0 4,1.0000000000,0.0000000000,0 5,1.0000000000,0.0000000000,0 6,1.0000000000,0.0000000000,0\r");
+}
+
+TEST_F(AnalogInputTest, testAnalogInputUptime) {
+    uptimeTest(sst, (uintptr_t)&_FlashAddrUptime);
+}
+
+TEST_F(AnalogInputTest, testAnalogInputOutputVoltage) {
+    /* First write flushes USB, so always sim 1 tick first */
+    simTicks(1);
+
+    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        /* Calculated value for 5.1V */
+        EXPECT_EQ(digipots[i]->wipers[1], 26) << "Channel " << i;
+    }
+
+    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        char buf[100] = {0};
+        sprintf(buf, "p%d volt 10.1\n", (i+1));
+        writeBoardMessage(buf);
+
+        /* Calculated value for 10.1V */
+        EXPECT_EQ(digipots[i]->wipers[1], 51)  << "Channel " << i;
+
+        /* Remaining potentiometers should not have been changed */
+        for(int j = i + 1; j < NO_CALIBRATION_CHANNELS; j++) {
+            EXPECT_EQ(digipots[j]->wipers[1], 26)  << "Channel " << j;
+        }
+    }
+}
+
+TEST_F(AnalogInputTest, testAnalogInputMeasurementRange) {
+    
 }

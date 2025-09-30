@@ -70,7 +70,7 @@ target_compile_options(analog_calibration_test PRIVATE -Wall)
 gtest_discover_tests(analog_calibration_test)
 
 # AnalogInput tests
-add_executable(analog_input_test analog_input_tests.cpp
+add_executable(analog_input_tests analog_input_tests.cpp
                                           ${LIB}/Util/Src/systeminfo.c
                                           ${LIB}/Util/Src/time32.c
                                           ${UT_LIB}/Util/serialStatus_tests.cpp
@@ -81,14 +81,14 @@ add_executable(analog_input_test analog_input_tests.cpp
                                           ${UT_FAKES}/fake_USBprint.cpp
                                           ${UT_FAKES}/fake_FLASH_readwrite.cpp
                                           ${LIB}/Crc/Src/crc.c)
-target_include_directories(analog_input_test PRIVATE
+target_include_directories(analog_input_tests PRIVATE
                                           ${UT_FAKES} ${UT_STUBS} ${INC_LIB}
                                           ${SRC}/AnalogInput/Core/Src ${SRC}/AnalogInput/Core/Inc
                                           ${LIB}/Util/Src ${LIB}/ADCMonitor/Src
                                           ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
                                           ${UT_LIB}/Util
                                           ${LIB}/I2C/Src)
-target_link_libraries(analog_input_test GTest::gtest_main gmock_main)
-target_compile_definitions(analog_input_test PUBLIC UNIT_TESTING)
-target_compile_options(analog_input_test PRIVATE -Wall)
-gtest_discover_tests(analog_input_test)
+target_link_libraries(analog_input_tests GTest::gtest_main gmock_main)
+target_compile_definitions(analog_input_tests PUBLIC UNIT_TESTING)
+target_compile_options(analog_input_tests PRIVATE -Wall)
+gtest_discover_tests(analog_input_tests)
