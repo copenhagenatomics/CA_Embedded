@@ -26,7 +26,6 @@
 
 // Set all SPI pins high to be enable for communication
 #define NO_SPI_DEVICES 5
-#define CALIMEMSIZE NO_SPI_DEVICES*2
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -137,12 +136,12 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi)
     uint8_t dummy[2] = { 0 };
     HAL_SPI_Transmit(hspi, dummy, 2, 1);
 
-    // Now configure the devices.
-    for (int i=0; i < NO_SPI_DEVICES; i++)
-    {
+    /* Now configure the devices. Subtype 1 uses an RTD instead of thermocouple. This affects how 
+    ** the ADS1120 driver converts data */
+    for (int i=0; i < NO_SPI_DEVICES; i++) {
         initConnection(&ads1120[i], i);
+        ads1120[i].sensor_type = subtype == 0? ST_THERMOCOUPLE : ST_RTD; 
     }
-    ads1120[0].sensor_type = ST_RTD; // Set the first device to be a rtd
 }
 
 static void monitorBoardStatus()
@@ -269,16 +268,10 @@ void initSensorCalibration()
     if (readFromFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0) {
         // If nothing is stored in FLASH defaults are:
         if (/* subtype = */ 1) {
-            // 2.7 kOhm resistor on the board, 0.48 total measured lead resistance.
-            for (int i = 0; i < 1; i++) 
-            {
+            // 2.7 kOhm resistor on the board, 0.60 total measured lead resistance.
+            for (int i = 0; i < NO_SPI_DEVICES*2; i++) {
                 portCalVal[i][0] = 2.7e3;
                 portCalVal[i][1] = 0.60;
-            }
-            for (int i = 1; i < NO_SPI_DEVICES*2; i++) 
-            {
-                portCalVal[i][0] = TYPE_K_DELTA;
-                portCalVal[i][1] = TYPE_K_CJ_DELTA;
             }
         }
         else {
