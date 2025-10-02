@@ -273,5 +273,46 @@ TEST_F(AnalogInputTest, testAnalogInputOutputVoltage) {
 }
 
 TEST_F(AnalogInputTest, testAnalogInputMeasurementRange) {
-    
+    /* Set all channels to mid-rail */
+    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        setAdcChannelBuffer(i, (4095/2));
+    }
+
+    /* First write flushes USB, so always sim 1 tick first */
+    simTicks(100);
+
+    /* By default, range should be 5.1 and calibration should be 1.0, so output should be ~2.610V */
+    /* First two lines are boot messages */
+    vector<string> lines = hostUSBread(true);
+    vector<string> channels = getChannelsFromLine(lines[2]);
+
+    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        double channel = stod(channels[i]);
+        EXPECT_NEAR(channel, 2.610, 1E-3);
+    }
+
+    /* Adjust the the voltage to 10.1V range, but keep the ADC values mid rail. The voltage should 
+    ** convert to 5.123 */
+    writeBoardMessage("p1 inmax 10.1\n");
+    EXPECT_EQ(digipots[0]->wipers[0], 53);
+    simTicks(100);
+    lines = hostUSBread(true);
+    channels = getChannelsFromLine(lines[1]);
+
+    EXPECT_NEAR(stod(channels[0]), 5.123, 1E-3);
+    for(int i = 1; i < NO_CALIBRATION_CHANNELS; i++) {
+        double channel = stod(channels[i]);
+        EXPECT_NEAR(channel, 2.610, 1E-3);
+    }
+
+    /* Reduce the ADC voltage back down to the ~2.5 range */
+    setAdcChannelBuffer(0, 1043);
+    simTicks(100);
+    lines = hostUSBread(true);
+    channels = getChannelsFromLine(lines[1]);
+
+    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+        double channel = stod(channels[i]);
+        EXPECT_NEAR(channel, 2.610, 1E-3);
+    }
 }

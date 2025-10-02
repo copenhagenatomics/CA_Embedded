@@ -33,8 +33,7 @@
 
 /* Transform for addressing 6x digipots on single I2C bus */
 #define I2C_MUX(x) ((uint8_t) 0x28 + ((x) & 0x7U)) 
-#define NUM_DIGIPOT_BITS 7U
-#define DIGIPOT_MAX (pow(2, NUM_DIGIPOT_BITS))
+#define DIGIPOT_MAX (pow(2, num_digipot_bits))
 
 /* Circuit constants */
 #define MEASURE_VOLTAGE_DIVIDER (2.0 / 15.0) 
@@ -63,7 +62,7 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels);
 static void printPorts(float *portValues);
 static void updateBoardStatus();
 static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples);
-static bool initDigiPots(unsigned int i);
+static int initDigiPots(unsigned int i);
 static void analogInputCommandHandler(const char* input);
 static uint16_t measureVoltageToDigipotIdx(float measure_volt);
 static uint16_t powerVoltageToDigipotIdx(float power_volt);
@@ -103,6 +102,7 @@ static digipot_t power_pots[NO_CALIBRATION_CHANNELS] = {0};
 static digipot_t measure_pots[NO_CALIBRATION_CHANNELS] = {0};
 static I2C_HandleTypeDef *hi2c = NULL;
 static StmGpio boost_en;
+static uint8_t num_digipot_bits = 7U;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
@@ -299,7 +299,7 @@ static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *ca
 static void ADCtoVolt(float *adcMeans, int noOfChannels) {
     // Convert from ADC means to volt
     for (int channel = 0; channel < noOfChannels; channel++) {
-        float adcScaled = adcMeans[channel] / (ADC_MAX + 1);
+        float adcScaled = adcMeans[channel] / ADC_MAX;
 
         /* Calculate voltage first */
         if(channel < NO_CALIBRATION_CHANNELS) {
@@ -421,24 +421,27 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
 **
 ** @param  i Index of the digital potentiometer to initialize
 */
-static bool initDigiPots(unsigned int i) {
-    if (0 == mcp4531_init(&measure_pots[i].handle, hi2c, I2C_MUX(i), 7, 0)) {
+static int initDigiPots(unsigned int i) {
+    int ret = 0;
+    if (0 == mcp4531_init(&measure_pots[i].handle, hi2c, I2C_MUX(i), num_digipot_bits, 0)) {
         // Set wiper to 5V range by default
         setDigipotWiper(&measure_pots[i], i, measureVoltageToDigipotIdx(5.1), false);
     }
     else {
         bsSetError(I2C_ERROR_Msk(i));
+        ret = -1;
     }
 
-    if (0 == mcp4531_init(&power_pots[i].handle, hi2c, I2C_MUX(i), 7, 1)) {
+    if (0 == mcp4531_init(&power_pots[i].handle, hi2c, I2C_MUX(i), num_digipot_bits, 1)) {
         // Set wiper to 5V (5.1V) power output by default
         setDigipotWiper(&power_pots[i], i, powerVoltageToDigipotIdx(5.1), true);
     }
     else {
         bsSetError(I2C_ERROR_Msk(i));
+        ret = -1;
     }
 
-    return bsGetField(I2C_ERROR_Msk(i));
+    return ret;
 }
 
 /*!
@@ -494,6 +497,17 @@ void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_Handl
 
     if(0 != boardSetup(AnalogInput, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, ANALOG_INPUT_ERROR_Msk)) {
         // Don't allow initialising outputs if there is a version error
+        return;
+    }
+
+    SubBoardType st;
+    if(0 == getBoardInfo(NULL, &st)) {
+        if(st == 1) {
+            num_digipot_bits = 8U;
+        }
+    }
+    else {
+        bsSetError(BS_VERSION_ERROR_Msk);
         return;
     }
 
