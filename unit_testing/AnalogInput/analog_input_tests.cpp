@@ -261,6 +261,12 @@ TEST_F(AnalogInputTest, testAnalogInputOutputVoltage) {
         char buf[100] = {0};
         sprintf(buf, "p%d volt 10.1\n", (i+1));
         writeBoardMessage(buf);
+        
+        /* Board should ramp to the new voltage (10.1) over the course of n cycles */
+        for(int j = 1; j < 25; j++) {
+            EXPECT_EQ(digipots[i]->wipers[1], 26+j)  << "Channel " << i;
+            simTicks(1);
+        }
 
         /* Calculated value for 10.1V */
         EXPECT_EQ(digipots[i]->wipers[1], 51)  << "Channel " << i;
@@ -294,8 +300,13 @@ TEST_F(AnalogInputTest, testAnalogInputMeasurementRange) {
     /* Adjust the the voltage to 10.1V range, but keep the ADC values mid rail. The voltage should 
     ** convert to 5.123 */
     writeBoardMessage("p1 inmax 10.1\n");
+
+    for(int i = 1; i < 26; i++) {
+        EXPECT_EQ(digipots[0]->wipers[0], 27 + i);
+        simTicks(1);
+    }
     EXPECT_EQ(digipots[0]->wipers[0], 53);
-    simTicks(100);
+    simTicks(75); /* Resynchronise with 10 Hz output */
     lines = hostUSBread(true);
     channels = getChannelsFromLine(lines[1]);
 

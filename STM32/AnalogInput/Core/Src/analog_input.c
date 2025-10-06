@@ -38,12 +38,16 @@
 /* Circuit constants */
 #define MEASURE_VOLTAGE_DIVIDER (2.0 / 15.0) 
 #define POWER_VOLTAGE_DIVIDER   (4.3 / 134.3) 
+#define AP64060_FB_VOLTAGE      (0.8)
+#define MAX_VOLTAGE             (24.5)
+#define CURRENT_MEASURE_RESISTOR (160.0) /* 160 Ohm shunt resistor */
 
 #define AMPS_TO_MILLIAMPS 1000.0f
 
 typedef struct {
     float voltage_range;
     uint16_t wiperPos;
+    uint16_t wiperTarget;
     mcp4531_handle_t handle;
 } digipot_t;
 
@@ -69,6 +73,7 @@ static uint16_t powerVoltageToDigipotIdx(float power_volt);
 static void forceCurrentMeasurementRange();
 static void setDigipotWiper(digipot_t* digipot, unsigned int channel, uint16_t pos, bool power);
 static void analogInputUptimeHandler(const char* input);
+static void updateDigipotWipers();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -119,7 +124,10 @@ static void analogInputUptimeHandler(const char* input) {
 ** @brief Converts a selected voltage range to digital potentiometer index
 */
 static uint16_t measureVoltageToDigipotIdx(float measure_volt) {
-    // 2/15 because of voltage divider
+    if(measure_volt < 0.0) {
+        measure_volt = 0.0;
+    }
+
     uint16_t idx = (uint16_t) ceil((DIGIPOT_MAX / V_REF) * MEASURE_VOLTAGE_DIVIDER * measure_volt);
 
     /* Note: output goes from 0 to 128 or 256 (NOT 128 - 1 or 256 - 1) */
@@ -137,9 +145,11 @@ static float digipotIdxToMeasureVoltage(uint16_t idx) {
 ** @brief Converts a power voltage range to digital potentiometer index
 */
 static uint16_t powerVoltageToDigipotIdx(float power_volt) {
-    /* 4.3/134.3 because of voltage divider */
-    /* 0.8 is feedback voltage of buck converter (AP64060) */
-    uint16_t idx = (uint16_t) ((DIGIPOT_MAX / 0.8) * POWER_VOLTAGE_DIVIDER * power_volt);
+    if(power_volt < 0.0) {
+        power_volt = 0.0;
+    }
+
+    uint16_t idx = (uint16_t) ((DIGIPOT_MAX / AP64060_FB_VOLTAGE) * POWER_VOLTAGE_DIVIDER * power_volt);
 
     /* Note: output goes from 0 to 128 or 256 (NOT 128 - 1 or 256 - 1) */
     return idx <= DIGIPOT_MAX ? idx : DIGIPOT_MAX;
@@ -149,7 +159,7 @@ static uint16_t powerVoltageToDigipotIdx(float power_volt) {
 ** @brief Converts a digital potentiometer index to a voltage range
 */
 static float digipotIdxToPowerVoltage(uint16_t idx) {
-    return ((float) idx) * (0.8 / DIGIPOT_MAX) / POWER_VOLTAGE_DIVIDER;
+    return ((float) idx) * (AP64060_FB_VOLTAGE / DIGIPOT_MAX) / POWER_VOLTAGE_DIVIDER;
 }
 
 /*!
@@ -161,18 +171,19 @@ static void analogInputCommandHandler(const char* input) {
     if (sscanf(input, "p%d inmax %f", &channel, &volt_range) == 2) {
         /* Only for channels within range and set to measure voltage. Current measurement is forced
         * to 20 mA max. */
-        if(channel >= 1 && 
-           channel <= NO_CALIBRATION_CHANNELS && 
-           cal.measurementType[channel - 1] == 0) {
-            setDigipotWiper(&measure_pots[channel - 1], channel - 1, measureVoltageToDigipotIdx(volt_range), false);
+        if(channel >= 1 && channel <= NO_CALIBRATION_CHANNELS && 
+           cal.measurementType[channel - 1] == 0 && 
+           volt_range >= 0 && volt_range <= MAX_VOLTAGE) {
+            measure_pots[channel - 1].wiperTarget = measureVoltageToDigipotIdx(volt_range);
         }
         else {
             HALundefined(input);
         }
     }
     else if (sscanf(input, "p%d volt %f", &channel, &volt_range) == 2) {
-        if(channel >= 1 && channel <= NO_CALIBRATION_CHANNELS) {
-            setDigipotWiper(&power_pots[channel - 1], channel - 1, powerVoltageToDigipotIdx(volt_range), true);
+        if(channel >= 1 && channel <= NO_CALIBRATION_CHANNELS && 
+           volt_range >= 0 && volt_range <= MAX_VOLTAGE) {
+            power_pots[channel - 1].wiperTarget = powerVoltageToDigipotIdx(volt_range);
         }
         else {
             HALundefined(input);
@@ -314,8 +325,7 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels) {
 
         /* If doing current measurement, convert voltage to current through shunt resistor */
         if(cal.measurementType[channel]) {
-            /* 160 Ohm shunt resistor */
-            volts[channel] = AMPS_TO_MILLIAMPS * volts[channel] / 160.0;
+            volts[channel] = AMPS_TO_MILLIAMPS * volts[channel] / CURRENT_MEASURE_RESISTOR;
         }
     }
 }
@@ -425,6 +435,7 @@ static int initDigiPots(unsigned int i) {
     int ret = 0;
     if (0 == mcp4531_init(&measure_pots[i].handle, hi2c, I2C_MUX(i), num_digipot_bits, 0)) {
         // Set wiper to 5V range by default
+        measure_pots[i].wiperTarget = measureVoltageToDigipotIdx(5.1);
         setDigipotWiper(&measure_pots[i], i, measureVoltageToDigipotIdx(5.1), false);
     }
     else {
@@ -434,6 +445,7 @@ static int initDigiPots(unsigned int i) {
 
     if (0 == mcp4531_init(&power_pots[i].handle, hi2c, I2C_MUX(i), num_digipot_bits, 1)) {
         // Set wiper to 5V (5.1V) power output by default
+        power_pots[i].wiperTarget = powerVoltageToDigipotIdx(5.1);
         setDigipotWiper(&power_pots[i], i, powerVoltageToDigipotIdx(5.1), true);
     }
     else {
@@ -464,6 +476,29 @@ static void forceCurrentMeasurementRange() {
     for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
         if(cal.measurementType[i]) {
             setDigipotWiper(&measure_pots[i], i, measureVoltageToDigipotIdx(V_REF), false);
+        }
+    }
+}
+
+/*!
+** @brief Gradually update the digipot wipers to their target position
+*/
+static void updateDigipotWipers() {
+    for(int i = 0; i< NO_CALIBRATION_CHANNELS; i++) {
+        digipot_t* dp = &measure_pots[i];
+        if(dp->wiperTarget > dp->wiperPos) {
+            setDigipotWiper(dp, i, dp->wiperPos + 1, false);
+        }
+        else if(dp->wiperTarget < dp->wiperPos) {
+            setDigipotWiper(dp, i, dp->wiperPos - 1, false);
+        }
+
+        dp = &power_pots[i];
+        if(dp->wiperTarget > dp->wiperPos) {
+            setDigipotWiper(dp, i, dp->wiperPos + 1, true);
+        }
+        else if(dp->wiperTarget < dp->wiperPos) {
+            setDigipotWiper(dp, i, dp->wiperPos - 1, true);
         }
     }
 }
@@ -527,4 +562,5 @@ void analogInputLoop(const char *bootMsg) {
     updateBoardStatus();
     ADCMonitorLoop(adcCallback);
     uptime_update();
+    updateDigipotWipers();
 }
