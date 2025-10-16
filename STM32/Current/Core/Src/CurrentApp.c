@@ -12,7 +12,6 @@
 #include <inttypes.h>
 
 #include "stm32f4xx_hal.h"
-#include "ca_rfft.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "ADCMonitor.h"
@@ -26,11 +25,58 @@
 #include "main.h"
 
 /***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#endif
+
+#define OMEGA_TO_HZ       (ADC_F_S / (2.0 * M_PI))
+#define ROCOF_TO_HZ_PER_S (ADC_F_S * ADC_F_S / (2.0 * M_PI))
+
+#define PLL_ALPHA     0.002f                      // [-]  - PLL magnitude smoothing factor
+#define ROCOF_ALPHA   0.001f                      // [-]  - Rocof smoothing factor
+#define PLL_MAX_HZ    150.0f                      // [Hz] - Max PLL frequency
+#define PLL_MAX_OMEGA (PLL_MAX_HZ / OMEGA_TO_HZ)  // [rad/sample] - Max PLL angular speed
+#define PLL_KP        5.0e-3f                     // [rad/sample] - PLL proportional gain
+#define PLL_KI        1.5e-3f                     // [rad/sample] - PLL integral gain
+
+#define MIN_CUR_RMS 0.5f // [Arms] - Min RMS current for PLL
+
+typedef enum {
+    Stopped,
+    Forward,
+    Reverse
+} PhaseDirection_t;
+
+typedef struct _PLL {
+    float theta;        // [rad]        - Phase estimation
+    float omega;        // [rad/sample] - Angular speed estimation
+    float omegaFilt;    // [rad/sample] - Filtered angular speed estimation
+    float integrator;   // [1/sample]   - Integrator
+    float amp;          // [-]          - Fundamental amplitude estimation
+    float inPhaseFilt;  // [-]          - In phase component
+    float quadFilt;     // [-]          - Quadrature component
+    float rocof;        // [rad/(sample·sample)]
+} PLL_t;
+
+typedef struct
+{
+    double rms;
+    double maBuffer[MOVING_AVERAGE_LENGTH];
+    moving_avg_cbuf_t maBufferHandler;
+    PLL_t pll;
+} PhaseData_t;
+
+/***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
 static void CurrentPrintHeader();
 
+static void pllReset(PLL_t *pll);
+static void pllStep(PLL_t *pll, float x);
 static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples);
 static void updateAdcAmps();
 static double adcToCurrent(double adcRMS, int channel);
@@ -45,38 +91,17 @@ static void calculateCurrent(int16_t *pData, int noOfChannels, int noOfSamples);
 static void printCurrent();
 static void adcPrinter();
 static void adcLogger(int16_t *pData, int noOfChannels, int noOfSamples);
-static void fftLogPrinter();
-static void fftLogger(int16_t *pData, int noOfChannels, int noOfSamples);
 static void logging(int port);
 
 static void updateBoardStatus();
-
-/***************************************************************************************************
-** DEFINES
-***************************************************************************************************/
-
-typedef enum {
-    Stopped,
-    Forward,
-    Reverse
-} PhaseDirection_t;
-
-typedef struct
-{
-    double rms;
-    q15_t frq;
-    q15_t amp;
-    double maBuffer[MOVING_AVERAGE_LENGTH];
-    moving_avg_cbuf_t maBufferHandler;
-} PhaseData_t;
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
 ***************************************************************************************************/
 
 static CRC_HandleTypeDef* hcrc_ = NULL;
-static TIM_HandleTypeDef* loopTimer = NULL;
 
+static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
 static ADCCallBack adcCbFunc = calculateCurrent;
 
 static struct
@@ -91,12 +116,6 @@ static struct
     double transformerRatio;
 } adcToAmps[NUM_CURRENT_CHANNELS];
 
-static struct
-{
-    q15_t* outTable;
-    ssize_t count;
-} fftLoggerData = { NULL, ADC_CHANNEL_BUF_SIZE };
-
 static StmGpio faultEnable;
 
 static struct
@@ -106,8 +125,6 @@ static struct
     size_t printed;  // number of samples printed to console/user.
     int16_t log[ADC_CHANNEL_BUF_SIZE * 4]; // Log two seconds.
 } adcData = { 0, 0, 0, { 0 } };
-
-static CA_rfft_ctx* ca_rfft_ctx = NULL;
 
 static CAProtocolCtx caProto =
 {
@@ -135,32 +152,92 @@ static void CurrentPrintHeader()
     ADCcalibrationRW(false);
 }
 
+/*!
+ * @brief Resets PLL
+ * @param pll PLL handler
+*/
+static void pllReset(PLL_t *pll) {
+    pll->amp         = 0.0;
+    pll->inPhaseFilt = 0.0;
+    pll->quadFilt    = 0.0;
+    pll->integrator  = 0.0;
+    pll->omega       = 0.0;
+    pll->omegaFilt   = 0.0;
+    pll->rocof       = 0.0;
+    pll->theta       = 1.0;  // Different from 0 so it can starts again
+}
+
+/*!
+ * @brief Updates PLL
+ * @note  Works by fitting an internal oscillator to the input signal
+ * @param pll PLL handler
+ * @param newSample New ADC value
+*/
+static void pllStep(PLL_t *pll, float newSample) {
+    static float previousOmegaFilt = 0.0;
+
+    // In phase and quadrature signal computation
+    float inPhase = newSample * cosf(pll->theta);
+    float quad    = newSample * sinf(pll->theta);
+
+    // Filtering
+    pll->inPhaseFilt = (1.0 - PLL_ALPHA) * pll->inPhaseFilt + PLL_ALPHA * inPhase;
+    pll->quadFilt   = (1.0 - PLL_ALPHA) * pll->quadFilt + PLL_ALPHA * quad;
+
+    // Amplitude estimation
+    pll->amp = 2.0 * sqrtf(pll->inPhaseFilt * pll->inPhaseFilt + pll->quadFilt * pll->quadFilt);
+
+    // PI controller that brings quad to 0, so the estimation corresponds to reality
+    if (pll->amp > 1.0e-2f) {
+        quad /= pll->amp;
+    }
+    float P = PLL_KP * quad;
+    float I = PLL_KI * quad;
+    float output = P + pll->integrator + I;
+
+    // Anti wind-up
+    if (output > PLL_MAX_OMEGA) {
+        output = PLL_MAX_OMEGA;
+    }
+    else if (output < -PLL_MAX_OMEGA) {
+        output = -PLL_MAX_OMEGA;
+    }
+    else {
+        pll->integrator += I;
+    }
+    pll->omega = output;
+
+    // Filtering
+    // Absolute value as PLL can lock on opposite side
+    previousOmegaFilt = pll->omegaFilt;
+    pll->omegaFilt = (1.0 - PLL_ALPHA) * pll->omegaFilt + PLL_ALPHA * fabsf(pll->omega);
+    pll->theta += pll->omega;
+
+    // Wrapping
+    while (pll->theta >= 2.0 * M_PI) {
+        pll->theta -= 2.0 * M_PI;
+    }
+    while (pll->theta < 0.0) {
+        pll->theta += 2.0 * M_PI;
+    }
+
+    // Rate of change of frequency
+    float raw_rocof = (pll->omegaFilt - previousOmegaFilt);
+    pll->rocof = (1.0 - ROCOF_ALPHA) * pll->rocof + ROCOF_ALPHA * raw_rocof;
+}
+
 static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples)
 {
-    static const int MIN_FREQ = 3;
     static struct {
         unsigned int delayCount; // Old value should be reported every second until error is gone.
         double oldFault;         // Fault measured when fault switch on
     } faultChannel = { 0, 0 };
 
-    // True RMS current calculation for each phase with moving average
     for (int ch = 0; ch < NUM_CURRENT_CHANNELS; ch++)
     {
-        q15_t freq = 0, amp = 0; // Default invalid values.
-        q15_t *fft = ca_rfft(ca_rfft_ctx, pData, noOfChannels, noOfSamples, ch);
-
-        if (fft != NULL && ca_rfft_absmax(&fft[MIN_FREQ], noOfSamples - MIN_FREQ, &freq, &amp) >= 0)
-        {
-            currentData.phases[ch].amp = amp;
-            currentData.phases[ch].frq = freq + MIN_FREQ;
-        }
-        else
-        {
-            currentData.phases[ch].amp = 0;
-            currentData.phases[ch].frq = 0;
-        }
-
         /*
+         * True RMS current calculation for each phase with moving average
+         *
          * Step 1: Calculation of begin/end indexes of the current sinewave
          * Step 2: Removal of offset with computed indexes (the current sinewave is centered around 0)
          * Step 3: Computation of RMS value based on computed indexes
@@ -170,6 +247,17 @@ static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, -ADCMeanLimited(pData, ch, indexes), ch);
         double current = adcToCurrent(ADCTrueRms(pData, ch, indexes), ch);
         currentData.phases[ch].rms = maMean(&currentData.phases[ch].maBufferHandler, current);
+
+        // Don't run the PLL if the RMS is too low
+        if (currentData.phases[ch].rms >= MIN_CUR_RMS) {
+            // Frequency and fundamental amplitude estimation
+            for (int i = 0; i < noOfSamples; i++) {
+                pllStep(&currentData.phases[ch].pll, pData[i * noOfChannels + ch]);
+            }
+        }
+        else {
+            pllReset(&currentData.phases[ch].pll);
+        }
     }
 
     if (faultChannel.delayCount == 0)
@@ -315,6 +403,7 @@ static void calculateCurrent(int16_t *pData, int noOfChannels, int noOfSamples)
 {
     getDirection(pData, noOfChannels, noOfSamples);
     pDataToValues(pData, noOfChannels, noOfSamples);
+    printCurrent();
 }
 
 static void printCurrent()
@@ -327,18 +416,18 @@ static void printCurrent()
         return;
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %d, %d, %d, %d, %d, %d, %d, 0x%08" PRIx32,
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,
                 currentData.phases[0].rms,
                 currentData.phases[1].rms,
                 currentData.phases[2].rms,
                 currentData.fault,
                 currentData.dir,
-                currentData.phases[0].frq,
-                currentData.phases[1].frq,
-                currentData.phases[2].frq,
-                currentData.phases[0].amp,
-                currentData.phases[1].amp,
-                currentData.phases[2].amp,
+                currentData.phases[0].pll.omegaFilt * OMEGA_TO_HZ,
+                currentData.phases[1].pll.omegaFilt * OMEGA_TO_HZ,
+                currentData.phases[2].pll.omegaFilt * OMEGA_TO_HZ,
+                currentData.phases[0].pll.rocof * ROCOF_TO_HZ_PER_S,
+                currentData.phases[1].pll.rocof * ROCOF_TO_HZ_PER_S,
+                currentData.phases[2].pll.rocof * ROCOF_TO_HZ_PER_S,
                 bsGetStatus());
 }
 
@@ -379,47 +468,7 @@ static void adcLogger(int16_t *pData, int noOfChannels, int noOfSamples)
         adcData.log[adcData.len] = *p;
         adcData.len++;
     }
-}
-
-static void fftLogPrinter()
-{
-    char buf[10];
-
-    if (fftLoggerData.count == ADC_CHANNEL_BUF_SIZE || fftLoggerData.outTable == NULL)
-    {
-        return; // Wait for ADC callback to generate new data
-    }
-
-    // Write data to the USB serial port.
-    while (fftLoggerData.count<ADC_CHANNEL_BUF_SIZE && txAvailable() > sizeof(buf))
-    {
-        int len = 0;
-        if (fftLoggerData.count != 0)
-        {
-            len += snprintf(&buf[len], sizeof(buf) - len, ", ");
-        }
-        len += snprintf(&buf[len], sizeof(buf) - len, "%x", abs(fftLoggerData.outTable[fftLoggerData.count]));
-        writeUSB(buf, len);
-
-        // Wrote one entry to upper half USB printer buffer.
-        fftLoggerData.count++;
-    }
-
-    if (fftLoggerData.count == ADC_CHANNEL_BUF_SIZE)
-    {
-        // Wait for ADC callback to generate new data
-        writeUSB("\r\n", 2);
-    }
-}
-
-static void fftLogger(int16_t *pData, int noOfChannels, int noOfSamples)
-{
-    if (fftLoggerData.count == ADC_CHANNEL_BUF_SIZE)
-    {
-        // Recalculate the FFT data.
-        fftLoggerData.outTable = ca_rfft(ca_rfft_ctx, pData, noOfChannels, noOfSamples, adcData.channel);
-        fftLoggerData.count = 0;
-    }
+    adcPrinter();
 }
 
 static void logging(int port)
@@ -431,11 +480,6 @@ static void logging(int port)
     {
         adcData.channel = port-1;
         adcCbFunc = adcLogger;
-    }
-    else if (port > 8 && port <= 11)
-    {
-        adcData.channel = port - 9;
-        adcCbFunc = fftLogger;
     }
     else
         adcCbFunc = calculateCurrent;
@@ -464,44 +508,18 @@ static void updateBoardStatus()
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-// Callback: timer has rolled over
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, CRC_HandleTypeDef* hcrc)
 {
-    // Check which version of the timer triggered this callback and toggle LED
-    if (htim == loopTimer)
-    {
-        if (adcCbFunc == adcLogger)
-        {
-            adcPrinter();
-        }
-        else if (adcCbFunc == fftLogger)
-        {
-            fftLogPrinter();
-        }
-        else
-        {
-            printCurrent();
-        }
-    }
-}
-
-void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, TIM_HandleTypeDef* _loopTimer, CRC_HandleTypeDef* hcrc)
-{
-    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
-
     initCAProtocol(&caProto, usbRx);
 
     hcrc_ = hcrc;
-    loopTimer = _loopTimer;
-    ca_rfft_ctx = ca_rfft_init(ADC_CHANNEL_BUF_SIZE);
-
-    HAL_TIM_Base_Start_IT(_loopTimer);
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
 
     for (int ch = 0; ch < NUM_CURRENT_CHANNELS; ch++)
     {
         maInit(&currentData.phases[ch].maBufferHandler, currentData.phases[ch].maBuffer, MOVING_AVERAGE_LENGTH);
+        pllReset(&currentData.phases[ch].pll);
     }
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
@@ -515,7 +533,7 @@ void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, TIM_Ha
 
     // Start timers to begin a measure.
     stmSetGpio(faultEnable, true); // start reading the fault channel.
-    HAL_TIM_Base_Start_IT(adcTimer);
+    HAL_TIM_Base_Start(adcTimer);
 }
 
 void currentAppLoop(const char* bootMsg)

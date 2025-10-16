@@ -9,17 +9,16 @@
 #define INC_CURRENT_APP_H_
 
 #include "stm32f4xx_hal.h"
-#include "ca_rfft.h"
-#include "array-math.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
 
 #define ADC_CHANNELS            5       // Channels: PhaseA, PhaseB, PhaseC, Fault Channel, AUX FB
-#define ADC_CHANNEL_BUF_SIZE    1024
+#define ADC_CHANNEL_BUF_SIZE    400
 #define ADC_RESOLUTION          4096
 #define ADC_V                   3.3     // ADC reference voltage
+#define ADC_F_S                 4000.0
 
 #define NUM_CURRENT_CHANNELS    3
 
@@ -37,7 +36,7 @@ extern uint32_t _FlashAddrCal;  // Starting address of calibration values in FLA
 ** PUBLIC FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, TIM_HandleTypeDef* _loopTimer, CRC_HandleTypeDef* hcrc);
+void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, CRC_HandleTypeDef* hcrc);
 void currentAppLoop(const char* bootMsg);
 
 #endif /* CURRENT_APP_H_ */
