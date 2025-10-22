@@ -222,7 +222,7 @@ static void pllStep(PLL_t *pll, float newSample) {
     }
 
     // Rate of change of frequency
-    float raw_rocof = (pll->omegaFilt - previousOmegaFilt);
+    float raw_rocof = pll->omegaFilt - previousOmegaFilt;
     pll->rocof = (1.0 - ROCOF_ALPHA) * pll->rocof + ROCOF_ALPHA * raw_rocof;
 }
 
@@ -342,19 +342,20 @@ static double adcToFaultOhm(double adcValue, double adc_vsupply)
 
 static void ADCcalibrationRW(bool wr)
 {
-    char buf[100];
-    int len = snprintf(buf, sizeof(buf), "Calibration: CAL 1,%lf,0 2,%lf,0 3,%lf,0\r\n",
-            adcToAmps[0].transformerRatio,
-            adcToAmps[1].transformerRatio,
-            adcToAmps[2].transformerRatio);
-    writeUSB(buf, len);
-
     if (wr)
     {
         if (writeToFlashCRC(hcrc_, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) adcToAmps, sizeof(adcToAmps)) != 0)
         {
             USBnprintf("Calibration was not stored in FLASH");
         }
+    }
+    else {
+        char buf[100];
+        int len = snprintf(buf, sizeof(buf), "Calibration: CAL 1,%lf,0 2,%lf,0 3,%lf,0\r\n",
+                           adcToAmps[0].transformerRatio,
+                           adcToAmps[1].transformerRatio,
+                           adcToAmps[2].transformerRatio);
+        writeUSB(buf, len);
     }
 }
 
