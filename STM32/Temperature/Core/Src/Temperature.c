@@ -1,13 +1,16 @@
-/*
- * Temperature.c
- * Description: reads temperature from devices connected to SPI.
+/*!
+ * @file    Temperature.c
+ * @brief   This file contains the main program of Temperature
+ * @date    2022
+ * @author  Anders Gnistrup
  */
 
+#include <inttypes.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "stm32f4xx_hal.h"
-
 #include "main.h"
 #include "Temperature.h"
 #include "systemInfo.h"
@@ -20,18 +23,42 @@
 #include "FLASH_readwrite.h"
 #include "pcbversion.h"
 
-// Local functions
-static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations);
-static void calibrateReadWrite(bool write);
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
+// Set all SPI pins high to be enable for communication
+#define NO_SPI_DEVICES 5
+#define CALIMEMSIZE (NO_SPI_DEVICES * 2)
+
+/***************************************************************************************************
+** PRIVATE FUNCTION DECLARATIONS
+***************************************************************************************************/
+
 static void printTempHeader();
 static void printTempStatus();
+static void printTempStatusDef();
 
-// Local variables
+static void initConnection(ADS1120Device *ads1120, int channel);
+static void initSpiDevices(SPI_HandleTypeDef* hspi);
+static void monitorBoardStatus();
+static void getPeripheralTemperatures();
+static float getInternalTemperature();
+static void enableWWDG();
+static void initSensorCalibration();
+static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations);
+static void calibrateReadWrite(bool write);
+
+/***************************************************************************************************
+** PRIVATE OBJECTS
+***************************************************************************************************/
+
 static CAProtocolCtx caProto =
 {
         .undefined = HALundefined,
         .printHeader = printTempHeader,
         .printStatus = printTempStatus,
+        .printStatusDef = printTempStatusDef,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = calibrateTypeInput,
         .calibrationRW = calibrateReadWrite,
@@ -40,11 +67,17 @@ static CAProtocolCtx caProto =
         .otpWrite = NULL
 };
 
-// Set all SPI pins high to be enable for communication
-#define NO_SPI_DEVICES 5
-#define CALIMEMSIZE NO_SPI_DEVICES*2
 static ADS1120Device ads1120[ NO_SPI_DEVICES ];
-float portCalVal[NO_SPI_DEVICES*2][2];
+static float portCalVal[NO_SPI_DEVICES*2][2];
+static char buf[600] = { 0 }; // Shared by printTempStatus and printTempStatusDef
+
+static SPI_HandleTypeDef* hspi = NULL;
+static WWDG_HandleTypeDef* hwwdg = NULL;
+static CRC_HandleTypeDef* hcrc = NULL;
+
+/***************************************************************************************************
+** PRIVATE FUNCTION DEFINITIONS
+***************************************************************************************************/
 
 static void printTempHeader()
 {
@@ -54,7 +87,6 @@ static void printTempHeader()
 
 static void printTempStatus()
 {
-    static char buf[600] = { 0 };
     int len = 0;
     uint32_t tempStatus = bsGetStatus();
 
@@ -62,9 +94,23 @@ static void printTempStatus()
     {
         if (tempStatus & TEMP_ADS1120_x_Error_Msk(i))
         {
-            len += snprintf(&buf[len], sizeof(buf) - len, 
-                "Communication lost to the ADS1120 chip that measures temperature on port %d and %d.\r\n", i*2, i*2+1);
+            CA_SNPRINTF(buf, len,
+                        "Communication lost to the ADS1120 chip that measures temperature on port "
+                        "%d and %d.\r\n",
+                        i * 2, i * 2 + 1);
         }
+    }
+    writeUSB(buf, len);
+}
+
+static void printTempStatusDef()
+{
+    int len = 0;
+
+    for (int i = 0; i < NO_SPI_DEVICES; i++)
+    {
+        CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Status ADC %u\r\n",
+                    (uint32_t)TEMP_ADS1120_x_Error_Msk(i), i + 1);
     }
     writeUSB(buf, len);
 }
@@ -132,13 +178,14 @@ static void monitorBoardStatus()
 {
     for (int i=0; i < NO_SPI_DEVICES; i++)
     {
+
         // Try to re-establish connection to ADS1120.
         // if the connection is broken
         if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0)
         {
             initConnection(&ads1120[i], i);
             // If there are no more errors left then clear the error bit.
-            if ((bsGetStatus() & TEMP_No_Error_Msk) == 0)
+            if ((bsGetStatus() & TEMP_ERRORS_Msk) == 0)
             {
                 bsClearField(BS_ERROR_Msk);
             }
@@ -193,60 +240,7 @@ static void enableWWDG()
     }
 }
 
-static SPI_HandleTypeDef* hspi = NULL;
-static WWDG_HandleTypeDef* hwwdg = NULL;
-static CRC_HandleTypeDef* hcrc = NULL;
-void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
-{
-    boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, 0);
-    initCAProtocol(&caProto, usbRx);
-
-    hspi = hspi_;
-    hwwdg = hwwdg_;
-    hcrc = hcrc_;
-
-    initSensorCalibration();
-    initSpiDevices(hspi);
-}
-
-void LoopTemperature(const char* bootMsg)
-{
-    static uint32_t timeStamp = 0;
-    static const uint32_t tsUpload = 100;
-
-    CAhandleUserInputs(&caProto, bootMsg);
-
-    // Check the status off the board
-    monitorBoardStatus();
-    // Measure temperatures
-    getPeripheralTemperatures();
-    float internalTemp = getInternalTemperature();
-
-    // Upload data every "tsUpload" ms.
-    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
-    {
-        timeStamp = HAL_GetTick();
-        HAL_WWDG_Refresh(hwwdg);
-        
-        if (!isUsbPortOpen())
-        {
-            return;
-        }
-
-        // Enable wwdg now that print frequency has stabilised.
-        enableWWDG(); 
-
-        USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%x"
-                , ads1120[0].data.chA, ads1120[0].data.chB
-                , ads1120[1].data.chA, ads1120[1].data.chB
-                , ads1120[2].data.chA, ads1120[2].data.chB
-                , ads1120[3].data.chA, ads1120[3].data.chB
-                , ads1120[4].data.chA, ads1120[4].data.chB
-                , internalTemp, bsGetStatus());
-    }
-}
-
-void initSensorCalibration()
+static void initSensorCalibration()
 {
     if (readFromFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0)
     {
@@ -301,3 +295,54 @@ static void calibrateReadWrite(bool write)
     }
 }
 
+/***************************************************************************************************
+** PUBLIC FUNCTION DEFINITIONS
+***************************************************************************************************/
+
+void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
+{
+    boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, TEMP_ERRORS_Msk);
+    initCAProtocol(&caProto, usbRx);
+
+    hspi = hspi_;
+    hwwdg = hwwdg_;
+    hcrc = hcrc_;
+
+    initSensorCalibration();
+    initSpiDevices(hspi);
+}
+
+void LoopTemperature(const char* bootMsg)
+{
+    static uint32_t timeStamp = 0;
+    static const uint32_t tsUpload = 100;
+
+    CAhandleUserInputs(&caProto, bootMsg);
+
+    // Check the status off the board
+    monitorBoardStatus();
+    // Measure temperatures
+    getPeripheralTemperatures();
+    float internalTemp = getInternalTemperature();
+
+    // Upload data every "tsUpload" ms.
+    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
+    {
+        timeStamp = HAL_GetTick();
+        HAL_WWDG_Refresh(hwwdg);
+        
+        if (!isUsbPortOpen())
+        {
+            return;
+        }
+
+        // Enable wwdg now that print frequency has stabilised.
+        enableWWDG();
+
+        USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,
+                   ads1120[0].data.chA, ads1120[0].data.chB, ads1120[1].data.chA,
+                   ads1120[1].data.chB, ads1120[2].data.chA, ads1120[2].data.chB,
+                   ads1120[3].data.chA, ads1120[3].data.chB, ads1120[4].data.chA,
+                   ads1120[4].data.chB, internalTemp, bsGetStatus());
+    }
+}

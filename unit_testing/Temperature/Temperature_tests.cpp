@@ -22,6 +22,7 @@ extern "C" {
 /* Real supporting units */
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
+#include "crc.c"
 
 /* UUT */
 #include "Temperature.c"
@@ -74,7 +75,7 @@ TEST_F(TemperatureBoardTest, goldenPath) {
         setTemp(&ads1120[i], 24.00, 26.00, 25.00);
     }
 
-    goldenPathTest(sst, "24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 25.00, 0x0");
+    goldenPathTest(sst, "24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 25.00, 0x00000000");
 }
 
 TEST_F(TemperatureBoardTest, incorrectBoard) {
@@ -82,7 +83,17 @@ TEST_F(TemperatureBoardTest, incorrectBoard) {
 }
 
 TEST_F(TemperatureBoardTest, printStatus) {
-    statusPrintoutTest(sst, {});
+    statusPrintoutTest(sst,{"The board is operating normally.\r"});
+}
+
+TEST_F(TemperatureBoardTest, printStatusDef) {
+    statusDefPrintoutTest(sst,
+        {"0x7e0003ff,System errors\r"},
+        {"0x00000003,Status ADC 1\r",
+         "0x0000000c,Status ADC 2\r",
+         "0x00000030,Status ADC 3\r",
+         "0x000000c0,Status ADC 4\r",
+         "0x00000300,Status ADC 5\r"});
 }
 
 TEST_F(TemperatureBoardTest, printSerial) {
