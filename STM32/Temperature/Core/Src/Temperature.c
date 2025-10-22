@@ -198,7 +198,7 @@ static WWDG_HandleTypeDef* hwwdg = NULL;
 static CRC_HandleTypeDef* hcrc = NULL;
 void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
 {
-    boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR});
+    boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, 0);
     initCAProtocol(&caProto, usbRx);
 
     hspi = hspi_;
