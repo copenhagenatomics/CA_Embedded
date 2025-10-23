@@ -305,7 +305,7 @@ static void updateBoardStatus()
 **
 ** Checks the hardware matches this FW version, starts the USB communication and starts the ADC.
 ** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
-** link
+** link 
 */
 void ACTenChannelInit(ADC_HandleTypeDef *hadc, TIM_HandleTypeDef *htim,
                       TIM_HandleTypeDef *hDS18B20tim) {
