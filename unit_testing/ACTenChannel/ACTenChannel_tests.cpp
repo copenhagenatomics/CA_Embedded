@@ -17,7 +17,6 @@
 #include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
-#include "CAProtocolACDC.c"
 
 /* UUT */
 #include "ACTenChannel.c"
@@ -114,6 +113,7 @@ TEST_F(ACTenCh, printStatusDef) {
 
 TEST_F(ACTenCh, printStatus) {
     statusPrintoutTest(sst, {
+        "The board is operating normally.\r", 
         "Port 0: On: 0, PWM percent: 0\r", 
         "Port 1: On: 0, PWM percent: 0\r", 
         "Port 2: On: 0, PWM percent: 0\r", 
