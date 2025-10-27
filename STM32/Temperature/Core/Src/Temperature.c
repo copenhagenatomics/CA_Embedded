@@ -10,18 +10,18 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "stm32f4xx_hal.h"
-#include "main.h"
-#include "Temperature.h"
-#include "systemInfo.h"
+#include "ADS1120.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "USBprint.h"
-#include "time32.h"
-#include "StmGpio.h"
-#include "ADS1120.h"
 #include "FLASH_readwrite.h"
+#include "StmGpio.h"
+#include "Temperature.h"
+#include "USBprint.h"
+#include "main.h"
 #include "pcbversion.h"
+#include "stm32f4xx_hal.h"
+#include "systemInfo.h"
+#include "time32.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -29,7 +29,7 @@
 
 // Set all SPI pins high to be enable for communication
 #define NO_SPI_DEVICES 5
-#define CALIMEMSIZE (NO_SPI_DEVICES * 2)
+#define CALIMEMSIZE    (NO_SPI_DEVICES * 2)
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -39,7 +39,7 @@ static void printTempHeader();
 static void printTempStatus();
 static void printTempStatusDef();
 
-static void initConnection(ADS1120Device *ads1120, int channel);
+static void initConnection(ADS1120Device* ads1120, int channel);
 static void initSpiDevices(SPI_HandleTypeDef* hspi);
 static void monitorBoardStatus();
 static void getPeripheralTemperatures();
@@ -53,47 +53,40 @@ static void calibrateReadWrite(bool write);
 ** PRIVATE OBJECTS
 ***************************************************************************************************/
 
-static CAProtocolCtx caProto =
-{
-        .undefined = HALundefined,
-        .printHeader = printTempHeader,
-        .printStatus = printTempStatus,
-        .printStatusDef = printTempStatusDef,
-        .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = calibrateTypeInput,
-        .calibrationRW = calibrateReadWrite,
-        .logging = NULL,
-        .otpRead = CAotpRead,
-        .otpWrite = NULL
-};
+static CAProtocolCtx caProto = {.undefined        = HALundefined,
+                                .printHeader      = printTempHeader,
+                                .printStatus      = printTempStatus,
+                                .printStatusDef   = printTempStatusDef,
+                                .jumpToBootLoader = HALJumpToBootloader,
+                                .calibration      = calibrateTypeInput,
+                                .calibrationRW    = calibrateReadWrite,
+                                .logging          = NULL,
+                                .otpRead          = CAotpRead,
+                                .otpWrite         = NULL};
 
-static ADS1120Device ads1120[ NO_SPI_DEVICES ];
-static float portCalVal[NO_SPI_DEVICES*2][2];
-static char buf[600] = { 0 }; // Shared by printTempStatus and printTempStatusDef
+static ADS1120Device ads1120[NO_SPI_DEVICES];
+static float portCalVal[NO_SPI_DEVICES * 2][2];
+static char buf[600] = {0};  // Shared by printTempStatus and printTempStatusDef
 
-static SPI_HandleTypeDef* hspi = NULL;
+static SPI_HandleTypeDef* hspi   = NULL;
 static WWDG_HandleTypeDef* hwwdg = NULL;
-static CRC_HandleTypeDef* hcrc = NULL;
+static CRC_HandleTypeDef* hcrc   = NULL;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-static void printTempHeader()
-{
+static void printTempHeader() {
     CAPrintHeader();
     calibrateReadWrite(false);
 }
 
-static void printTempStatus()
-{
-    int len = 0;
+static void printTempStatus() {
+    int len             = 0;
     uint32_t tempStatus = bsGetStatus();
 
-    for (int i = 0; i < NO_SPI_DEVICES; i++)
-    {
-        if (tempStatus & TEMP_ADS1120_x_Error_Msk(i))
-        {
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
+        if (tempStatus & TEMP_ADS1120_x_Error_Msk(i)) {
             CA_SNPRINTF(buf, len,
                         "Communication lost to the ADS1120 chip that measures temperature on port "
                         "%d and %d.\r\n",
@@ -103,42 +96,37 @@ static void printTempStatus()
     writeUSB(buf, len);
 }
 
-static void printTempStatusDef()
-{
+static void printTempStatusDef() {
     int len = 0;
 
-    for (int i = 0; i < NO_SPI_DEVICES; i++)
-    {
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
         CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Status ADC %u\r\n",
                     (uint32_t)TEMP_ADS1120_x_Error_Msk(i), i + 1);
     }
     writeUSB(buf, len);
 }
 
-static void initConnection(ADS1120Device *ads1120, int channel)
-{
+static void initConnection(ADS1120Device* ads1120, int channel) {
     // Configure the device.
     int ret = ADS1120Init(ads1120);
     if (ret != 0) {
         // If connection could not be established to chip
         // set temperatures to 10010 to indicate miscommunication
         ads1120->data.internalTemp = 10010;
-        ads1120->data.chA = 10010;
-        ads1120->data.chB = 10010;
+        ads1120->data.chA          = 10010;
+        ads1120->data.chB          = 10010;
 
         // The TEMP_ADS1120_Error_Msk maps to the bit relating to the
         // 0th ADS1120 on the temperature board. Hence, we shift the index
         // according to the relevant chip having an error.
-        bsSetErrorRange(ret << (channel*2), TEMP_ADS1120_x_Error_Msk(channel));
+        bsSetErrorRange(ret << (channel * 2), TEMP_ADS1120_x_Error_Msk(channel));
     }
-    else
-    {
+    else {
         bsClearField(TEMP_ADS1120_x_Error_Msk(channel));
     }
 }
 
-static void initSpiDevices(SPI_HandleTypeDef* hspi)
-{
+static void initSpiDevices(SPI_HandleTypeDef* hspi) {
     // Initialise Chip Select pin
     stmGpioInit(&ads1120[0].cs, CS1_GPIO_Port, CS1_Pin, STM_GPIO_OUTPUT);
     stmGpioInit(&ads1120[1].cs, CS2_GPIO_Port, CS2_Pin, STM_GPIO_OUTPUT);
@@ -153,8 +141,8 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi)
     stmGpioInit(&ads1120[3].drdy, DRDY4_GPIO_Port, DRDY4_Pin, STM_GPIO_INPUT);
     stmGpioInit(&ads1120[4].drdy, DRDY5_GPIO_Port, DRDY5_Pin, STM_GPIO_INPUT);
 
-    for (int i=0; i < NO_SPI_DEVICES; i++) {
-        stmSetGpio(ads1120[i].cs, true); // CS selects chip when low
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
+        stmSetGpio(ads1120[i].cs, true);  // CS selects chip when low
         ads1120[i].hspi = hspi;
     }
 
@@ -164,104 +152,90 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi)
     // After this initial write everything seems to work just fine.
     // This could be related to the note in the documentation section 8.5.6
     // where two bytes with DIN held low should be sent after each read of data.
-    uint8_t dummy[2] = { 0 };
+    uint8_t dummy[2] = {0};
     HAL_SPI_Transmit(hspi, dummy, 2, 1);
 
     // Now configure the devices.
-    for (int i=0; i < NO_SPI_DEVICES; i++)
-    {
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
         initConnection(&ads1120[i], i);
     }
 }
 
-static void monitorBoardStatus()
-{
-    for (int i=0; i < NO_SPI_DEVICES; i++)
-    {
-
+static void monitorBoardStatus() {
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
         // Try to re-establish connection to ADS1120.
         // if the connection is broken
-        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0)
-        {
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) {
             initConnection(&ads1120[i], i);
             // If there are no more errors left then clear the error bit.
-            if ((bsGetStatus() & TEMP_ERRORS_Msk) == 0)
-            {
+            if ((bsGetStatus() & TEMP_ERRORS_Msk) == 0) {
                 bsClearField(BS_ERROR_Msk);
             }
-        } 
-    }
-}
-
-static void getPeripheralTemperatures()
-{
-    for (int i=0; i < NO_SPI_DEVICES; i++)
-    {
-        // Try to re-establish connection to ADS1120.
-        // If the connection is broken
-        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) continue;
-
-        // Get measurements
-        float *calPtr = &portCalVal[i*2][0];
-        int ret = ADS1120Loop(&ads1120[i], calPtr);
-
-        // If the return value is different from 0 - set an error.
-        if (ret != 0)
-        {
-            bsSetErrorRange(ret << (i*2), TEMP_ADS1120_x_Error_Msk(i));
         }
     }
 }
 
-static float getInternalTemperature()
-{
-    int count = 0;
+static void getPeripheralTemperatures() {
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
+        // Try to re-establish connection to ADS1120.
+        // If the connection is broken
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) {
+            continue;
+        }
+
+        // Get measurements
+        float* calPtr = &portCalVal[i * 2][0];
+        int ret       = ADS1120Loop(&ads1120[i], calPtr);
+
+        // If the return value is different from 0 - set an error.
+        if (ret != 0) {
+            bsSetErrorRange(ret << (i * 2), TEMP_ADS1120_x_Error_Msk(i));
+        }
+    }
+}
+
+static float getInternalTemperature() {
+    int count           = 0;
     double internalTemp = 0;
-    for (int i = 0; i < NO_SPI_DEVICES; i++)
-    {
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
         // Do not include internal temperature of chip if
         // connection could not be established to ADS1120 chip.
         // Reconnection is handled in updateTempAndStates()
-        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) continue;
+        if ((bsGetStatus() & TEMP_ADS1120_x_Error_Msk(i)) != 0) {
+            continue;
+        }
 
         internalTemp += ads1120[i].data.internalTemp;
         count++;
     }
-    return internalTemp/count;
+    return internalTemp / count;
 }
 
-static void enableWWDG()
-{
+static void enableWWDG() {
     static int isWWDGEnabled = 0;
-    if (!isWWDGEnabled)
-    {
+    if (!isWWDGEnabled) {
         isWWDGEnabled = 1;
-        __HAL_RCC_WWDG_CLK_ENABLE(); 
+        __HAL_RCC_WWDG_CLK_ENABLE();
     }
 }
 
-static void initSensorCalibration()
-{
-    if (readFromFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0)
-    {
+static void initSensorCalibration() {
+    if (readFromFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
+                         sizeof(portCalVal)) != 0) {
         // If nothing is stored in FLASH default to type K thermocouple
-        for (int i = 0; i < NO_SPI_DEVICES*2; i++)
-        {
+        for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
             portCalVal[i][0] = TYPE_K_DELTA;
             portCalVal[i][1] = TYPE_K_CJ_DELTA;
         }
     }
 }
 
-static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations)
-{
+static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations) {
     __HAL_RCC_WWDG_CLK_DISABLE();
-    for (int count = 0; count < noOfCalibrations; count++)
-    {
-        if (1 <= calibrations[count].port && calibrations[count].port <= 10)
-        {
-            portCalVal[calibrations[count].port-1][0] = calibrations[count].alpha;
-            portCalVal[calibrations[count].port-1][1] = calibrations[count].beta;
+    for (int count = 0; count < noOfCalibrations; count++) {
+        if (1 <= calibrations[count].port && calibrations[count].port <= 10) {
+            portCalVal[calibrations[count].port - 1][0] = calibrations[count].alpha;
+            portCalVal[calibrations[count].port - 1][1] = calibrations[count].beta;
         }
     }
     // Update automatically when receiving new calibration values
@@ -269,26 +243,22 @@ static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibr
     __HAL_RCC_WWDG_CLK_ENABLE();
 }
 
-static void calibrateReadWrite(bool write)
-{
-    if (write)
-    {
-        if (writeToFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0) 
-        { 
-            USBnprintf("Calibration was not stored in FLASH"); 
+static void calibrateReadWrite(bool write) {
+    if (write) {
+        if (writeToFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
+                            sizeof(portCalVal)) != 0) {
+            USBnprintf("Calibration was not stored in FLASH");
         }
     }
-    else
-    {
+    else {
         char buf[512];
         int len = 0;
-        for (int i = 0; i < NO_SPI_DEVICES*2; i++)
-        {
-            if (i == 0)
-            {
+        for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
+            if (i == 0) {
                 len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
             }
-            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i+1, portCalVal[i][0], portCalVal[i][1]);
+            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i + 1,
+                            portCalVal[i][0], portCalVal[i][1]);
         }
         len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
         writeUSB(buf, len);
@@ -299,22 +269,21 @@ static void calibrateReadWrite(bool write)
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_, CRC_HandleTypeDef* hcrc_)
-{
+void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_,
+                     CRC_HandleTypeDef* hcrc_) {
     boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, TEMP_ERRORS_Msk);
     initCAProtocol(&caProto, usbRx);
 
-    hspi = hspi_;
+    hspi  = hspi_;
     hwwdg = hwwdg_;
-    hcrc = hcrc_;
+    hcrc  = hcrc_;
 
     initSensorCalibration();
     initSpiDevices(hspi);
 }
 
-void LoopTemperature(const char* bootMsg)
-{
-    static uint32_t timeStamp = 0;
+void LoopTemperature(const char* bootMsg) {
+    static uint32_t timeStamp      = 0;
     static const uint32_t tsUpload = 100;
 
     CAhandleUserInputs(&caProto, bootMsg);
@@ -326,13 +295,11 @@ void LoopTemperature(const char* bootMsg)
     float internalTemp = getInternalTemperature();
 
     // Upload data every "tsUpload" ms.
-    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload)
-    {
+    if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload) {
         timeStamp = HAL_GetTick();
         HAL_WWDG_Refresh(hwwdg);
-        
-        if (!isUsbPortOpen())
-        {
+
+        if (!isUsbPortOpen()) {
             return;
         }
 
