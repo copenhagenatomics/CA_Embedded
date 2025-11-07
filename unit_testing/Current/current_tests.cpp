@@ -22,12 +22,13 @@ extern "C" {
 #include "fake_USBprint.h"
 
 /* Real supporting units */
-#include "crc.c"
-#include "systeminfo.c"
 #include "array-math.c"
+#include "crc.c"
+#include "pll.c"
+#include "systeminfo.c"
+#include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
-#include "ADCmonitor.c"
 
 /* UUT */
 #include "CurrentApp.c"

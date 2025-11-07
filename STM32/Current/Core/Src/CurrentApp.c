@@ -5,61 +5,37 @@
  * @author  agp
 */
 
-#include <stdio.h>
-#include <stdint.h>
-#include <math.h>
-#include <stdlib.h>
 #include <inttypes.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "stm32f4xx_hal.h"
+#include "ADCMonitor.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "ADCMonitor.h"
-#include "FLASH_readwrite.h"
-#include "systemInfo.h"
-#include "USBprint.h"
-#include "StmGpio.h"
-#include "array-math.h"
-#include "pcbversion.h"
 #include "CurrentApp.h"
+#include "FLASH_readwrite.h"
+#include "StmGpio.h"
+#include "USBprint.h"
+#include "array-math.h"
 #include "main.h"
+#include "pcbversion.h"
+#include "pll.h"
+#include "stm32f4xx_hal.h"
+#include "systemInfo.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846f
-#endif
-
-#define OMEGA_TO_HZ       (ADC_F_S / (2.0 * M_PI))
-#define ROCOF_TO_HZ_PER_S (ADC_F_S * ADC_F_S / (2.0 * M_PI))
-
-#define PLL_ALPHA     0.002f                      // [-]  - PLL magnitude smoothing factor
-#define ROCOF_ALPHA   0.001f                      // [-]  - Rocof smoothing factor
-#define PLL_MAX_HZ    150.0f                      // [Hz] - Max PLL frequency
-#define PLL_MAX_OMEGA (PLL_MAX_HZ / OMEGA_TO_HZ)  // [rad/sample] - Max PLL angular speed
-#define PLL_KP        5.0e-3f                     // [rad/sample] - PLL proportional gain
-#define PLL_KI        1.5e-3f                     // [rad/sample] - PLL integral gain
-
-#define MIN_CUR_RMS 0.5f // [Arms] - Min RMS current for PLL
+#define MIN_CUR_RMS   0.5f // [Arms] - Min RMS current
 
 typedef enum {
     Stopped,
     Forward,
     Reverse
-} PhaseDirection_t;
-
-typedef struct _PLL {
-    float theta;        // [rad]        - Phase estimation
-    float omega;        // [rad/sample] - Angular speed estimation
-    float omegaFilt;    // [rad/sample] - Filtered angular speed estimation
-    float integrator;   // [1/sample]   - Integrator
-    float amp;          // [-]          - Fundamental amplitude estimation
-    float inPhaseFilt;  // [-]          - In phase component
-    float quadFilt;     // [-]          - Quadrature component
-    float rocof;        // [rad/(sample·sample)]
-} PLL_t;
+} PhaseDirection_t; // Phase direction handler
 
 typedef struct
 {
@@ -67,7 +43,7 @@ typedef struct
     double maBuffer[MOVING_AVERAGE_LENGTH];
     moving_avg_cbuf_t maBufferHandler;
     PLL_t pll;
-} PhaseData_t;
+} PhaseData_t; // Phase data handler
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -75,8 +51,6 @@ typedef struct
 
 static void CurrentPrintHeader();
 
-static void pllReset(PLL_t *pll);
-static void pllStep(PLL_t *pll, float x);
 static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples);
 static void updateAdcAmps();
 static double adcToCurrent(double adcRMS, int channel);
@@ -150,80 +124,6 @@ static void CurrentPrintHeader()
 {
     CAPrintHeader();
     ADCcalibrationRW(false);
-}
-
-/*!
- * @brief Resets PLL
- * @param pll PLL handler
-*/
-static void pllReset(PLL_t *pll) {
-    pll->amp         = 0.0;
-    pll->inPhaseFilt = 0.0;
-    pll->quadFilt    = 0.0;
-    pll->integrator  = 0.0;
-    pll->omega       = 0.0;
-    pll->omegaFilt   = 0.0;
-    pll->rocof       = 0.0;
-    pll->theta       = 1.0;  // Different from 0 so it can starts again
-}
-
-/*!
- * @brief Updates PLL
- * @note  Works by fitting an internal oscillator to the input signal
- * @param pll PLL handler
- * @param newSample New ADC value
-*/
-static void pllStep(PLL_t *pll, float newSample) {
-    static float previousOmegaFilt = 0.0;
-
-    // In phase and quadrature signal computation
-    float inPhase = newSample * cosf(pll->theta);
-    float quad    = newSample * sinf(pll->theta);
-
-    // Filtering
-    pll->inPhaseFilt = (1.0 - PLL_ALPHA) * pll->inPhaseFilt + PLL_ALPHA * inPhase;
-    pll->quadFilt   = (1.0 - PLL_ALPHA) * pll->quadFilt + PLL_ALPHA * quad;
-
-    // Amplitude estimation
-    pll->amp = 2.0 * sqrtf(pll->inPhaseFilt * pll->inPhaseFilt + pll->quadFilt * pll->quadFilt);
-
-    // PI controller that brings quad to 0, so the estimation corresponds to reality
-    if (pll->amp > 1.0e-2f) {
-        quad /= pll->amp;
-    }
-    float P = PLL_KP * quad;
-    float I = PLL_KI * quad;
-    float output = P + pll->integrator + I;
-
-    // Anti wind-up
-    if (output > PLL_MAX_OMEGA) {
-        output = PLL_MAX_OMEGA;
-    }
-    else if (output < -PLL_MAX_OMEGA) {
-        output = -PLL_MAX_OMEGA;
-    }
-    else {
-        pll->integrator += I;
-    }
-    pll->omega = output;
-
-    // Filtering
-    // Absolute value as PLL can lock on opposite side
-    previousOmegaFilt = pll->omegaFilt;
-    pll->omegaFilt = (1.0 - PLL_ALPHA) * pll->omegaFilt + PLL_ALPHA * fabsf(pll->omega);
-    pll->theta += pll->omega;
-
-    // Wrapping
-    while (pll->theta >= 2.0 * M_PI) {
-        pll->theta -= 2.0 * M_PI;
-    }
-    while (pll->theta < 0.0) {
-        pll->theta += 2.0 * M_PI;
-    }
-
-    // Rate of change of frequency
-    float raw_rocof = pll->omegaFilt - previousOmegaFilt;
-    pll->rocof = (1.0 - ROCOF_ALPHA) * pll->rocof + ROCOF_ALPHA * raw_rocof;
 }
 
 static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples)
