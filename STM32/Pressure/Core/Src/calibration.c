@@ -10,9 +10,11 @@
 #include <string.h>
 
 #include "FLASH_readwrite.h"
-#include "StmGpio.h"
 #include "USBprint.h"
 #include "calibration.h"
+#include "vl53l1_api.h"
+#include "pressure.h"
+#include "systemInfo.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -26,103 +28,47 @@ extern uint32_t _FlashAddrCal;  // Starting address of calibration values in FLA
 ** PRIVATE PROTOTYPE FUNCTIONS
 ***************************************************************************************************/
 
-static void setMeasurementType(int channel, int measureCurrent);
-static void channelGpioInit(FlashCalibration *cal);
-static void setDefaultCalibration(FlashCalibration *cal);
+static void setDefaultCalibration(FlashCalibration *cal, VL53L1_DEV dev_p);
+static const CACalibration* getCalFromIdx(int noOfCalibrations, const CACalibration* calibrations, int port);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
 ***************************************************************************************************/
 
 CRC_HandleTypeDef *hcrc_ = NULL;
-StmGpio CH_Ctrl[NO_CALIBRATION_CHANNELS];
+static int cal_last_step = 0;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
 
 /*!
- * @brief   Define measurement type (voltage/current)
- * @param   channel Sensor channel (0-5)
- * @param   measureCurrent >0 if current measurement
- */
-static void setMeasurementType(int channel, int measureCurrent) {
-    stmSetGpio(CH_Ctrl[channel], measureCurrent);
-}
-
-/*!
- * @brief   Initialization of control GPIOs according to measurement type
- * @param   cal Calibration
- */
-static void channelGpioInit(FlashCalibration *cal) {
-    stmGpioInit(&CH_Ctrl[0], CH1_Ctrl_GPIO_Port, CH1_Ctrl_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&CH_Ctrl[1], CH2_Ctrl_GPIO_Port, CH2_Ctrl_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&CH_Ctrl[2], CH3_Ctrl_GPIO_Port, CH3_Ctrl_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&CH_Ctrl[3], CH4_Ctrl_GPIO_Port, CH4_Ctrl_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&CH_Ctrl[4], CH5_Ctrl_GPIO_Port, CH5_Ctrl_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&CH_Ctrl[5], CH6_Ctrl_GPIO_Port, CH6_Ctrl_Pin, STM_GPIO_OUTPUT);
-
-    for (int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
-        stmSetGpio(CH_Ctrl[i], cal->measurementType[i]);
-    }
-}
-
-/*!
  * @brief   If nothing is stored in FLASH use default values
  * @param   cal Calibration
  */
-static void setDefaultCalibration(FlashCalibration *cal) {
-    for (int i = 0; i < NO_CHANNELS; i++) {
-        if (i < NO_CALIBRATION_CHANNELS) {
-            cal->sensorCalVal[i * 2]     = GANLITONG_SCALAR;
-            cal->sensorCalVal[i * 2 + 1] = GANLITONG_OFFSET;
+static void setDefaultCalibration(FlashCalibration *cal, VL53L1_DEV dev_p) {
+    /* Retrieve CAL data from device, and copy it to the local flash object, ready for saving */
+    VL53L1_CalibrationData_t calib_data;
+    VL53L1_Error status = VL53L1_GetCalibrationData(dev_p, &calib_data);
+    if(status != 0) {bsSetFieldRange((uint8_t)status, VL53_STATUS_Msk);}
+
+    memcpy(&cal->cal_data, &calib_data.customer, sizeof(VL53L1_CustomerNvmManaged_t));
+}
+
+static const CACalibration* getCalFromIdx(int noOfCalibrations, const CACalibration* calibrations, int port) {
+    const CACalibration* return_p = NULL;
+    for(int i = 0; i < noOfCalibrations; i++) {
+        if(calibrations[i].port == port) {
+            return_p = calibrations + i;
+            break;
         }
-        else {
-            cal->sensorCalVal[i * 2]     = 0;
-            cal->sensorCalVal[i * 2 + 1] = 0;
-        }
-        // The voltage divider prior to the ADC is made such that 5.112V becomes 3.33V i.e. above
-        // the measurement range. This port calibration accounts for this such that 5.112V becomes
-        // exactly 3.3V at the ADC input.
-        cal->portCalVal[i]      = PORTCALVAL_DEFAULT;
-        cal->measurementType[i] = 0;
     }
+    return return_p;
 }
 
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
-
-/*!
- * @brief   Calibration function that adjust the raw ADC values given a precise input voltage as
- * reference
- * @param   noOfCalibrations Number of calibrations
- * @param   calibrations CA library calibration structure
- * @param   cal Calibration
- * @param   ADCMeansRaw Array of ADC means
- * @param   calSize Calibration size
- */
-void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration *cal,
-                    float *ADCMeansRaw, uint32_t calSize) {
-    for (int i = 0; i < noOfCalibrations; i++) {
-        // Channel to be calibrated
-        if (calibrations[i].port <= 0 || calibrations[i].port > NO_CALIBRATION_CHANNELS) {
-            continue;
-        }
-        const int channel = calibrations[i].port - 1;
-
-        // Current input voltage on channel to calibrate against
-        if (calibrations[i].alpha < 0 || calibrations[i].alpha >= MAX_VIN) {
-            continue;
-        }
-
-        const float Vinput       = calibrations[i].alpha;
-        float targetADC          = Vinput * ADC_MAX / MAX_VIN;
-        cal->portCalVal[channel] = (targetADC / ADCMeansRaw[channel]);
-    }
-    // Calibrations are stored in flash
-    calibrationRW(true, cal, calSize);
-}
 
 /*!
  * @brief   Calibration function that sets the sensor calibrations
@@ -132,26 +78,36 @@ void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, Fla
  * @param   calSize Calibration size
  */
 void calibrateSensor(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration *cal,
-                     uint32_t calSize) {
-    for (int i = 0; i < noOfCalibrations; i++) {
-        // Channel to be calibrated
-        if (calibrations[i].port <= 0 || calibrations[i].port > NO_CALIBRATION_CHANNELS) {
-            continue;
+                     uint32_t calSize, VL53L1_DEV dev_p) {
+
+    /* Get the cal value of the next step */
+    int next_step = cal_last_step + 1;
+    const CACalibration* local_cal = getCalFromIdx(noOfCalibrations, calibrations, next_step);
+
+    VL53L1_Error status;
+    if(local_cal) {
+        switch(next_step) {
+            case 1: status = VL53L1_PerformRefSpadManagement(dev_p);
+                    break;
+            case 2: status = VL53L1_PerformOffsetSimpleCalibration(dev_p, (int32_t)local_cal->alpha);
+                    break;
+            case 3: status = VL53L1_PerformSingleTargetXTalkCalibration(dev_p, (int32_t)local_cal->alpha);
+                    break;
+            default:USBnprintf("CAL ordering error, restart device and try again from the beginning");
+                    status = -1;
         }
 
-        // Make sure the measurement type has been explicitly set
-        if (calibrations[i].threshold != 0 && calibrations[i].threshold != 1) {
-            continue;
+        if(status != 0) {
+            bsSetFieldRange((uint8_t)status, VL53_STATUS_Msk);
+            cal_last_step = 0;
         }
-
-        const int channel                  = calibrations[i].port - 1;
-        cal->sensorCalVal[channel * 2]     = calibrations[i].alpha;
-        cal->sensorCalVal[channel * 2 + 1] = calibrations[i].beta;
-        cal->measurementType[channel]      = calibrations->threshold;
-        setMeasurementType(channel, calibrations->threshold);
+        else {
+            cal_last_step = next_step;
+        }
     }
-    // Calibrations are stored in flash
-    calibrationRW(true, cal, calSize);
+    else {
+        USBnprintf("CAL step %d not found in port list", next_step);
+    }
 }
 
 /*!
@@ -160,16 +116,22 @@ void calibrateSensor(int noOfCalibrations, const CACalibration *calibrations, Fl
  * @param   cal Calibration
  * @param   size Calibration size
  */
-void calibrationInit(CRC_HandleTypeDef *hcrc, FlashCalibration *cal, uint32_t size) {
+void calibrationInit(CRC_HandleTypeDef *hcrc, FlashCalibration *cal, uint32_t size, VL53L1_DEV dev_p) {
     hcrc_ = hcrc;
 
     // If calibration value is not stored in FLASH use default calibration
     if (readFromFlashCRC(hcrc_, (uint32_t)FLASH_ADDR_CAL, (uint8_t *)cal, size) != 0) {
-        setDefaultCalibration(cal);
+        setDefaultCalibration(cal, dev_p);
     }
-
-    // Initialise channels to measure current or voltage
-    channelGpioInit(cal);
+    else {
+        /* Modify on-device calibration data with saved values */
+        VL53L1_CalibrationData_t calib_data;
+        VL53L1_Error status = VL53L1_GetCalibrationData(dev_p, &calib_data);
+        if(status != 0) {bsSetFieldRange((uint8_t)status, VL53_STATUS_Msk);}
+        memcpy(&calib_data.customer, &cal->cal_data, sizeof(VL53L1_CustomerNvmManaged_t));
+        status = VL53L1_SetCalibrationData(dev_p, &calib_data);
+        if(status != 0) {bsSetFieldRange((uint8_t)status, VL53_STATUS_Msk);}
+    }
 }
 
 /*!
@@ -187,13 +149,19 @@ void calibrationRW(bool write, FlashCalibration *cal, uint32_t size) {
     else {
         char buf[300];
         int len = 0;
-        len += snprintf(&buf[len], sizeof(buf) - len, "Calibration: CAL");
-        for (int ch = 0; ch < NO_CALIBRATION_CHANNELS; ch++) {
-            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f,%d", ch + 1,
-                            cal->sensorCalVal[ch * 2], cal->sensorCalVal[ch * 2 + 1],
-                            cal->measurementType[ch]);
+        CA_SNPRINTF(buf, len, "Calibration: \r\n");
+        uint8_t* cal_data_uint8 = (uint8_t*)&cal->cal_data;
+        int lines = sizeof(VL53L1_CustomerNvmManaged_t) / 8;
+
+        for (int l = 0; l <= lines; l++) {
+            int remaining = sizeof(VL53L1_CustomerNvmManaged_t) - (8 * l);
+            int line_len = remaining > 8 ? 8 : remaining;
+            //CA_SNPRINTF(buf, len, "%d, ", line_len);
+            for(int i = 0; i < line_len; i++) {
+                CA_SNPRINTF(buf, len, "0x%02x ", cal_data_uint8[8 *  l + i]);
+            }
+            CA_SNPRINTF(buf, len, "\r\n");
         }
-        len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
         writeUSB(buf, len);
     }
 }

@@ -11,19 +11,15 @@
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "main.h"
+#include "vl53l1_api.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
 
-// Default pressure sensors
-#define GANLITONG_OFFSET -1.79    // in bar
-#define GANLITONG_SCALAR 0.00188  // in bar/ADCstep assuming the ADC range is [0V, 5V]
-
 #define PORTCALVAL_DEFAULT 1.0
 
-#define NO_CALIBRATION_CHANNELS 6      // 6 Sensors
-#define NO_CHANNELS             8      // 6 sensors + VCC + Vbus
+#define NO_CHANNELS             2      // VCC + Vbus
 #define ADC_MAX                 4095   // 12-bits
 #define MAX_VIN                 5.112  // Maximum input voltage on channels (after voltage divider)
 #define MAX_VCC_IN              5.49   // Maximum measurable VCC (after voltage divider)
@@ -32,9 +28,7 @@
 
 // Variables that need to be stored in flash memory.
 typedef struct FlashCalibration {
-    float sensorCalVal[NO_CHANNELS * 2];
-    float portCalVal[NO_CHANNELS];
-    int measurementType[NO_CHANNELS];
+    VL53L1_CustomerNvmManaged_t cal_data;
 } FlashCalibration;
 
 /***************************************************************************************************
@@ -44,8 +38,8 @@ typedef struct FlashCalibration {
 void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration *cal,
                     float *ADCMeansRaw, uint32_t calSize);
 void calibrateSensor(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration *cal,
-                     uint32_t calSize);
-void calibrationInit(CRC_HandleTypeDef *hcrc, FlashCalibration *cal, uint32_t size);
+                     uint32_t calSize, VL53L1_DEV dev_p);
+void calibrationInit(CRC_HandleTypeDef *hcrc, FlashCalibration *cal, uint32_t size, VL53L1_DEV dev_p);
 void calibrationRW(bool write, FlashCalibration *cal, uint32_t size);
 
 #endif /* INC_CALIBRATION_H_ */

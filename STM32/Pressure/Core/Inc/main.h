@@ -58,34 +58,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define CH6_Ctrl_Pin GPIO_PIN_13
-#define CH6_Ctrl_GPIO_Port GPIOC
-#define CH5_Ctrl_Pin GPIO_PIN_14
-#define CH5_Ctrl_GPIO_Port GPIOC
-#define CH4_Ctrl_Pin GPIO_PIN_15
-#define CH4_Ctrl_GPIO_Port GPIOC
 #define FB_5V_Pin GPIO_PIN_0
 #define FB_5V_GPIO_Port GPIOA
 #define FB_VBUS_Pin GPIO_PIN_1
 #define FB_VBUS_GPIO_Port GPIOA
-#define pressure_6_Pin GPIO_PIN_2
-#define pressure_6_GPIO_Port GPIOA
-#define pressure_5_Pin GPIO_PIN_3
-#define pressure_5_GPIO_Port GPIOA
-#define pressure_4_Pin GPIO_PIN_4
-#define pressure_4_GPIO_Port GPIOA
-#define pressure_3_Pin GPIO_PIN_6
-#define pressure_3_GPIO_Port GPIOA
-#define pressure_2_Pin GPIO_PIN_7
-#define pressure_2_GPIO_Port GPIOA
-#define pressure_1_Pin GPIO_PIN_1
-#define pressure_1_GPIO_Port GPIOB
-#define CH3_Ctrl_Pin GPIO_PIN_12
-#define CH3_Ctrl_GPIO_Port GPIOB
-#define CH2_Ctrl_Pin GPIO_PIN_13
-#define CH2_Ctrl_GPIO_Port GPIOB
-#define CH1_Ctrl_Pin GPIO_PIN_14
-#define CH1_Ctrl_GPIO_Port GPIOB
 #define CTRL_LED_Pin GPIO_PIN_4
 #define CTRL_LED_GPIO_Port GPIOB
 
