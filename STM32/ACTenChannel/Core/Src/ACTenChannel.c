@@ -84,6 +84,9 @@ static CAProtocolCtx caProto =
 /* Status printout buffer, shared */
 static char buf[600] = {0};
 
+static StmGpio powerStatus;
+static float isMainsConnected = 0;
+
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
@@ -99,6 +102,8 @@ static void printAcTenChannelStatus() {
                         stmGetGpio(heaterPorts[i]), getPWMPinPercent(i));
     }
 
+    CA_SNPRINTF(buf, len, "Power   On: %d\r\n", (int)round(isMainsConnected));
+
     writeUSB(buf, len);
 }
 
@@ -108,9 +113,11 @@ static void printAcTenChannelStatus() {
 static void printAcTenChannelStatusDef() {
     int len = 0;
 
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Mains not-connected error\r\n", AC_POWER_ERROR_Msk);
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Fan state\r\n", AC_TEN_CH_PORT_x_STATUS_Msk(10));
     for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++) {
-        len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",Port %d switching state\r\n",
-                        (uint32_t) AC_TEN_CH_PORT_x_STATUS_Msk(i), i);
+        CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Port %d switching state\r\n", 
+            (uint32_t) AC_TEN_CH_PORT_x_STATUS_Msk(i), i);
     }
 
     writeUSB(buf, len);
@@ -135,6 +142,8 @@ static void GpioInit()
         stmGpioInit(&heaterPorts[i], pinsBlk[i], pins[i], STM_GPIO_OUTPUT);
         heatCtrlAdd(&heaterPorts[i]);
     }
+
+    stmGpioInit(&powerStatus, POWERSTATUS_GPIO_Port, POWERSTATUS_Pin, STM_GPIO_INPUT);
 }
 
 static double ADCtoCurrent(double adc_val)
@@ -284,12 +293,19 @@ static void CAportState(int port, bool state, int percent, int duration)
 ** Adds the port and fan status bits into the error field, and clears the error bit if there are no
 ** more errors.
 */
-static void updateBoardStatus() 
-{
+static void updateBoardStatus() {
+    static int const FILTER_LEN = 1000;
+
     for(int i = 0; i < AC_TEN_CH_NUM_PORTS; i++)
     {
         stmGetGpio(heaterPorts[i]) ? bsSetField(AC_TEN_CH_PORT_x_STATUS_Msk(i)) : bsClearField(AC_TEN_CH_PORT_x_STATUS_Msk(i));
     }
+
+    /* Heavily averaged signal of the last 1000 samples to smooth out large dips
+    ** The gpio input is not supposed to change value generally so should be fine to use a large filter
+    ** Note: When power is toggled the status code changes within one print cycle */
+    isMainsConnected += (stmGetGpio(powerStatus) - isMainsConnected)/FILTER_LEN;
+    (isMainsConnected >= 0.5) ? bsClearField(AC_POWER_ERROR_Msk) : bsSetError(AC_POWER_ERROR_Msk);
 
     /* Clear the error mask if there are no error bits set any more. This logic could be done when
     ** the (other) error bits are cleared, but doing here means it only needs to be done once */
