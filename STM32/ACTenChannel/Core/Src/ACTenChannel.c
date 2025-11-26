@@ -273,12 +273,8 @@ static void updateBoardStatus() {
     ** The gpio input is not supposed to change value generally so should be fine to use a large
     * filter
     ** Note: When power is toggled the status code changes within one print cycle */
-    isMainsConnected += (stmGetGpio(powerStatus) - isMainsConnected) / FILTER_LEN;
-    (isMainsConnected >= 0.5) ? bsClearField(AC_POWER_ERROR_Msk) : bsSetError(AC_POWER_ERROR_Msk);
-
-    /* Clear the error mask if there are no error bits set any more. This logic could be done when
-    ** the (other) error bits are cleared, but doing here means it only needs to be done once */
-    bsClearError(AC_TEN_CH_No_Error_Msk);
+    isMainsConnected += ((float)stmGetGpio(powerStatus) - isMainsConnected) / FILTER_LEN;
+    bsUpdateError(AC_POWER_ERROR_Msk, isMainsConnected <= 0.5, AC_TEN_CH_No_Error_Msk);
 }
 
 /***************************************************************************************************
