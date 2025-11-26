@@ -38,13 +38,13 @@ void pllReset(PLL_t *pll) {
     pll->omega       = 0.0;
     pll->omegaFilt   = 0.0;
     pll->rocof       = 0.0;
-    pll->theta       = 1.0;  // Different from 0 so it can starts again
+    pll->theta       = 1.0;  // Different from 0 so it can start again
 }
 
 /*
 PLL (Phase Lock Loop) principle
 -
-The goal is a make the input signal match with an internal oscillator
+The goal is to make the internal oscillator match with the input signal
 -
 Input signal:
 where A is the signal amplitude and ϕ its phase
@@ -67,7 +67,7 @@ If the phase error Δ is brought to 0, it means:
 inPhase -> 0.5 A
 quad    -> 0
 -
-So quad is given as input to a PI controller which output the estimated input frequency
+So quad is given as input to a PI controller which outputs the estimated input frequency
 θ is then obtained by integration
 -
 The signal amplitude A can be computed:
