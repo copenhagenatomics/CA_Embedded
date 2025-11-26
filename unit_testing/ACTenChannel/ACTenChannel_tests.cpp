@@ -40,6 +40,9 @@ class ACTenCh: public CaBoardUnitTest
         *******************************************************************************************/
         ACTenCh() : CaBoardUnitTest(&ACTenChannelLoop, ACTenChannel, {LATEST_MAJOR, LATEST_MINOR}) {
             hadc1.Init.NbrOfConversion = 10;
+
+            sst.boundInit();
+            stmSetGpio(powerStatus, true);
         }
 
         void simTick()
@@ -93,11 +96,14 @@ TEST_F(ACTenCh, goldenPath)
 {
     sst.boundInit();
 
-    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0x00000000");    
+    /* 700 ticks is minimum required for average filter on power status to fill up in simulation */
+    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0x00000000", 700);    
 }
 
 TEST_F(ACTenCh, printStatusDef) {
-    statusDefPrintoutTest(sst, "0x7e000000,System errors\r", {
+    statusDefPrintoutTest(sst, "0x7e000800,System errors\r", {
+        "0x00000800,Mains not-connected error\r", 
+        "0x00000400,Fan state\r", 
         "0x00000001,Port 0 switching state\r", 
         "0x00000002,Port 1 switching state\r", 
         "0x00000004,Port 2 switching state\r", 
@@ -113,7 +119,6 @@ TEST_F(ACTenCh, printStatusDef) {
 
 TEST_F(ACTenCh, printStatus) {
     statusPrintoutTest(sst, {
-        "The board is operating normally.\r", 
         "Port 0: On: 0, PWM percent: 0\r", 
         "Port 1: On: 0, PWM percent: 0\r", 
         "Port 2: On: 0, PWM percent: 0\r", 
@@ -124,7 +129,12 @@ TEST_F(ACTenCh, printStatus) {
         "Port 7: On: 0, PWM percent: 0\r", 
         "Port 8: On: 0, PWM percent: 0\r", 
         "Port 9: On: 0, PWM percent: 0\r",
+        "Power   On: 0\r", 
     });
+
+    /* Allow powerstatus buffer to fill for simulation */
+    simTicks(1000);
+    (void)hostUSBread(true);
 
     writeBoardMessage("p2 on 1\n");
     writeBoardMessage("p8 on 1\n");
@@ -144,6 +154,7 @@ TEST_F(ACTenCh, printStatus) {
         "Port 7: On: 1, PWM percent: 100\r", 
         "Port 8: On: 0, PWM percent: 0\r", 
         "Port 9: On: 0, PWM percent: 0\r",
+        "Power   On: 1\r", 
         "\r", 
         "End of board status. \r"
     ));
