@@ -9,8 +9,4 @@ InsertBraces: true
 IndentWidth: 4
 AlignConsecutiveAssignments: true
 AlignConsecutiveMacros: true
-AllowShortBlocksOnASingleLine: Empty
-AllowShortEnumsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: InlineOnly
-AllowShortIfStatementsOnASingleLine: Never
 ...

@@ -59,8 +59,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define FAN_CTRL_Pin GPIO_PIN_14
 #define FAN_CTRL_GPIO_Port GPIOC
-#define POWERSTATUS_Pin GPIO_PIN_2
-#define POWERSTATUS_GPIO_Port GPIOB
 #define CTRL_5_Pin GPIO_PIN_12
 #define CTRL_5_GPIO_Port GPIOB
 #define CTRL_6_Pin GPIO_PIN_13

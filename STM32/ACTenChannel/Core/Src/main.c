@@ -479,8 +479,8 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-  /* USER CODE END MX_GPIO_Init_1 */
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -506,12 +506,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(FAN_CTRL_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : POWERSTATUS_Pin */
-  GPIO_InitStruct.Pin = POWERSTATUS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(POWERSTATUS_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pins : CTRL_5_Pin CTRL_6_Pin CTRL_7_Pin CTRL_8_Pin
                            CTRL_LED_Pin CTRL_4_Pin CTRL_3_Pin CTRL_2_Pin
                            CTRL_1_Pin CTRL_0_Pin */
@@ -530,8 +524,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-  /* USER CODE END MX_GPIO_Init_2 */
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
