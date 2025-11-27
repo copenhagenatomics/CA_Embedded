@@ -118,9 +118,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-      HAL_IWDG_Refresh(&hiwdg);
-      HAL_WWDG_Refresh(&hwwdg);
-      ACTenChannelLoop(bootMsg);
+    HAL_IWDG_Refresh(&hiwdg);
+    HAL_WWDG_Refresh(&hwwdg);
+    ACTenChannelLoop(bootMsg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
