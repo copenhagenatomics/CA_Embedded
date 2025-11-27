@@ -99,16 +99,12 @@ jobs:
       - name: Install arm-none-eabi toolchain
         run: |
           TOOLCHAIN_URL="https://developer.arm.com/-/media/Files/downloads/gnu/14.3.rel1/binrel/arm-gnu-toolchain-14.3.rel1-x86_64-arm-none-eabi.tar.xz"
-          
           echo "Downloading ARM toolchain..."
           wget -q $TOOLCHAIN_URL -O arm-toolchain.tar.xz
-
           echo "Extracting..."
           sudo mkdir -p /opt/arm-toolchain
           sudo tar -xf arm-toolchain.tar.xz -C /opt/arm-toolchain --strip-components=1
-
-          echo "Adding to PATH..."
-          echo "/opt/arm-toolchain/bin" | sudo tee /etc/profile.d/arm-gcc-path.sh
+          echo "/opt/arm-toolchain/bin" >> $GITHUB_PATH
       # Generate the next release + tag for including in the build
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-1
