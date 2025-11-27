@@ -95,8 +95,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'true'
-      # Setup the compiler and compile the program
-      - uses: carlosperate/arm-none-eabi-gcc-action@v1
+      - name: Install arm-none-eabi toolchain
+        run: sudo apt update && sudo apt install -y gcc-arm-none-eabi
       # Generate the next release + tag for including in the build
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-1
