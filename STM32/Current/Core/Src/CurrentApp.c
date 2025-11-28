@@ -5,25 +5,45 @@
  * @author  agp
 */
 
-#include <stdio.h>
-#include <stdint.h>
-#include <math.h>
-#include <stdlib.h>
 #include <inttypes.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "stm32f4xx_hal.h"
-#include "ca_rfft.h"
+#include "ADCMonitor.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "ADCMonitor.h"
-#include "FLASH_readwrite.h"
-#include "systemInfo.h"
-#include "USBprint.h"
-#include "StmGpio.h"
-#include "array-math.h"
-#include "pcbversion.h"
 #include "CurrentApp.h"
+#include "FLASH_readwrite.h"
+#include "StmGpio.h"
+#include "USBprint.h"
+#include "array-math.h"
 #include "main.h"
+#include "pcbversion.h"
+#include "pll.h"
+#include "stm32f4xx_hal.h"
+#include "systemInfo.h"
+
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
+#define MIN_CUR_RMS   0.5f // [Arms] - Min RMS current
+
+typedef enum {
+    Stopped,
+    Forward,
+    Reverse
+} PhaseDirection_t; // Phase direction handler
+
+typedef struct
+{
+    double rms;
+    double maBuffer[MOVING_AVERAGE_LENGTH];
+    moving_avg_cbuf_t maBufferHandler;
+    PLL_t pll;
+} PhaseData_t; // Phase data handler
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -45,38 +65,17 @@ static void calculateCurrent(int16_t *pData, int noOfChannels, int noOfSamples);
 static void printCurrent();
 static void adcPrinter();
 static void adcLogger(int16_t *pData, int noOfChannels, int noOfSamples);
-static void fftLogPrinter();
-static void fftLogger(int16_t *pData, int noOfChannels, int noOfSamples);
 static void logging(int port);
 
 static void updateBoardStatus();
-
-/***************************************************************************************************
-** DEFINES
-***************************************************************************************************/
-
-typedef enum {
-    Stopped,
-    Forward,
-    Reverse
-} PhaseDirection_t;
-
-typedef struct
-{
-    double rms;
-    q15_t frq;
-    q15_t amp;
-    double maBuffer[MOVING_AVERAGE_LENGTH];
-    moving_avg_cbuf_t maBufferHandler;
-} PhaseData_t;
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
 ***************************************************************************************************/
 
 static CRC_HandleTypeDef* hcrc_ = NULL;
-static TIM_HandleTypeDef* loopTimer = NULL;
 
+static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
 static ADCCallBack adcCbFunc = calculateCurrent;
 
 static struct
@@ -91,12 +90,6 @@ static struct
     double transformerRatio;
 } adcToAmps[NUM_CURRENT_CHANNELS];
 
-static struct
-{
-    q15_t* outTable;
-    ssize_t count;
-} fftLoggerData = { NULL, ADC_CHANNEL_BUF_SIZE };
-
 static StmGpio faultEnable;
 
 static struct
@@ -106,8 +99,6 @@ static struct
     size_t printed;  // number of samples printed to console/user.
     int16_t log[ADC_CHANNEL_BUF_SIZE * 4]; // Log two seconds.
 } adcData = { 0, 0, 0, { 0 } };
-
-static CA_rfft_ctx* ca_rfft_ctx = NULL;
 
 static CAProtocolCtx caProto =
 {
@@ -137,30 +128,16 @@ static void CurrentPrintHeader()
 
 static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples)
 {
-    static const int MIN_FREQ = 3;
     static struct {
         unsigned int delayCount; // Old value should be reported every second until error is gone.
         double oldFault;         // Fault measured when fault switch on
     } faultChannel = { 0, 0 };
 
-    // True RMS current calculation for each phase with moving average
     for (int ch = 0; ch < NUM_CURRENT_CHANNELS; ch++)
     {
-        q15_t freq = 0, amp = 0; // Default invalid values.
-        q15_t *fft = ca_rfft(ca_rfft_ctx, pData, noOfChannels, noOfSamples, ch);
-
-        if (fft != NULL && ca_rfft_absmax(&fft[MIN_FREQ], noOfSamples - MIN_FREQ, &freq, &amp) >= 0)
-        {
-            currentData.phases[ch].amp = amp;
-            currentData.phases[ch].frq = freq + MIN_FREQ;
-        }
-        else
-        {
-            currentData.phases[ch].amp = 0;
-            currentData.phases[ch].frq = 0;
-        }
-
         /*
+         * True RMS current calculation for each phase with moving average
+         *
          * Step 1: Calculation of begin/end indexes of the current sinewave
          * Step 2: Removal of offset with computed indexes (the current sinewave is centered around 0)
          * Step 3: Computation of RMS value based on computed indexes
@@ -170,6 +147,17 @@ static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, -ADCMeanLimited(pData, ch, indexes), ch);
         double current = adcToCurrent(ADCTrueRms(pData, ch, indexes), ch);
         currentData.phases[ch].rms = maMean(&currentData.phases[ch].maBufferHandler, current);
+
+        // Don't run the PLL if the RMS is too low
+        if (currentData.phases[ch].rms >= MIN_CUR_RMS) {
+            // Frequency and fundamental amplitude estimation
+            for (int i = 0; i < noOfSamples; i++) {
+                pllStep(&currentData.phases[ch].pll, pData[i * noOfChannels + ch]);
+            }
+        }
+        else {
+            pllReset(&currentData.phases[ch].pll);
+        }
     }
 
     if (faultChannel.delayCount == 0)
@@ -254,19 +242,20 @@ static double adcToFaultOhm(double adcValue, double adc_vsupply)
 
 static void ADCcalibrationRW(bool wr)
 {
-    char buf[100];
-    int len = snprintf(buf, sizeof(buf), "Calibration: CAL 1,%lf,0 2,%lf,0 3,%lf,0\r\n",
-            adcToAmps[0].transformerRatio,
-            adcToAmps[1].transformerRatio,
-            adcToAmps[2].transformerRatio);
-    writeUSB(buf, len);
-
     if (wr)
     {
         if (writeToFlashCRC(hcrc_, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) adcToAmps, sizeof(adcToAmps)) != 0)
         {
             USBnprintf("Calibration was not stored in FLASH");
         }
+    }
+    else {
+        char buf[100];
+        int len = snprintf(buf, sizeof(buf), "Calibration: CAL 1,%lf,0 2,%lf,0 3,%lf,0\r\n",
+                           adcToAmps[0].transformerRatio,
+                           adcToAmps[1].transformerRatio,
+                           adcToAmps[2].transformerRatio);
+        writeUSB(buf, len);
     }
 }
 
@@ -315,6 +304,7 @@ static void calculateCurrent(int16_t *pData, int noOfChannels, int noOfSamples)
 {
     getDirection(pData, noOfChannels, noOfSamples);
     pDataToValues(pData, noOfChannels, noOfSamples);
+    printCurrent();
 }
 
 static void printCurrent()
@@ -327,18 +317,18 @@ static void printCurrent()
         return;
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %d, %d, %d, %d, %d, %d, %d, 0x%08" PRIx32,
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,
                 currentData.phases[0].rms,
                 currentData.phases[1].rms,
                 currentData.phases[2].rms,
                 currentData.fault,
                 currentData.dir,
-                currentData.phases[0].frq,
-                currentData.phases[1].frq,
-                currentData.phases[2].frq,
-                currentData.phases[0].amp,
-                currentData.phases[1].amp,
-                currentData.phases[2].amp,
+                currentData.phases[0].pll.omegaFilt * OMEGA_TO_HZ,
+                currentData.phases[1].pll.omegaFilt * OMEGA_TO_HZ,
+                currentData.phases[2].pll.omegaFilt * OMEGA_TO_HZ,
+                currentData.phases[0].pll.rocof * ROCOF_TO_HZ_PER_S,
+                currentData.phases[1].pll.rocof * ROCOF_TO_HZ_PER_S,
+                currentData.phases[2].pll.rocof * ROCOF_TO_HZ_PER_S,
                 bsGetStatus());
 }
 
@@ -379,47 +369,7 @@ static void adcLogger(int16_t *pData, int noOfChannels, int noOfSamples)
         adcData.log[adcData.len] = *p;
         adcData.len++;
     }
-}
-
-static void fftLogPrinter()
-{
-    char buf[10];
-
-    if (fftLoggerData.count == ADC_CHANNEL_BUF_SIZE || fftLoggerData.outTable == NULL)
-    {
-        return; // Wait for ADC callback to generate new data
-    }
-
-    // Write data to the USB serial port.
-    while (fftLoggerData.count<ADC_CHANNEL_BUF_SIZE && txAvailable() > sizeof(buf))
-    {
-        int len = 0;
-        if (fftLoggerData.count != 0)
-        {
-            len += snprintf(&buf[len], sizeof(buf) - len, ", ");
-        }
-        len += snprintf(&buf[len], sizeof(buf) - len, "%x", abs(fftLoggerData.outTable[fftLoggerData.count]));
-        writeUSB(buf, len);
-
-        // Wrote one entry to upper half USB printer buffer.
-        fftLoggerData.count++;
-    }
-
-    if (fftLoggerData.count == ADC_CHANNEL_BUF_SIZE)
-    {
-        // Wait for ADC callback to generate new data
-        writeUSB("\r\n", 2);
-    }
-}
-
-static void fftLogger(int16_t *pData, int noOfChannels, int noOfSamples)
-{
-    if (fftLoggerData.count == ADC_CHANNEL_BUF_SIZE)
-    {
-        // Recalculate the FFT data.
-        fftLoggerData.outTable = ca_rfft(ca_rfft_ctx, pData, noOfChannels, noOfSamples, adcData.channel);
-        fftLoggerData.count = 0;
-    }
+    adcPrinter();
 }
 
 static void logging(int port)
@@ -431,11 +381,6 @@ static void logging(int port)
     {
         adcData.channel = port-1;
         adcCbFunc = adcLogger;
-    }
-    else if (port > 8 && port <= 11)
-    {
-        adcData.channel = port - 9;
-        adcCbFunc = fftLogger;
     }
     else
         adcCbFunc = calculateCurrent;
@@ -464,44 +409,18 @@ static void updateBoardStatus()
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-// Callback: timer has rolled over
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, CRC_HandleTypeDef* hcrc)
 {
-    // Check which version of the timer triggered this callback and toggle LED
-    if (htim == loopTimer)
-    {
-        if (adcCbFunc == adcLogger)
-        {
-            adcPrinter();
-        }
-        else if (adcCbFunc == fftLogger)
-        {
-            fftLogPrinter();
-        }
-        else
-        {
-            printCurrent();
-        }
-    }
-}
-
-void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, TIM_HandleTypeDef* _loopTimer, CRC_HandleTypeDef* hcrc)
-{
-    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
-
     initCAProtocol(&caProto, usbRx);
 
     hcrc_ = hcrc;
-    loopTimer = _loopTimer;
-    ca_rfft_ctx = ca_rfft_init(ADC_CHANNEL_BUF_SIZE);
-
-    HAL_TIM_Base_Start_IT(_loopTimer);
 
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer)/sizeof(int16_t));
 
     for (int ch = 0; ch < NUM_CURRENT_CHANNELS; ch++)
     {
         maInit(&currentData.phases[ch].maBufferHandler, currentData.phases[ch].maBuffer, MOVING_AVERAGE_LENGTH);
+        pllReset(&currentData.phases[ch].pll);
     }
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
@@ -515,7 +434,7 @@ void currentAppInit(ADC_HandleTypeDef* hadc, TIM_HandleTypeDef* adcTimer, TIM_Ha
 
     // Start timers to begin a measure.
     stmSetGpio(faultEnable, true); // start reading the fault channel.
-    HAL_TIM_Base_Start_IT(adcTimer);
+    HAL_TIM_Base_Start(adcTimer);
 }
 
 void currentAppLoop(const char* bootMsg)
