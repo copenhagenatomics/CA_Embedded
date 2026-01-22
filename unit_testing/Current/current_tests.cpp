@@ -22,11 +22,13 @@ extern "C" {
 #include "fake_USBprint.h"
 
 /* Real supporting units */
-#include "systeminfo.c"
 #include "array-math.c"
+#include "crc.c"
+#include "pll.c"
+#include "systeminfo.c"
+#include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
-#include "ADCmonitor.c"
 
 /* UUT */
 #include "CurrentApp.c"
@@ -53,15 +55,11 @@ class CurrentTest: public CaBoardUnitTest
         void simTick()
         {
             if(tickCounter != 0) {
-                if(tickCounter % 100 == 0) {
-                    HAL_TIM_PeriodElapsedCallback(&hlooptim);
-                }
-
                 /* ADC sampling speed ~= 2048 Hz, buffer = 1024 * 2. Will fill in a second */
-                if(tickCounter % 1000 == 0) {
+                if(tickCounter % 200 == 0) {
                     HAL_ADC_ConvCpltCallback(&hadc);
                 }
-                else if(tickCounter % 500 == 0) {
+                else if(tickCounter % 100 == 0) {
                     HAL_ADC_ConvHalfCpltCallback(&hadc);
                 }
             }
@@ -76,6 +74,28 @@ class CurrentTest: public CaBoardUnitTest
             int ch_dma_len = hadc.dma_length / n;
             for(int i = 0; i < ch_dma_len; i++) {
                 *((int16_t*)hadc.dma_address + ch + n * i) = val;
+            }
+        }
+
+        void generateSine(int ch, float freq, float amp, float fs, float offset) {
+            int n = hadc.Init.NbrOfConversion;
+            int ch_dma_len = hadc.dma_length / n;
+            float angleStep = 2 * M_PI * freq / fs;
+
+            for (int i = 0; i < ch_dma_len; i++) {
+                *((int16_t*)hadc.dma_address + ch + n * i) = (int16_t)roundf(amp * sinf(angleStep * i) + offset);
+            }
+        }
+
+        void generateSineRamp(int ch, float freqInit, float amp, float fs, float offset, float freqRamp) {
+            int n = hadc.Init.NbrOfConversion;
+            int ch_dma_len = hadc.dma_length / n;
+            float freqStep = freqRamp / fs;
+
+            for (int i = 0; i < ch_dma_len; i++) {
+                float freq = freqInit + freqStep * i;
+                float angleStep = 2.0 * M_PI * freq / fs;
+                *((int16_t*)hadc.dma_address + ch + n * i) = (int16_t)roundf(amp * sinf(angleStep * i) + offset);
             }
         }
 
@@ -94,7 +114,7 @@ class CurrentTest: public CaBoardUnitTest
 
         /* Normal board setup */
         void currentSetup() {
-            currentAppInit(&hadc, &hadctim, &hlooptim, &hcrc);
+            currentAppInit(&hadc, &hadctim, &hcrc);
         
             /* Fill the ADC buffer with null values */
             zeroCurrentAdcBuffer();
@@ -128,7 +148,7 @@ class CurrentTest: public CaBoardUnitTest
 ***************************************************************************************************/
 
 TEST_F(CurrentTest, goldenStartup) {
-    goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0, 0, 0, 0, 0, 0, 0x00000000", 600);
+    goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000", 600);
 }
 
 TEST_F(CurrentTest, incorrectBoard) {
@@ -191,7 +211,7 @@ TEST_F(CurrentTest, printStatus) {
 }
 
 TEST_F(CurrentTest, faultChannelCurrent) {
-    goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0, 0, 0, 0, 0, 0, 0x00000000", 600);
+    goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000", 600);
     /* Flush the USB buffer */
     (void) hostUSBread(true);
 
@@ -202,23 +222,81 @@ TEST_F(CurrentTest, faultChannelCurrent) {
     goToTick(1100);
 
     /* 1 mA at 24 V = 24k */
-    vector<string>* vs = hostUSBread(true);
-    double fault = getNthPrintoutChannel(vs->back(), 3);
+    vector<string> vs = hostUSBread(true);
+    double fault = getNthPrintoutChannel(vs.back(), 3);
     EXPECT_NEAR(fault, 24000.00, 0.001*24000); /* 0.1% accuracy */
-    delete vs;
 
     /* Repeat with 4 and 20 mA */
     fillAdcChannel(3, 496);
     goToTick(1600);
     vs = hostUSBread(true);
-    fault = getNthPrintoutChannel(vs->back(), 3);
+    fault = getNthPrintoutChannel(vs.back(), 3);
     EXPECT_NEAR(fault, 6000.00, 0.001*6000); /* 0.1% accuracy */
-    delete vs;
 
     fillAdcChannel(3, 2482);
     goToTick(2100);
     vs = hostUSBread(true);
-    fault = getNthPrintoutChannel(vs->back(), 3);
+    fault = getNthPrintoutChannel(vs.back(), 3);
     EXPECT_NEAR(fault, 1200.00, 0.001*1200); /* 0.1% accuracy */
-    delete vs;
+}
+
+TEST_F(CurrentTest, frequencyMeasurement) {
+    float fs     = 4000.0;  // Sampling frequency
+    float amp    = 500.0;   // Typical amplitude
+    float offset = 2047;    // To center the sine
+
+    currentAppInit(&hadc, &hadctim, &hcrc);
+
+    generateSine(0, 50.0, amp, fs, offset);
+    generateSine(1, 75.6, amp, fs, offset);
+    generateSine(2, 44.9, amp, fs, offset);
+    goToTick(4000);
+    vector<string> vs = hostUSBread(true);
+    double freq = getNthPrintoutChannel(vs.back(), 5);
+    EXPECT_NEAR(freq, 50.0, 0.01 * 50.0);
+    freq = getNthPrintoutChannel(vs.back(), 6);
+    EXPECT_NEAR(freq, 75.6, 0.01 * 75.6);
+    freq = getNthPrintoutChannel(vs.back(), 7);
+    EXPECT_NEAR(freq, 44.9, 0.01 * 44.9);
+
+    generateSine(0, 51.0, amp, fs, offset);
+    fillAdcChannel(1, 2400);
+    goToTick(6000);
+    vs = hostUSBread(true);
+    freq = getNthPrintoutChannel(vs.back(), 5);
+    EXPECT_NEAR(freq, 51.0, 0.1 * 51.0);
+    freq = getNthPrintoutChannel(vs.back(), 6);
+    EXPECT_NEAR(freq, 0.0, 0.001);
+}
+
+TEST_F(CurrentTest, rocofMeasurement) {
+    float fs     = 4000.0;  // Sampling frequency
+    float amp    = 500.0;   // Typical amplitude
+    float offset = 2047;    // To center the sine
+
+    currentAppInit(&hadc, &hadctim, &hcrc);
+
+    // Ramps the frequency from 0 to 60 Hz
+    float freqRamp = 10.0;
+    float freqDiff = 60.0;
+    int noOfSamples = ADC_F_S * freqDiff / freqRamp;
+    int N = noOfSamples / (2 * ADC_CHANNEL_BUF_SIZE);
+    int tick = 0;
+    for (int i = 0; i < N; i++) {
+        // Generates a sine with the frequency changing over time
+        generateSineRamp(0, i * freqDiff / N, amp, fs, offset, freqRamp);
+        tick += 200;
+        goToTick(tick);
+    }
+    vector<string> vs = hostUSBread(true);
+    double rocof = getNthPrintoutChannel(vs.back(), 8);
+    EXPECT_NEAR(rocof, freqRamp, 0.1 * freqRamp);
+
+    // Keeps constant frequency, the rocof should go to 0
+    generateSine(0, 60.0, amp, fs, offset);
+    fillAdcChannel(1, 2400);
+    goToTick(tick + 1000);
+    vs = hostUSBread(true);
+    rocof = getNthPrintoutChannel(vs.back(), 8);
+    EXPECT_NEAR(rocof, 0.0, 0.1);
 }
