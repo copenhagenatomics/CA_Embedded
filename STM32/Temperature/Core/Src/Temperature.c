@@ -158,10 +158,10 @@ static void initConnection(ADS1120Device* ads1120, int channel) {
 static void initSpiDevices(SPI_HandleTypeDef* hspi) {
     for (int i = 0; i < NO_SPI_DEVICES; i++) {
         // Initialise Chip Select pin
-        stmGpioInit(&ads1120[0].cs, cs[0].port, cs[0].pin, STM_GPIO_OUTPUT);
+        stmGpioInit(&ads1120[i].cs, cs[i].port, cs[i].pin, STM_GPIO_OUTPUT);
 
         // Initialise Data Ready input pin
-        stmGpioInit(&ads1120[0].drdy, drdy[0].port, drdy[0].pin, STM_GPIO_INPUT);
+        stmGpioInit(&ads1120[i].drdy, drdy[i].port, drdy[i].pin, STM_GPIO_INPUT);
 
         stmSetGpio(ads1120[i].cs, true);  // CS selects chip when low
         ads1120[i].hspi = hspi;
