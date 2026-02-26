@@ -51,7 +51,7 @@ enable_testing()
 include(GoogleTest)
 
 # Temperature tests
-add_executable(temperature_test Temperature_tests.cpp
+add_executable(temperature_tests temperature_tests.cpp
             ${UT_STUBS}/stub_jumpToBootloader.cpp 
             ${LIB}/Util/Src/systeminfo.c
             ${UT_FAKES}/fake_USBprint.cpp 
@@ -62,7 +62,7 @@ add_executable(temperature_test Temperature_tests.cpp
             ${UT_FAKES}/fake_FLASH_readwrite.cpp
             ${UT_LIB}/Util/serialStatus_tests.cpp 
             ${UT_FAKES}/fake_ADS1120.cpp)
-target_include_directories(temperature_test PRIVATE 
+target_include_directories(temperature_tests PRIVATE 
             ${UT_FAKES}
             ${UT_STUBS}
             ${SRC}/Temperature/Core/Src 
@@ -73,7 +73,7 @@ target_include_directories(temperature_test PRIVATE
             ${DRIV}/Inc
             ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include 
             ${UT_LIB}/Util)
-target_link_libraries(temperature_test GTest::gtest_main gmock_main)
-target_compile_definitions(temperature_test PUBLIC UNIT_TESTING)
-target_compile_options(temperature_test PRIVATE -Wall)
-gtest_discover_tests(temperature_test)
+target_link_libraries(temperature_tests GTest::gtest_main gmock_main)
+target_compile_definitions(temperature_tests PUBLIC UNIT_TESTING)
+target_compile_options(temperature_tests PRIVATE -Wall)
+gtest_discover_tests(temperature_tests)
