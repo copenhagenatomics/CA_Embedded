@@ -97,7 +97,7 @@ TEST_F(ACTenCh, goldenPath)
     sst.boundInit();
 
     /* 700 ticks is minimum required for average filter on power status to fill up in simulation */
-    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0x00000000", 700);    
+    goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, -0.0100, 0x00000000\r", 700);    
 }
 
 TEST_F(ACTenCh, printStatusDef) {
@@ -119,17 +119,17 @@ TEST_F(ACTenCh, printStatusDef) {
 
 TEST_F(ACTenCh, printStatus) {
     statusPrintoutTest(sst, {
-        "Port 0: On: 0, PWM percent: 0\r", 
-        "Port 1: On: 0, PWM percent: 0\r", 
-        "Port 2: On: 0, PWM percent: 0\r", 
-        "Port 3: On: 0, PWM percent: 0\r", 
-        "Port 4: On: 0, PWM percent: 0\r", 
-        "Port 5: On: 0, PWM percent: 0\r", 
-        "Port 6: On: 0, PWM percent: 0\r", 
-        "Port 7: On: 0, PWM percent: 0\r", 
-        "Port 8: On: 0, PWM percent: 0\r", 
+        "Port 0: On: 0, PWM percent: 0\r",
+        "Port 1: On: 0, PWM percent: 0\r",
+        "Port 2: On: 0, PWM percent: 0\r",
+        "Port 3: On: 0, PWM percent: 0\r",
+        "Port 4: On: 0, PWM percent: 0\r",
+        "Port 5: On: 0, PWM percent: 0\r",
+        "Port 6: On: 0, PWM percent: 0\r",
+        "Port 7: On: 0, PWM percent: 0\r",
+        "Port 8: On: 0, PWM percent: 0\r",
         "Port 9: On: 0, PWM percent: 0\r",
-        "Power   On: 0\r", 
+        "Power   On: 0\r",
     });
 
     /* Allow powerstatus buffer to fill for simulation */
@@ -141,22 +141,20 @@ TEST_F(ACTenCh, printStatus) {
     writeBoardMessage("Status\n");
 
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Start of board status:\r", 
+        "Start of board status:\r",
         "The board is operating normally.\r",
-        "Port 0: On: 0, PWM percent: 0\r", 
-        "Port 1: On: 1, PWM percent: 100\r", 
-        "Port 2: On: 0, PWM percent: 0\r", 
-        "Port 3: On: 0, PWM percent: 0\r", 
-        "Port 4: On: 0, PWM percent: 0\r", 
-        "Port 5: On: 0, PWM percent: 0\r", 
-        "Port 6: On: 0, PWM percent: 0\r", 
-        "Port 7: On: 1, PWM percent: 100\r", 
-        "Port 8: On: 0, PWM percent: 0\r", 
+        "Port 0: On: 0, PWM percent: 0\r",
+        "Port 1: On: 1, PWM percent: 100\r",
+        "Port 2: On: 0, PWM percent: 0\r",
+        "Port 3: On: 0, PWM percent: 0\r",
+        "Port 4: On: 0, PWM percent: 0\r",
+        "Port 5: On: 0, PWM percent: 0\r",
+        "Port 6: On: 0, PWM percent: 0\r",
+        "Port 7: On: 1, PWM percent: 100\r",
+        "Port 8: On: 0, PWM percent: 0\r",
         "Port 9: On: 0, PWM percent: 0\r",
-        "Power   On: 1\r", 
-        "\r", 
-        "End of board status. \r"
+        "Power   On: 1\r",
+        "End of board status.\r"
     ));
 }
 

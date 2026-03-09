@@ -242,7 +242,7 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
     {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
@@ -264,11 +264,11 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 
     computeHeatSinkTemperatures(pData);
 
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,  ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), 
-                                                                                ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)), 
-                                                                                heatSinkTemperatures[0], heatSinkTemperatures[1],
-                                                                                heatSinkTemperatures[2], heatSinkTemperatures[3],
-                                                                                bsGetStatus());
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n",
+               ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)),
+               ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
+               heatSinkTemperatures[0], heatSinkTemperatures[1], heatSinkTemperatures[2],
+               heatSinkTemperatures[3], bsGetStatus());
 }
 
 /*!
