@@ -531,7 +531,7 @@ void analogInputInit(ADC_HandleTypeDef *hadc, CRC_HandleTypeDef *hcrc, I2C_Handl
     hi2c = _hi2c;
 
     if(0 != boardSetup(AnalogInput, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, ANALOG_INPUT_ERROR_Msk)) {
-        // Don't allow initialising outputs if there is a version error
+        // Don't allow initialising outputs if there is a version error 
         return;
     }
 
