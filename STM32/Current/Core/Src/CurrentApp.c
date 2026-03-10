@@ -246,15 +246,15 @@ static void ADCcalibrationRW(bool wr)
     {
         if (writeToFlashCRC(hcrc_, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) adcToAmps, sizeof(adcToAmps)) != 0)
         {
-            USBnprintf("Calibration was not stored in FLASH");
+            USBnprintf("Calibration was not stored in FLASH\r\n");
         }
     }
     else {
         char buf[100];
-        int len = snprintf(buf, sizeof(buf), "Calibration: CAL 1,%lf,0 2,%lf,0 3,%lf,0\r\n",
-                           adcToAmps[0].transformerRatio,
-                           adcToAmps[1].transformerRatio,
-                           adcToAmps[2].transformerRatio);
+        int len = 0;
+        CA_SNPRINTF(buf, len, "Calibration: CAL 1,%lf,0 2,%lf,0 3,%lf,0\r\n",
+                    adcToAmps[0].transformerRatio, adcToAmps[1].transformerRatio,
+                    adcToAmps[2].transformerRatio);
         writeUSB(buf, len);
     }
 }
@@ -313,23 +313,19 @@ static void printCurrent()
         return;
 
     if(bsGetStatus() & BS_VERSION_ERROR_Msk) {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,
-                currentData.phases[0].rms,
-                currentData.phases[1].rms,
-                currentData.phases[2].rms,
-                currentData.fault,
-                currentData.dir,
-                currentData.phases[0].pll.omegaFilt * OMEGA_TO_HZ,
-                currentData.phases[1].pll.omegaFilt * OMEGA_TO_HZ,
-                currentData.phases[2].pll.omegaFilt * OMEGA_TO_HZ,
-                currentData.phases[0].pll.rocof * ROCOF_TO_HZ_PER_S,
-                currentData.phases[1].pll.rocof * ROCOF_TO_HZ_PER_S,
-                currentData.phases[2].pll.rocof * ROCOF_TO_HZ_PER_S,
-                bsGetStatus());
+    USBnprintf(
+        "%.2f, %.2f, %.2f, %.2f, %d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n",
+        currentData.phases[0].rms, currentData.phases[1].rms, currentData.phases[2].rms,
+        currentData.fault, currentData.dir, currentData.phases[0].pll.omegaFilt * OMEGA_TO_HZ,
+        currentData.phases[1].pll.omegaFilt * OMEGA_TO_HZ,
+        currentData.phases[2].pll.omegaFilt * OMEGA_TO_HZ,
+        currentData.phases[0].pll.rocof * ROCOF_TO_HZ_PER_S,
+        currentData.phases[1].pll.rocof * ROCOF_TO_HZ_PER_S,
+        currentData.phases[2].pll.rocof * ROCOF_TO_HZ_PER_S, bsGetStatus());
 }
 
 static void adcPrinter()
@@ -341,7 +337,8 @@ static void adcPrinter()
 
     while (adcData.printed<adcData.len && txAvailable() > sizeof(buf))
     {
-        int len = sprintf(buf, "%u,", adcData.log[adcData.printed]);
+        int len = 0;
+        CA_SNPRINTF(buf, len, "%u,", adcData.log[adcData.printed]);
         if (len > 0)
         {
             adcData.printed++;

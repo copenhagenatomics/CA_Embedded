@@ -148,7 +148,7 @@ class CurrentTest: public CaBoardUnitTest
 ***************************************************************************************************/
 
 TEST_F(CurrentTest, goldenStartup) {
-    goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000", 600);
+    goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000\r", 600);
 }
 
 TEST_F(CurrentTest, incorrectBoard) {
@@ -164,15 +164,13 @@ TEST_F(CurrentTest, printStatus) {
     /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
     ** printing anything */
     currentAppLoop(bootMsg);
+    (void) hostUSBread(true);
     writeBoardMessage("Status\n");
     
-    EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Boot Unit Test\r", 
-        "Start of board status:\r", 
+    EXPECT_FLUSH_USB(ElementsAre( 
+        "Start of board status:\r",
         "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r",
-        "\r", 
-        "End of board status. \r"
+        "End of board status.\r"
     ));
 
     goToTick(600);
@@ -182,11 +180,9 @@ TEST_F(CurrentTest, printStatus) {
 
     writeBoardMessage("Status\n");
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Start of board status:\r", 
+        "Start of board status:\r",
         "The board is operating normally.\r",
-        "\r", 
-        "End of board status. \r"
+        "End of board status.\r"
     ));
 
     /* Set the ADC buffer just below the undervoltage limit */
@@ -202,16 +198,14 @@ TEST_F(CurrentTest, printStatus) {
 
     writeBoardMessage("Status\n");
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Start of board status:\r", 
+        "Start of board status:\r",
         "Under voltage. The board operates at too low voltage of 21.98V. Check power supply.\r",
-        "\r", 
-        "End of board status. \r"
+        "End of board status.\r"
     ));
 }
 
 TEST_F(CurrentTest, faultChannelCurrent) {
-    goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000", 600);
+    goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000\r", 600);
     /* Flush the USB buffer */
     (void) hostUSBread(true);
 
