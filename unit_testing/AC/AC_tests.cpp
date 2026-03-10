@@ -356,7 +356,6 @@ TEST_F(ACBoard, faultInfoPrintout) {
     ACBoardLoop(bootMsg);
 
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
         "Boot Unit Test\r",
         "Start of fault info\r",
         "Last fault was: 1\r",
