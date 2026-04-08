@@ -161,7 +161,7 @@ class AnalogInputTest: public CaBoardUnitTest
 ***************************************************************************************************/
 
 TEST_F(AnalogInputTest, testanalogInputInitCorrectParams) {
-    goldenPathTest(sst, "0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0x00000000", 200);
+    goldenPathTest(sst, "0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0x00000000\r", 200);
 }
 
 TEST_F(AnalogInputTest, testanalogInputInitWrongBoard) {
@@ -185,8 +185,8 @@ TEST_F(AnalogInputTest, testAnalogInputStatus) {
         "Port 4 measures voltage [0-5V]\r", 
         "Port 5 measures voltage [0-5V]\r", 
         "Port 6 measures voltage [0-5V]\r", 
-        "VCC_28V is: 0.00. It should be >=26.00V \r", 
-        "VBUS is: 0.00. It should be >=4.6V \r", 
+        "VCC_28V is: 0.00. It should be >=26.00V\r", 
+        "VBUS is: 0.00. It should be >=4.6V\r", 
     });
 
     setAdcChannelBuffer(ADC_CHANNEL_28V,  ADC_MAX * 28.0 / MAX_28V_IN);
@@ -254,7 +254,7 @@ TEST_F(AnalogInputTest, testAnalogInputOutputVoltage) {
 
     for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
         /* Calculated value for 5.1V */
-        EXPECT_EQ(digipots[i]->wipers[1], 26) << "Channel " << i;
+        EXPECT_EQ(digipots[i]->wipers[1], 52) << "Channel " << i;
     }
 
     for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
@@ -263,17 +263,17 @@ TEST_F(AnalogInputTest, testAnalogInputOutputVoltage) {
         writeBoardMessage(buf);
         
         /* Board should ramp to the new voltage (10.1) over the course of n cycles */
-        for(int j = 1; j < 25; j++) {
-            EXPECT_EQ(digipots[i]->wipers[1], 26+j)  << "Channel " << i;
+        for(int j = 1; j < 50; j++) {
+            EXPECT_EQ(digipots[i]->wipers[1], 52+j)  << "Channel " << i;
             simTicks(1);
         }
 
         /* Calculated value for 10.1V */
-        EXPECT_EQ(digipots[i]->wipers[1], 51)  << "Channel " << i;
+        EXPECT_EQ(digipots[i]->wipers[1], 102)  << "Channel " << i;
 
         /* Remaining potentiometers should not have been changed */
         for(int j = i + 1; j < NO_CALIBRATION_CHANNELS; j++) {
-            EXPECT_EQ(digipots[j]->wipers[1], 26)  << "Channel " << j;
+            EXPECT_EQ(digipots[j]->wipers[1], 52)  << "Channel " << j;
         }
     }
 }
@@ -287,43 +287,44 @@ TEST_F(AnalogInputTest, testAnalogInputMeasurementRange) {
     /* First write flushes USB, so always sim 1 tick first */
     simTicks(100);
 
-    /* By default, range should be 5.1 and calibration should be 1.0, so output should be ~2.610V */
+    /* By default, range should be 5.1 and calibration should be 1.0, so output should be ~2.56V */
     /* First two lines are boot messages */
     vector<string> lines = hostUSBread(true);
-    vector<string> channels = getChannelsFromLine(lines[2]);
+    vector<string> channels = getChannelsFromLine(lines[1]);
 
     for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
         double channel = stod(channels[i]);
-        EXPECT_NEAR(channel, 2.610, 1E-3);
+        EXPECT_NEAR(channel, 2.561, 1E-3);
     }
 
     /* Adjust the the voltage to 10.1V range, but keep the ADC values mid rail. The voltage should 
-    ** convert to 5.123 */
+    ** convert to 5.075 */
     writeBoardMessage("p1 inmax 10.1\n");
 
-    for(int i = 1; i < 26; i++) {
-        EXPECT_EQ(digipots[0]->wipers[0], 27 + i);
+    for(int i = 1; i < 51; i++) {
+        EXPECT_EQ(digipots[0]->wipers[0], 53 + i);
         simTicks(1);
     }
-    EXPECT_EQ(digipots[0]->wipers[0], 53);
+    EXPECT_EQ(digipots[0]->wipers[0], 104);
     simTicks(75); /* Resynchronise with 10 Hz output */
     lines = hostUSBread(true);
-    channels = getChannelsFromLine(lines[1]);
+    channels = getChannelsFromLine(lines[0]);
 
-    EXPECT_NEAR(stod(channels[0]), 5.123, 1E-3);
+    EXPECT_NEAR(stod(channels[0]), 5.075, 1E-3);
     for(int i = 1; i < NO_CALIBRATION_CHANNELS; i++) {
         double channel = stod(channels[i]);
-        EXPECT_NEAR(channel, 2.610, 1E-3);
+        EXPECT_NEAR(channel, 2.561, 1E-3);
     }
 
     /* Reduce the ADC voltage back down to the ~2.5 range */
     setAdcChannelBuffer(0, 1043);
     simTicks(100);
     lines = hostUSBread(true);
-    channels = getChannelsFromLine(lines[1]);
+    channels = getChannelsFromLine(lines[0]);
 
-    for(int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
+    EXPECT_NEAR(stod(channels[0]), 2.586, 1E-3);
+    for(int i = 1; i < NO_CALIBRATION_CHANNELS; i++) {
         double channel = stod(channels[i]);
-        EXPECT_NEAR(channel, 2.610, 1E-3);
+        EXPECT_NEAR(channel, 2.561, 1E-3);
     }
 }

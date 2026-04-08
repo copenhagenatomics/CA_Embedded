@@ -107,8 +107,7 @@ static digipot_t power_pots[NO_CALIBRATION_CHANNELS] = {0};
 static digipot_t measure_pots[NO_CALIBRATION_CHANNELS] = {0};
 static I2C_HandleTypeDef *hi2c = NULL;
 static StmGpio boost_en;
-static uint8_t num_digipot_bits = 7U;
-static int retu = 1000;
+static uint8_t num_digipot_bits = 8U;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
@@ -349,7 +348,7 @@ static void voltsToAnalog(int noOfChannels) {
  * @param   portValues Array of values to plot
  */
 static void printPorts(float *portValues) {
-    USBnprintf("%d, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, 0x%08" PRIx32 "\r\n", retu, *portValues,
+    USBnprintf("%0.6f, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, 0x%08" PRIx32 "\r\n", *portValues,
                *(portValues + 1), *(portValues + 2), *(portValues + 3), *(portValues + 4),
                *(portValues + 5), bsGetStatus());
 }
@@ -452,10 +451,6 @@ static int initDigiPots(unsigned int i) {
     else {
         bsSetError(I2C_ERROR_Msk(i));
         ret = -1;
-    }
-
-    if (retu == 1000 && ret != 0) {
-        retu = ret;
     }
 
     return ret;
