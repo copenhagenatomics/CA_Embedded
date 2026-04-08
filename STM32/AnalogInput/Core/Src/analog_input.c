@@ -36,8 +36,8 @@
 #define DIGIPOT_MAX (pow(2, num_digipot_bits))
 
 /* Circuit constants */
-#define MEASURE_VOLTAGE_DIVIDER (2.0 / 15.0) 
-#define POWER_VOLTAGE_DIVIDER   (4.3 / 134.3) 
+#define MEASURE_VOLTAGE_DIVIDER (20.0 / (20.0 + 130.0))
+#define POWER_VOLTAGE_DIVIDER   (4.3 / (130.0 + 4.3))
 #define AP64060_FB_VOLTAGE      (0.8)
 #define MAX_VOLTAGE             (24.5)
 #define CURRENT_MEASURE_RESISTOR (160.0) /* 160 Ohm shunt resistor */
@@ -108,6 +108,7 @@ static digipot_t measure_pots[NO_CALIBRATION_CHANNELS] = {0};
 static I2C_HandleTypeDef *hi2c = NULL;
 static StmGpio boost_en;
 static uint8_t num_digipot_bits = 7U;
+static int retu = 1000;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
@@ -224,12 +225,12 @@ static void printAnalogInputStatus() {
     }
 
     if (bsGetField(VCC_28V_ERROR_Msk)) {
-        CA_SNPRINTF(buf, len, "VCC_28V is: %.2f. It should be >=%.2fV \r\n", volts[ADC_CHANNEL_28V], 
+        CA_SNPRINTF(buf, len, "VCC_28V is: %.2f. It should be >=%.2fV\r\n", volts[ADC_CHANNEL_28V], 
                     MIN_28V);
     }
 
     if (bsGetField(VCC_RAW_ERROR_Msk)) {
-        CA_SNPRINTF(buf, len, "VBUS is: %.2f. It should be >=%.1fV \r\n", 
+        CA_SNPRINTF(buf, len, "VBUS is: %.2f. It should be >=%.1fV\r\n", 
                     volts[ADC_CHANNEL_VBUS], MIN_VBUS);
     }
     writeUSB(buf, len);
@@ -287,7 +288,7 @@ static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *ca
     //   calibrations->threshold == 2 -> board port calibration
     if (calibrations->threshold == 2) {
         if (loggingMode != 1) {
-            USBnprintf("To calibrate board, first enter voltLogging mode by typing: 'LOG p1'");
+            USBnprintf("To calibrate board, first enter voltLogging mode by typing: 'LOG p1'\r\n");
             return;
         }
 
@@ -348,7 +349,7 @@ static void voltsToAnalog(int noOfChannels) {
  * @param   portValues Array of values to plot
  */
 static void printPorts(float *portValues) {
-    USBnprintf("%0.6f, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, 0x%08" PRIx32, *portValues,
+    USBnprintf("%d, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, 0x%08" PRIx32 "\r\n", retu, *portValues,
                *(portValues + 1), *(portValues + 2), *(portValues + 3), *(portValues + 4),
                *(portValues + 5), bsGetStatus());
 }
@@ -401,7 +402,7 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
 
     /* If the version is incorrect only print out status code */
     if (bsGetField(BS_VERSION_ERROR_Msk)) {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
@@ -451,6 +452,10 @@ static int initDigiPots(unsigned int i) {
     else {
         bsSetError(I2C_ERROR_Msk(i));
         ret = -1;
+    }
+
+    if (retu == 1000 && ret != 0) {
+        retu = ret;
     }
 
     return ret;

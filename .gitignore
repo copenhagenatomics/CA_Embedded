@@ -4,9 +4,15 @@ build/
 *.launch
 *.mxproject
 githash.h
-/**/settings.json
-*.log
+.vscode/settings.json
+STM32/**/settings.json
+unit_testing/.vscode/settings.json
 
-# Python files
+# Compiled python files
 *.pyc
-.venv
+
+# Virtual environment files
+.venv/
+
+# Log files
+*.log
