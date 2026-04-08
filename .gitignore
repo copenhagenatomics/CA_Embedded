@@ -1,9 +1,11 @@
 Debug
+Release
 build/
 .settings
 *.launch
 *.mxproject
-githash.h
+STM32/**/githash.h
+**/.cortex-debug*
 .vscode/settings.json
 STM32/**/settings.json
 unit_testing/.vscode/settings.json
