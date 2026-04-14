@@ -92,7 +92,7 @@ class LightControllerTest: public ::testing::Test
         TIM_HandleTypeDef htim2;
         TIM_HandleTypeDef htim5;
         WWDG_HandleTypeDef hwwdg;
-        const char * bootMsg = "Boot Unit Test";
+        const char * bootMsg = "Boot Unit Test\r\n";
         const int TICK_COUNTER_OVERFLOW = 256;
         int tickCounter = 0;
 };
@@ -112,7 +112,7 @@ TEST_F(LightControllerTest, CorrectBoardParams)
     HAL_TIM_PeriodElapsedCallback(&htim5);
 
     /* Check the printout is correct */
-    EXPECT_READ_USB(Contains("0, 0, 0, 0x0"));
+    EXPECT_READ_USB(Contains("0, 0, 0, 0x00000000\r"));
 }
 
 TEST_F(LightControllerTest, WrongBoardParams)
@@ -142,7 +142,7 @@ TEST_F(LightControllerTest, WrongBoardParams)
     HAL_TIM_PeriodElapsedCallback(&htim5);
 
     /* Check that it prints the status error code */
-    EXPECT_FLUSH_USB(Contains("0x84000000"));
+    EXPECT_FLUSH_USB(Contains("0x84000000\r"));
     
 
     /* Reset to correct params */
@@ -153,7 +153,7 @@ TEST_F(LightControllerTest, WrongBoardParams)
     LightControllerInit(&htim2, &htim5, &hwwdg);
     EXPECT_FALSE(bsGetField(BS_VERSION_ERROR_Msk));
     HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre("\r", "0, 0, 0, 0x0"));
+    EXPECT_FLUSH_USB(ElementsAre("0, 0, 0, 0x00000000\r"));
 
     /* Run with wrong board type */
     bi.v2.boardType = AC_Board;
@@ -161,7 +161,7 @@ TEST_F(LightControllerTest, WrongBoardParams)
     LightControllerInit(&htim2, &htim5, &hwwdg);
     EXPECT_TRUE(bsGetField(BS_VERSION_ERROR_Msk));
     HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre("\r", "0x84000000"));
+    EXPECT_FLUSH_USB(ElementsAre("0x84000000\r"));
 }
 
 
@@ -174,7 +174,6 @@ TEST_F(LightControllerTest, printSerial)
     writeLightControllerMessage("Serial\n");
     
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
         "Boot Unit Test\r", 
         "Serial Number: 000\r", 
         "Product Type: LightController\r", 
@@ -196,15 +195,13 @@ TEST_F(LightControllerTest, printStatus)
     writeLightControllerMessage("Status\n");
     
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
         "Boot Unit Test\r",
         "Start of board status:\r",
         "The board is operating normally.\r",  
         "Port 1: On: 0\r",
         "Port 2: On: 0\r",
         "Port 3: On: 0\r",
-        "\r",
-        "End of board status. \r"
+        "End of board status.\r"
     ));
 }
 
@@ -247,9 +244,8 @@ TEST_F(LightControllerTest, InputHandler)
 
     // Initial flush
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
         "Boot Unit Test\r",
-        "0, 0, 0, 0x0"
+        "0, 0, 0, 0x00000000\r"
     ));
 
 
@@ -257,22 +253,19 @@ TEST_F(LightControllerTest, InputHandler)
     writeLightControllerMessage("p1 ABAB10\n");
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "abab10, 0, 0, 0x1"
+        "abab10, 0, 0, 0x00000001\r"
     ));
 
     writeLightControllerMessage("p2 105020\n");
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "abab10, 105020, 0, 0x3"
+        "abab10, 105020, 0, 0x00000003\r"
     ));
 
     writeLightControllerMessage("p3 FFFFFF\n");
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "abab10, 105020, ffffff, 0x7"
+        "abab10, 105020, ffffff, 0x00000007\r"
     ));
 
     // Reset all ports
@@ -281,8 +274,7 @@ TEST_F(LightControllerTest, InputHandler)
     writeLightControllerMessage("p3 000000\n");
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "0, 0, 0, 0x0"
+        "0, 0, 0, 0x00000000\r"
     ));
 
     /* ----- INVALID INPUTS ----- */
@@ -294,35 +286,30 @@ TEST_F(LightControllerTest, InputHandler)
     // Invalid port   
     writeLightControllerMessage("p4 FFFFFF\n");
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "MISREAD: p4 FFFFFF"
+        "MISREAD: p4 FFFFFF\r"
     ));
 
     writeLightControllerMessage("p0 0xFFFFFF\n");
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "MISREAD: p0 0xFFFFFF"
+        "MISREAD: p0 0xFFFFFF\r"
     ));
 
     // Wrong hex code (too short)
     writeLightControllerMessage("p1 13908\n");
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "MISREAD: p1 13908"
+        "MISREAD: p1 13908\r"
     ));
 
     // Wrong hex code (too long)
     writeLightControllerMessage("p1 13908CC\n");
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "MISREAD: p1 13908CC"
+        "MISREAD: p1 13908CC\r"
     ));
 
     // Wrong hex code (non valid hex characters)
     writeLightControllerMessage("p1 ACACFM\n");
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "MISREAD: p1 ACACFM"
+        "MISREAD: p1 ACACFM\r"
     ));
 }
 
@@ -424,9 +411,8 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
 
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
         "Boot Unit Test\r",
-        "ffffff, ffffff, ffffff, 0x7"
+        "ffffff, ffffff, ffffff, 0x00000007\r"
     )); 
 
     forceTick(1);                   // Set system tick to 1
@@ -435,8 +421,7 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
 
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "ffffff, ffffff, ffffff, 0x7"
+        "ffffff, ffffff, ffffff, 0x00000007\r"
     )); 
 
     // All white GPIOs should be on
@@ -450,8 +435,7 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
 
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "ffffff, ffffff, ffffff, 0x7"
+        "ffffff, ffffff, ffffff, 0x00000007\r"
     )); 
 
     // All white GPIOs should still be on since the ACTUATION_TIMEOUT has not yet occured
@@ -465,8 +449,7 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
 
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "0, 0, 0, 0x0"
+        "0, 0, 0, 0x00000000\r"
     )); 
 
     // Everything should be turned off because of timeout.
@@ -486,8 +469,7 @@ TEST_F(LightControllerTest, LEDSwitchingTimeout)
 
     HAL_TIM_PeriodElapsedCallback(&htim5);
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r",
-        "ffffff, ffffff, ffffff, 0x7"
+        "ffffff, ffffff, ffffff, 0x00000007\r"
     )); 
 
     EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));

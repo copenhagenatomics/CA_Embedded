@@ -131,8 +131,8 @@ static void printDcStatus()
     int len = 0;
 
     for (int i = 0; i < ACTUATIONPORTS; i++) {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %" PRIu32 ", PWM percent: %" PRIu32 "\r\n", 
-                        i, port_state[i], *getTimerCCR(i));
+        CA_SNPRINTF(buf, len, "Port %d: On: %" PRIu32 ", PWM percent: %" PRIu32 "\r\n", i,
+                    port_state[i], *getTimerCCR(i));
     }
 
     writeUSB(buf, len);
@@ -223,14 +223,14 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetStatus() & BS_VERSION_ERROR_Msk)
     {
-        USBnprintf("0x%08x", bsGetStatus());
+        USBnprintf("0x%08x\r\n", bsGetStatus());
         return;
     }
 
     inputVoltage = adcToInputVoltage(ADCMean(pBuffer, INPUT_V_CHANNEL_IDX));
     setBoardVoltage(inputVoltage);
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x",
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x\r\n",
             meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
             meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
             meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5),

@@ -181,19 +181,18 @@ void calibrationInit(CRC_HandleTypeDef *hcrc, FlashCalibration *cal, uint32_t si
 void calibrationRW(bool write, FlashCalibration *cal, uint32_t size) {
     if (write) {
         if (writeToFlashCRC(hcrc_, (uint32_t)FLASH_ADDR_CAL, (uint8_t *)cal, size) != 0) {
-            USBnprintf("Calibration was not stored in FLASH");
+            USBnprintf("Calibration was not stored in FLASH\r\n");
         }
     }
     else {
         char buf[300];
         int len = 0;
-        len += snprintf(&buf[len], sizeof(buf) - len, "Calibration: CAL");
+        CA_SNPRINTF(buf, len, "Calibration: CAL");
         for (int ch = 0; ch < NO_CALIBRATION_CHANNELS; ch++) {
-            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f,%d", ch + 1,
-                            cal->sensorCalVal[ch * 2], cal->sensorCalVal[ch * 2 + 1],
-                            cal->measurementType[ch]);
+            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f,%d", ch + 1, cal->sensorCalVal[ch * 2],
+                        cal->sensorCalVal[ch * 2 + 1], cal->measurementType[ch]);
         }
-        len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
+        CA_SNPRINTF(buf, len, "\r\n");
         writeUSB(buf, len);
     }
 }

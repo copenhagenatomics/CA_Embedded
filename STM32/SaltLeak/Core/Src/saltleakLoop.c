@@ -323,7 +323,7 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
     }
 
     if (bsGetField(BS_VERSION_ERROR_Msk)) {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
@@ -333,7 +333,6 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
     updateBoostMode();
 
     int len = 0;
-    CA_SNPRINTF(buff, len, "\r\n");
 
     // Estimated sensor resistances/voltages
     for (uint8_t i = 0; i < NO_OF_SENSORS; i++) {
@@ -351,7 +350,7 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
     }
 
     // Boost voltage and board status
-    CA_SNPRINTF(buff, len, "%0.2f, 0x%08" PRIx32, voltageBoost, bsGetStatus());
+    CA_SNPRINTF(buff, len, "%0.2f, 0x%08" PRIx32 "\r\n", voltageBoost, bsGetStatus());
 
     writeUSB(buff, len);
 }

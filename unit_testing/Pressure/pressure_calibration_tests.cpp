@@ -18,6 +18,9 @@ extern "C" {
 #include "fake_StmGpio.h"
 #include "fake_USBprint.h"
 
+/* Real supporting units */
+#include "crc.c"
+
 /* UUT */
 #include "calibration.c"
 

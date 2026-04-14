@@ -105,9 +105,9 @@ TEST_F(ACBoard, printStatus) {
 
     statusPrintoutTest(sst, {"The board is operating normally.\r",
                              "Fan     On: 0\r",
-                             "Port 0: On: 0, PWM percent: 0\r",
-                             "Port 1: On: 0, PWM percent: 0\r",
-                             "Port 2: On: 0, PWM percent: 0\r",
+                             "Port 0: On: 0, PWM percent: 0\r", 
+                             "Port 1: On: 0, PWM percent: 0\r", 
+                             "Port 2: On: 0, PWM percent: 0\r", 
                              "Port 3: On: 0, PWM percent: 0\r",
                              "Power   On: 1\r"});
 
@@ -117,7 +117,7 @@ TEST_F(ACBoard, printStatus) {
     writeBoardMessage("p4 on 1\n");
     writeBoardMessage("Status\n");
     
-    EXPECT_FLUSH_USB(ElementsAre( 
+    EXPECT_FLUSH_USB(ElementsAre(
         "Start of board status:\r",
         "Fan     On: 1\r",
         "Port 0: On: 0, PWM percent: 0\r",
@@ -356,16 +356,16 @@ TEST_F(ACBoard, faultInfoPrintout) {
     ACBoardLoop(bootMsg);
 
     EXPECT_FLUSH_USB(ElementsAre(
-        "Boot Unit Test\r",
-        "Start of fault info\r",
-        "Last fault was: 1\r",
-        "CFSR was: 0x00000000\r",
-        "HFSR was: 0x00000000\r",
-        "MMFA was: 0x00000000\r",
-        "BFA was:  0x00000000\r",
-        "AFSR was: 0x00000000\r",
-        "Stack Frame was:\r", "0x00000000, 0x00000000, 0x00000000, 0x00000000\r",
-        "0x00000000, 0x00000000, 0x00000000, 0x00000000\r",
+        "Boot Unit Test\r", 
+        "Start of fault info\r", 
+        "Last fault was: 1\r", 
+        "CFSR was: 0x00000000\r", 
+        "HFSR was: 0x00000000\r", 
+        "MMFA was: 0x00000000\r", 
+        "BFA was:  0x00000000\r", 
+        "AFSR was: 0x00000000\r", 
+        "Stack Frame was:\r", "0x00000000, 0x00000000, 0x00000000, 0x00000000\r", 
+        "0x00000000, 0x00000000, 0x00000000, 0x00000000\r", 
         "End of fault info\r"
     ));
 }
