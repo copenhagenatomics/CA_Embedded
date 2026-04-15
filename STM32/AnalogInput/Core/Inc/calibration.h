@@ -16,13 +16,12 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define PORTCALVAL_DEFAULT 1.0
-
-#define NO_CALIBRATION_CHANNELS 6      // 6 Sensors
-#define ADC_MAX                 4095   // 12-bits
-#define MAX_VBUS_IN             5.7750 // Maximum measurable VCC (due to voltage divider)
-#define MAX_28V_IN              33.0   // Maximum measurable 28V rail (due to voltage divider)
-#define V_REF                   3.3    // ADC internal voltage reference
+#define NO_CALIBRATION_CHANNELS 6        // 6 Sensors
+#define ADC_MAX                 4095     // 12-bits
+#define MAX_VBUS_IN             5.7750f  // Maximum measurable VCC (due to voltage divider)
+#define MAX_28V_IN              33.0f    // Maximum measurable 28V rail (due to voltage divider)
+#define V_REF                   3.3f     // ADC internal voltage reference
+#define AMPS_TO_MILLIAMPS       1000.0f
 
 enum adc_channels {
     ADC_CHANNEL_PORT_1 = 0,
@@ -38,8 +37,9 @@ enum adc_channels {
 
 // Variables that need to be stored in flash memory.
 typedef struct FlashCalibration {
-    float sensorCalVal[NUM_CHANNELS * 2];
-    float portCalVal[NUM_CHANNELS];
+    float sensorCalVal[NUM_CHANNELS * 2];  // Slope and offset to convert volt/amp to user unit
+    float portVoltCalVal[NUM_CHANNELS];    // Slope to convert ADC to volt
+    float portResCalVal[NUM_CHANNELS];     // Shunt resistance to convert voltage to current
     int measurementType[NUM_CHANNELS];
 } FlashCalibration;
 

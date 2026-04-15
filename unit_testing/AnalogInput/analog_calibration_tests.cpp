@@ -73,7 +73,7 @@ TEST_F(AnalogCalibrationTest, testCalibrationInit)
     { 
         EXPECT_EQ(cal.sensorCalVal[i*2], 0);
         EXPECT_EQ(cal.sensorCalVal[i*2+1], 0);
-        EXPECT_EQ(cal.portCalVal[i], 0);
+        EXPECT_EQ(cal.portVoltCalVal[i], 0);
         EXPECT_EQ(cal.measurementType[i], 0);
     }
 
@@ -87,7 +87,7 @@ TEST_F(AnalogCalibrationTest, testCalibrationInit)
     { 
         EXPECT_NEAR(cal.sensorCalVal[i*2], 1.0, 1e-5);
         EXPECT_NEAR(cal.sensorCalVal[i*2+1], 0.0, 1e-5);
-        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-5);
+        EXPECT_NEAR(cal.portVoltCalVal[i], 1.0, 1e-5);
         EXPECT_EQ(cal.measurementType[i], 0);
     }   
 
@@ -102,7 +102,7 @@ TEST_F(AnalogCalibrationTest, testCalibrateBoard)
     calibrationInit(&hcrc, &cal, sizeof(cal));
     // Check that the port calibration value is set to its default value
     for (int i = 0; i < NO_CALIBRATION_CHANNELS; i++) {
-        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4);
+        EXPECT_NEAR(cal.portVoltCalVal[i], 1.0, 1e-4);
     }   
 
     // Try to calibrate port 1 which is already correctly calibrated
@@ -118,26 +118,26 @@ TEST_F(AnalogCalibrationTest, testCalibrateBoard)
     calibrateBoard(noOfCalibrations, calibration, &cal, ADCMeansRaw, sizeof(cal), 5.0);
 
     // Calibration should be unchanged
-    EXPECT_NEAR(cal.portCalVal[0], 1, 1e-4)  << "Channel is " << 1;
+    EXPECT_NEAR(cal.portVoltCalVal[0], 1, 1e-4)  << "Channel is " << 1;
     for (int i = 1; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4)  << "Channel is " << i+1;
+        EXPECT_NEAR(cal.portVoltCalVal[i], 1.0, 1e-4)  << "Channel is " << i+1;
     }   
 
     ADCMeansRaw[0] = 2060.0;
     // Calibrate 1st port that read wrong ADC value at 2.5V input
     calibrateBoard(noOfCalibrations, calibration, &cal, ADCMeansRaw, sizeof(cal), 5.0);
 
-    EXPECT_NEAR(cal.portCalVal[0], 0.9939, 1e-4)  << "Channel is " << 1;
+    EXPECT_NEAR(cal.portVoltCalVal[0], 0.9939, 1e-4)  << "Channel is " << 1;
     for (int i = 1; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
+        EXPECT_NEAR(cal.portVoltCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
     }   
 
     // Reset the calibration
     ADCMeansRaw[0] = 2047.5;
     calibrateBoard(noOfCalibrations, calibration, &cal, ADCMeansRaw, sizeof(cal), 5.0);
-    EXPECT_NEAR(cal.portCalVal[0], 1, 1e-4) << "Channel is " << 1;
+    EXPECT_NEAR(cal.portVoltCalVal[0], 1, 1e-4) << "Channel is " << 1;
 
     // Call the calibration function with wrong ports and check the calibration
     // is unchanged
@@ -145,10 +145,10 @@ TEST_F(AnalogCalibrationTest, testCalibrateBoard)
     ADCMeansRaw[0] = 2060.0;
 
     calibrateBoard(2, wrongPorts, &cal, ADCMeansRaw, sizeof(cal), 5.0);
-    EXPECT_NEAR(cal.portCalVal[0], 1, 1e-4) << "Channel is " << 1;
+    EXPECT_NEAR(cal.portVoltCalVal[0], 1, 1e-4) << "Channel is " << 1;
     for (int i = 1; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
+        EXPECT_NEAR(cal.portVoltCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
     }   
 
     // Call the calibration function with invalid input voltages and check the calibration
@@ -157,10 +157,10 @@ TEST_F(AnalogCalibrationTest, testCalibrateBoard)
     ADCMeansRaw[0] = 2047.5;
 
     calibrateBoard(2, wrongInputVoltages, &cal, ADCMeansRaw, sizeof(cal), 5.0);
-    EXPECT_NEAR(cal.portCalVal[0], 1, 1e-4) << "Channel is " << 1;
+    EXPECT_NEAR(cal.portVoltCalVal[0], 1, 1e-4) << "Channel is " << 1;
     for (int i = 1; i<NO_CALIBRATION_CHANNELS; i++) 
     { 
-        EXPECT_NEAR(cal.portCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
+        EXPECT_NEAR(cal.portVoltCalVal[i], 1.0, 1e-4) << "Channel is " << i+1;
     }   
 }
 

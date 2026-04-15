@@ -1,12 +1,20 @@
 Debug
+Release
 build/
 .settings
 *.launch
 *.mxproject
-githash.h
-/**/settings.json
-*.log
+STM32/**/githash.h
+**/.cortex-debug*
+.vscode/settings.json
+STM32/**/settings.json
+unit_testing/.vscode/settings.json
 
-# Python files
+# Compiled python files
 *.pyc
-.venv
+
+# Virtual environment files
+.venv/
+
+# Log files
+*.log

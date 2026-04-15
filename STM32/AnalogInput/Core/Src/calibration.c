@@ -3,14 +3,14 @@
  * @brief   Header file of calibration.c
  * @date    05/12/2022
  * @author  Matias
- * 
+ *
  * The calibration for the AnalogInput board is made up of 2 parts:
  * - Board calibration: this calibration is done with a precise voltage source
  *   connected to the input ports. It is used to correct for inaccuracies in the
  *   ADC and voltage dividers. It is stored in cal.portCalVal[].
  * - Sensor calibration: this "calibration" is really a user applied linear transformation between
- *   the measurement output of the sensor (e.g. voltage or current) and the physical value (e.g. 
- *   pressure). It is stored in cal.sensorCalVal[] (even indices are scalars, odd indices are 
+ *   the measurement output of the sensor (e.g. voltage or current) and the physical value (e.g.
+ *   pressure). It is stored in cal.sensorCalVal[] (even indices are scalars, odd indices are
  *   biases).
  */
 
@@ -30,6 +30,11 @@
 // Extern value defined in .ld linker script
 extern uint32_t _FlashAddrCal;  // Starting address of calibration values in FLASH
 #define FLASH_ADDR_CAL ((uintptr_t) & _FlashAddrCal)
+
+#define PORT_VOLT_CAL_VAL_DEFAULT 1.0f
+#define PORT_RES_CAL_VAL_DEFAULT  160.0f
+#define PORT_RES_CAL_VAL_MIN      150.0f
+#define PORT_RES_CAL_VAL_MAX      170.0f
 
 /***************************************************************************************************
 ** PRIVATE PROTOTYPE FUNCTIONS
@@ -88,8 +93,9 @@ static void setDefaultCalibration(FlashCalibration *cal) {
             cal->sensorCalVal[i * 2 + 1] = 0;
         }
 
-        // When the "sensor" is uncalibrated, output calibrated voltage 
-        cal->portCalVal[i]      = PORTCALVAL_DEFAULT;
+        // When the "sensor" is uncalibrated, output calibrated voltage
+        cal->portVoltCalVal[i]  = PORT_VOLT_CAL_VAL_DEFAULT;
+        cal->portResCalVal[i]   = PORT_RES_CAL_VAL_DEFAULT;
         cal->measurementType[i] = 0;
     }
 }
@@ -110,6 +116,13 @@ static void setDefaultCalibration(FlashCalibration *cal) {
  */
 void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration *cal,
                     float *ADCMeansRaw, uint32_t calSize, float vref) {
+    /*
+        Calibration command:
+        -------------------------------------------------------------------------
+        CAL port,appliedVoltage,0,2   - Calibrates voltage measurement (needs to be in volt mode)
+        CAL port,appliedCurrent,0,3   - Calibrates current measurement (needs to be in current mode)
+        -------------------------------------------------------------------------
+    */
     for (int i = 0; i < noOfCalibrations; i++) {
         // Channel to be calibrated
         if (calibrations[i].port <= 0 || calibrations[i].port > NO_CALIBRATION_CHANNELS) {
@@ -117,14 +130,27 @@ void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, Fla
         }
         const int channel = calibrations[i].port - 1;
 
-        // Current input voltage on channel to calibrate against
-        if (calibrations[i].alpha < 0 || calibrations[i].alpha >= vref) {
-            continue;
-        }
+        if (calibrations[i].threshold == 2) {
+            // Current input voltage on channel to calibrate against
+            if (calibrations[i].alpha < 0 || calibrations[i].alpha >= vref) {
+                continue;
+            }
 
-        const float Vinput       = calibrations[i].alpha;
-        float targetADC          = Vinput * ADC_MAX / vref;
-        cal->portCalVal[channel] = (targetADC / ADCMeansRaw[channel]);
+            const float Vinput           = calibrations[i].alpha;
+            float targetADC              = Vinput * ADC_MAX / vref;
+            cal->portVoltCalVal[channel] = targetADC / ADCMeansRaw[channel];
+        }
+        else {
+            const float Iinput = calibrations[i].alpha;
+            float measCurrent  = AMPS_TO_MILLIAMPS * ADCMeansRaw[channel] *
+                                cal->portVoltCalVal[channel] * vref /
+                                (ADC_MAX * cal->portResCalVal[channel]);
+            float newRes = cal->portResCalVal[channel] * measCurrent / Iinput;
+
+            if (newRes >= PORT_RES_CAL_VAL_MIN && newRes <= PORT_RES_CAL_VAL_MAX) {
+                cal->portResCalVal[channel] = newRes;
+            }
+        }
     }
     // Calibrations are stored in flash
     calibrationRW(true, cal, calSize);
@@ -139,6 +165,13 @@ void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, Fla
  */
 void calibrateSensor(int noOfCalibrations, const CACalibration *calibrations, FlashCalibration *cal,
                      uint32_t calSize) {
+    /*
+    Calibration command:
+    -------------------------------------------------------------------------
+    CAL port,slope,offset,0         - Calibrates the sensor in voltage mode
+    CAL port,slope,offset,1         - Calibrates the sensor in current mode
+    -------------------------------------------------------------------------
+    */
     for (int i = 0; i < noOfCalibrations; i++) {
         // Channel to be calibrated
         if (calibrations[i].port <= 0 || calibrations[i].port > NO_CALIBRATION_CHANNELS) {
@@ -193,13 +226,13 @@ void calibrationRW(bool write, FlashCalibration *cal, uint32_t size) {
     else {
         char buf[300];
         int len = 0;
-        len += snprintf(&buf[len], sizeof(buf) - len, "Calibration: CAL");
+
+        CA_SNPRINTF(buf, len, "Calibration: CAL");
         for (int ch = 0; ch < NO_CALIBRATION_CHANNELS; ch++) {
-            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f,%d", ch + 1,
-                            cal->sensorCalVal[ch * 2], cal->sensorCalVal[ch * 2 + 1],
-                            cal->measurementType[ch]);
+            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f,%d", ch + 1, cal->sensorCalVal[ch * 2],
+                        cal->sensorCalVal[ch * 2 + 1], cal->measurementType[ch]);
         }
-        len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
+        CA_SNPRINTF(buf, len, "\r\n");
         writeUSB(buf, len);
     }
 }

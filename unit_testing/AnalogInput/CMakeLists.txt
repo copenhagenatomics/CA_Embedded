@@ -31,14 +31,22 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../../STM32)
 set(LIB ../../CA_Embedded_Libraries/STM32)
-set(INC_LIB_CAL  ${LIB}/Crc/Inc 
-                 ${LIB}/FLASH_readwrite/Inc 
-                 ${LIB}/USBprint/Inc 
-                 ${LIB}/Util/Inc)
-set(INC_LIB   ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Crc/Inc ${LIB}/Filtering/Inc 
-              ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
-              ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc 
-              ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
+set(INC_LIB_CAL ${LIB}/Crc/Inc 
+                ${LIB}/FLASH_readwrite/Inc 
+                ${LIB}/USBprint/Inc 
+                ${LIB}/Util/Inc)
+set(INC_LIB     ${LIB}/ADCMonitor/Inc
+                ${LIB}/circularBuffer/Inc
+                ${LIB}/Crc/Inc
+                ${LIB}/Filtering/Inc 
+                ${LIB}/FLASH_readwrite/Inc
+                ${LIB}/I2C/Inc
+                ${LIB}/jumpToBootloader/Inc 
+                ${LIB}/Regulation/Inc
+                ${LIB}/SPI/Inc
+                ${LIB}/TransformationFunctions/Inc 
+                ${LIB}/USBprint/Inc
+                ${LIB}/Util/Inc)
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
 set(UT_STUBS ${UT_LIB}/stubs)
@@ -82,12 +90,18 @@ add_executable(analog_input_tests analog_input_tests.cpp
                                           ${UT_FAKES}/fake_FLASH_readwrite.cpp
                                           ${LIB}/Crc/Src/crc.c)
 target_include_directories(analog_input_tests PRIVATE
-                                          ${UT_FAKES} ${UT_STUBS} ${INC_LIB}
-                                          ${SRC}/AnalogInput/Core/Src ${SRC}/AnalogInput/Core/Inc
-                                          ${LIB}/Util/Src ${LIB}/ADCMonitor/Src
-                                          ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
+                                          .
+                                          ${UT_FAKES}
+                                          ${UT_STUBS}
+                                          ${INC_LIB}
                                           ${UT_LIB}/Util
-                                          ${LIB}/I2C/Src)
+                                          ${SRC}/AnalogInput/Core/Src
+                                          ${SRC}/AnalogInput/Core/Inc
+                                          ${LIB}/ADCMonitor/Src
+                                          ${LIB}/I2C/Src
+                                          ${LIB}/Util/Src
+                                          ${DRIV}/Inc
+                                          ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 target_link_libraries(analog_input_tests GTest::gtest_main gmock_main)
 target_compile_definitions(analog_input_tests PUBLIC UNIT_TESTING)
 target_compile_options(analog_input_tests PRIVATE -Wall)
