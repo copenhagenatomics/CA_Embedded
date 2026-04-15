@@ -268,7 +268,7 @@ static void calibrateReadWrite(bool write) {
     if (write) {
         if (writeToFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
                             sizeof(portCalVal)) != 0) {
-            USBnprintf("Calibration was not stored in FLASH");
+            USBnprintf("Calibration was not stored in FLASH\r\n");
         }
     }
     else {
@@ -276,12 +276,12 @@ static void calibrateReadWrite(bool write) {
         int len = 0;
         for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
             if (i == 0) {
-                len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
+                CA_SNPRINTF(buf, len, "Calibration: CAL");
             }
-            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i + 1,
+            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f", i + 1,
                             portCalVal[i][0], portCalVal[i][1]);
         }
-        len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
+        CA_SNPRINTF(buf, len, "\r\n");
         writeUSB(buf, len);
     }
 }
@@ -298,7 +298,7 @@ void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_,
     hspi  = hspi_;
     hwwdg = hwwdg_;
     hcrc  = hcrc_;
-    
+
     pcbVersion ver;
     getPcbVersion(&ver);
     initPinLayout(ver);
@@ -331,10 +331,10 @@ void LoopTemperature(const char* bootMsg) {
         // Enable wwdg now that print frequency has stabilised.
         enableWWDG();
 
-        USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,
-                   ads1120[0].data.chA, ads1120[0].data.chB, ads1120[1].data.chA,
-                   ads1120[1].data.chB, ads1120[2].data.chA, ads1120[2].data.chB,
-                   ads1120[3].data.chA, ads1120[3].data.chB, ads1120[4].data.chA,
-                   ads1120[4].data.chB, internalTemp, bsGetStatus());
+        USBnprintf(
+            "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n",
+            ads1120[0].data.chA, ads1120[0].data.chB, ads1120[1].data.chA, ads1120[1].data.chB,
+            ads1120[2].data.chA, ads1120[2].data.chB, ads1120[3].data.chA, ads1120[3].data.chB,
+            ads1120[4].data.chA, ads1120[4].data.chB, internalTemp, bsGetStatus());
     }
 }
