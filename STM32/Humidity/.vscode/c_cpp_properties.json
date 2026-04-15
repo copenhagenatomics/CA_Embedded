@@ -4,13 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/I2C/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Crc/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/USBprint/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**"
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/**"
             ],
             "defines": [
                 "_DEBUG",
@@ -32,13 +26,7 @@
             "name": "Windows",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/I2C/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Crc/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/USBprint/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**"
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/**"
             ],
             "defines": [
                 "_DEBUG",

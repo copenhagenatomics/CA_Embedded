@@ -92,7 +92,7 @@ class DCBoard: public CaBoardUnitTest
         
         ADC_HandleTypeDef hadc;
         WWDG_HandleTypeDef hwwdg;
-        const char * bootMsg = "Boot Unit Test";
+        const char * bootMsg = "Boot Unit Test\r\n";
 
         SerialStatusTest sst = {
             .boundInit = bind(DCBoardInit, &hadc, &hwwdg),
@@ -108,7 +108,7 @@ TEST_F(DCBoard, CorrectBoardParams)
 {
     dcSetup();
 
-    goldenPathTest(sst, "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000");
+    goldenPathTest(sst, "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000\r");
 }
 
 TEST_F(DCBoard, incorrectBoard) {
@@ -122,12 +122,14 @@ TEST_F(DCBoard, printSerial)
 
 TEST_F(DCBoard, printStatus) 
 {
-    statusPrintoutTest(sst, {"Port 0: On: 0, PWM percent: 0\r", 
-        "Port 1: On: 0, PWM percent: 0\r", 
-        "Port 2: On: 0, PWM percent: 0\r", 
-        "Port 3: On: 0, PWM percent: 0\r", 
-        "Port 4: On: 0, PWM percent: 0\r", 
-                             "Port 5: On: 0, PWM percent: 0\r"});
+    statusPrintoutTest(sst, {
+        "The board is operating normally.\r",
+        "Port 0: On: 0, PWM percent: 0\r",
+        "Port 1: On: 0, PWM percent: 0\r",
+        "Port 2: On: 0, PWM percent: 0\r",
+        "Port 3: On: 0, PWM percent: 0\r",
+        "Port 4: On: 0, PWM percent: 0\r",
+        "Port 5: On: 0, PWM percent: 0\r"});
     
     writeDcMessage("p2 on\n");
     writeDcMessage("p4 on\n");
@@ -135,17 +137,15 @@ TEST_F(DCBoard, printStatus)
     writeDcMessage("Status\n");
     
     EXPECT_FLUSH_USB(ElementsAre( 
-        "\r", 
-        "Start of board status:\r", 
-        "The board is operating normally.\r", 
+        "Start of board status:\r",
+        "The board is operating normally.\r",
         "Port 0: On: 0, PWM percent: 0\r",
         "Port 1: On: 1, PWM percent: 999\r",
         "Port 2: On: 0, PWM percent: 0\r",
         "Port 3: On: 1, PWM percent: 999\r",
         "Port 4: On: 0, PWM percent: 0\r",
         "Port 5: On: 1, PWM percent: 999\r",
-        "\r", 
-        "End of board status. \r"
+        "End of board status.\r"
     ));
 }
 
@@ -164,15 +164,15 @@ TEST_F(DCBoard, status24v)
 
         if (inputVoltage < UNDER_VOLTAGE_THRESHOLD)
         {
-            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000"));
+            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000\r"));
         }
         else if (inputVoltage > OVER_VOLTAGE_THRESHOLD)
         {
-            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x90000000"));
+            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x90000000\r"));
         }
         else
         {
-            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
+            EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000\r"));
         }
 
     }
@@ -222,7 +222,7 @@ TEST_F(DCBoard, portsNoTimeout)
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
-            sprintf(cmd, "MISREAD: Invalid Pin: %d", i);
+            sprintf(cmd, "MISREAD: Invalid Pin: %d\r", i);
             EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
@@ -257,7 +257,7 @@ TEST_F(DCBoard, portsPct)
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
-            sprintf(cmd, "MISREAD: Invalid Pin: %d", i);
+            sprintf(cmd, "MISREAD: Invalid Pin: %d\r", i);
             EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
@@ -292,7 +292,7 @@ TEST_F(DCBoard, portsTimeout)
             for(int j = 0; j < ACTUATIONPORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j << ", tick = " << tickCounter;
             }
-            sprintf(cmd, "MISREAD: Invalid Pin: %d", i);
+            sprintf(cmd, "MISREAD: Invalid Pin: %d\r", i);
             EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
@@ -342,17 +342,17 @@ TEST_F(DCBoard, onboardButtons)
         /* Check status bit updated correctly. Could take up to 100 ms for another print */
         simTicks(100);
         switch(i) {
-            case 0: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000001"));
+            case 0: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000001\r"));
                     break;
-            case 1: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000002"));
+            case 1: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000002\r"));
                     break;
-            case 2: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000004"));
+            case 2: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000004\r"));
                     break;
-            case 3: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000008"));
+            case 3: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000008\r"));
                     break;
-            case 4: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000010"));
+            case 4: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000010\r"));
                     break;
-            case 5: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000020"));
+            case 5: EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000020\r"));
                     break;
             default: FAIL();
         }
@@ -393,7 +393,7 @@ TEST_F(DCBoard, onboardButtonsOff)
 
         simTicks(100); /* Could take up to 100 ms for another print */
         /* Check status bit updated correctly */
-        EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f")); 
+        EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f\r")); 
 
         /* Release button */
         stmSetGpio(buttonGpio[i], true);
@@ -437,7 +437,7 @@ TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod)
 
         simTicks(100); /* Could take up to 100 ms for another print */
         /* Check status bit updated correctly */
-        EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f")); 
+        EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x0000003f\r")); 
 
         /* Timer port should time out after 1 second but not turn off because button is pressed */
         simTicks(800);
@@ -455,7 +455,7 @@ TEST_F(DCBoard, testCurrentBuffer) {
     dcSetup();
     goToTick(100);
 
-    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000\r"));
 
     for(int h = 0; h < 4096; h++) {
         
@@ -469,7 +469,7 @@ TEST_F(DCBoard, testCurrentBuffer) {
 
         char buf[100] = {0};
         double curr = ((h / 4096.0) * 3.3 - 1.65) / 0.264;
-        sprintf(buf, "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x00000000", 
+        sprintf(buf, "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x00000000\r", 
                 curr, curr, curr, curr, curr, curr);
         EXPECT_FLUSH_USB(Contains(buf));
     }

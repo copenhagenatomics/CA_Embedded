@@ -19,6 +19,7 @@ extern "C" {
 #include "fake_USBprint.h"
 
 /* Real supporting units */
+#include "crc.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
 #include "calibration.c"
@@ -87,7 +88,7 @@ TEST_F(PressureTest, testPressureInitCorrectParams) {
     pressureLoop(bootMsg);
 
     /* Check the printout is correct */
-    EXPECT_READ_USB(Contains("-1.790000, -1.790000, -1.790000, -1.790000, -1.790000, -1.790000, 0xa0000180"));
+    EXPECT_READ_USB(Contains("-1.790000, -1.790000, -1.790000, -1.790000, -1.790000, -1.790000, 0xa0000180\r"));
 }
 
 TEST_F(PressureTest, testPressureInitWrongBoard)
@@ -102,7 +103,7 @@ TEST_F(PressureTest, testPressureInitWrongBoard)
     pressureLoop(bootMsg);
     HAL_ADC_ConvCpltCallback(&hadc);
     pressureLoop(bootMsg);
-    EXPECT_READ_USB(Contains("0xa4000180"));
+    EXPECT_READ_USB(Contains("0xa4000180\r"));
 }
 
 TEST_F(PressureTest, testPressureInitWrongSwVersion)
@@ -117,7 +118,7 @@ TEST_F(PressureTest, testPressureInitWrongSwVersion)
     pressureLoop(bootMsg);
     HAL_ADC_ConvCpltCallback(&hadc);
     pressureLoop(bootMsg);
-    EXPECT_READ_USB(Contains("0xa4000180"));
+    EXPECT_READ_USB(Contains("0xa4000180\r"));
 }
 
 TEST_F(PressureTest, testPressureStatus)
@@ -129,20 +130,18 @@ TEST_F(PressureTest, testPressureStatus)
     writeBoardMessage("Status\n");
 
     EXPECT_FLUSH_USB(ElementsAre(
-         "\r", 
-         "Boot Unit Test\r", 
-         "Start of board status:\r", 
-         "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r", 
-         "Port 1 measures voltage [0-5V]\r", 
-         "Port 2 measures voltage [0-5V]\r", 
-         "Port 3 measures voltage [0-5V]\r", 
-         "Port 4 measures voltage [0-5V]\r", 
-         "Port 5 measures voltage [0-5V]\r", 
-         "Port 6 measures voltage [0-5V]\r", 
-         "VCC is: 0.00. It should be >=5.05V \r", 
-         "VCC raw is: 0.00. It should be >=4.6V \r", 
-         "\r", 
-         "End of board status. \r"
+         "Boot Unit Test\r",
+         "Start of board status:\r",
+         "Under voltage. The board operates at too low voltage of 0.00V. Check power supply.\r",
+         "Port 1 measures voltage [0-5V]\r",
+         "Port 2 measures voltage [0-5V]\r",
+         "Port 3 measures voltage [0-5V]\r",
+         "Port 4 measures voltage [0-5V]\r",
+         "Port 5 measures voltage [0-5V]\r",
+         "Port 6 measures voltage [0-5V]\r",
+         "VCC is: 0.00. It should be >=5.05V \r",
+         "VCC raw is: 0.00. It should be >=4.6V \r",
+         "End of board status.\r"
     ));
 
     /* Input ADC measurements that will yield a valid input VCC */
@@ -165,8 +164,7 @@ TEST_F(PressureTest, testPressureStatus)
          "Port 4 measures voltage [0-5V]\r", 
          "Port 5 measures voltage [0-5V]\r", 
          "Port 6 measures voltage [0-5V]\r", 
-         "\r", 
-         "End of board status. \r"
+         "End of board status.\r"
     }));
 
     int port = 1;
@@ -179,17 +177,15 @@ TEST_F(PressureTest, testPressureStatus)
     writeBoardMessage("Status\n");
     
     EXPECT_FLUSH_USB(IsSupersetOf({ 
-        "\r", 
-        "Start of board status:\r", 
-        "The board is operating normally.\r", 
-        "Port 1 measures current [4-20mA]\r", 
-        "Port 2 measures voltage [0-5V]\r", 
-        "Port 3 measures voltage [0-5V]\r", 
-        "Port 4 measures voltage [0-5V]\r", 
-        "Port 5 measures voltage [0-5V]\r", 
+        "Start of board status:\r",
+        "The board is operating normally.\r",
+        "Port 1 measures current [4-20mA]\r",
+        "Port 2 measures voltage [0-5V]\r",
+        "Port 3 measures voltage [0-5V]\r",
+        "Port 4 measures voltage [0-5V]\r",
+        "Port 5 measures voltage [0-5V]\r",
         "Port 6 measures voltage [0-5V]\r",
-        "\r", 
-        "End of board status. \r"
+        "End of board status.\r"
     }));
 }
 
