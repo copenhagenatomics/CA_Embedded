@@ -145,7 +145,7 @@ void calibrateBoard(int noOfCalibrations, const CACalibration *calibrations, Fla
             float measCurrent  = AMPS_TO_MILLIAMPS * ADCMeansRaw[channel] *
                                 cal->portVoltCalVal[channel] * vref /
                                 (ADC_MAX * cal->portResCalVal[channel]);
-            float newRes = measCurrent / Iinput;
+            float newRes = cal->portResCalVal[channel] * measCurrent / Iinput;
 
             if (newRes >= PORT_RES_CAL_VAL_MIN && newRes <= PORT_RES_CAL_VAL_MAX) {
                 cal->portResCalVal[channel] = newRes;
