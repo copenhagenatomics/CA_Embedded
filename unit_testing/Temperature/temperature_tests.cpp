@@ -75,7 +75,7 @@ TEST_F(TemperatureBoardTest, goldenPath) {
         setTemp(&ads1120[i], 24.00, 26.00, 25.00);
     }
 
-    goldenPathTest(sst, "24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 25.00, 0x00000000");
+    goldenPathTest(sst, "24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 24.00, 26.00, 25.00, 0x00000000\r");
 }
 
 TEST_F(TemperatureBoardTest, incorrectBoard) {

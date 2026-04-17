@@ -31,6 +31,11 @@
 #define NO_SPI_DEVICES 5
 #define CALIMEMSIZE    (NO_SPI_DEVICES * 2)
 
+typedef struct _gpio {
+    GPIO_TypeDef* port;
+    uint16_t pin;
+} gpio_t;
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
@@ -39,6 +44,7 @@ static void printTempHeader();
 static void printTempStatus();
 static void printTempStatusDef();
 
+static void initPinLayout(pcbVersion ver);
 static void initConnection(ADS1120Device* ads1120, int channel);
 static void initSpiDevices(SPI_HandleTypeDef* hspi);
 static void monitorBoardStatus();
@@ -71,6 +77,9 @@ static char buf[600] = {0};  // Shared by printTempStatus and printTempStatusDef
 static SPI_HandleTypeDef* hspi   = NULL;
 static WWDG_HandleTypeDef* hwwdg = NULL;
 static CRC_HandleTypeDef* hcrc   = NULL;
+
+static gpio_t cs[NO_SPI_DEVICES];
+static gpio_t drdy[NO_SPI_DEVICES];
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -106,6 +115,26 @@ static void printTempStatusDef() {
     writeUSB(buf, len);
 }
 
+static void initPinLayout(pcbVersion ver) {
+    cs[0] = (gpio_t){GPIOB, GPIO_PIN_13};
+    cs[1] = (gpio_t){GPIOB, GPIO_PIN_15};
+    cs[2] = (gpio_t){GPIOA, GPIO_PIN_15};
+    cs[3] = (gpio_t){GPIOB, GPIO_PIN_4};
+    cs[4] = (gpio_t){GPIOB, GPIO_PIN_8};
+
+    drdy[0] = (gpio_t){GPIOB, GPIO_PIN_14};
+    drdy[1] = (gpio_t){GPIOA, GPIO_PIN_8};
+    drdy[2] = (gpio_t){GPIOB, GPIO_PIN_3};
+    drdy[3] = (gpio_t){GPIOB, GPIO_PIN_5};
+    drdy[4] = (gpio_t){GPIOB, GPIO_PIN_9};
+
+    if (ver.major >= 6 && ver.minor >= 2) {
+        cs[3]   = (gpio_t){GPIOB, GPIO_PIN_5};
+        drdy[2] = (gpio_t){GPIOB, GPIO_PIN_4};
+        drdy[3] = (gpio_t){GPIOB, GPIO_PIN_6};
+    }
+}
+
 static void initConnection(ADS1120Device* ads1120, int channel) {
     // Configure the device.
     int ret = ADS1120Init(ads1120);
@@ -127,21 +156,13 @@ static void initConnection(ADS1120Device* ads1120, int channel) {
 }
 
 static void initSpiDevices(SPI_HandleTypeDef* hspi) {
-    // Initialise Chip Select pin
-    stmGpioInit(&ads1120[0].cs, CS1_GPIO_Port, CS1_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&ads1120[1].cs, CS2_GPIO_Port, CS2_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&ads1120[2].cs, CS3_GPIO_Port, CS3_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&ads1120[3].cs, CS4_GPIO_Port, CS4_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&ads1120[4].cs, CS5_GPIO_Port, CS5_Pin, STM_GPIO_OUTPUT);
-
-    // Initialise Data Ready input pin
-    stmGpioInit(&ads1120[0].drdy, DRDY1_GPIO_Port, DRDY1_Pin, STM_GPIO_INPUT);
-    stmGpioInit(&ads1120[1].drdy, DRDY2_GPIO_Port, DRDY2_Pin, STM_GPIO_INPUT);
-    stmGpioInit(&ads1120[2].drdy, DRDY3_GPIO_Port, DRDY3_Pin, STM_GPIO_INPUT);
-    stmGpioInit(&ads1120[3].drdy, DRDY4_GPIO_Port, DRDY4_Pin, STM_GPIO_INPUT);
-    stmGpioInit(&ads1120[4].drdy, DRDY5_GPIO_Port, DRDY5_Pin, STM_GPIO_INPUT);
-
     for (int i = 0; i < NO_SPI_DEVICES; i++) {
+        // Initialise Chip Select pin
+        stmGpioInit(&ads1120[i].cs, cs[i].port, cs[i].pin, STM_GPIO_OUTPUT);
+
+        // Initialise Data Ready input pin
+        stmGpioInit(&ads1120[i].drdy, drdy[i].port, drdy[i].pin, STM_GPIO_INPUT);
+
         stmSetGpio(ads1120[i].cs, true);  // CS selects chip when low
         ads1120[i].hspi = hspi;
     }
@@ -247,7 +268,7 @@ static void calibrateReadWrite(bool write) {
     if (write) {
         if (writeToFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
                             sizeof(portCalVal)) != 0) {
-            USBnprintf("Calibration was not stored in FLASH");
+            USBnprintf("Calibration was not stored in FLASH\r\n");
         }
     }
     else {
@@ -255,12 +276,12 @@ static void calibrateReadWrite(bool write) {
         int len = 0;
         for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
             if (i == 0) {
-                len += snprintf(&buf[len], sizeof(buf), "Calibration: CAL");
+                CA_SNPRINTF(buf, len, "Calibration: CAL");
             }
-            len += snprintf(&buf[len], sizeof(buf) - len, " %d,%.10f,%.10f", i + 1,
+            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f", i + 1,
                             portCalVal[i][0], portCalVal[i][1]);
         }
-        len += snprintf(&buf[len], sizeof(buf) - len, "\r\n");
+        CA_SNPRINTF(buf, len, "\r\n");
         writeUSB(buf, len);
     }
 }
@@ -277,6 +298,10 @@ void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_,
     hspi  = hspi_;
     hwwdg = hwwdg_;
     hcrc  = hcrc_;
+
+    pcbVersion ver;
+    getPcbVersion(&ver);
+    initPinLayout(ver);
 
     initSensorCalibration();
     initSpiDevices(hspi);
@@ -306,10 +331,10 @@ void LoopTemperature(const char* bootMsg) {
         // Enable wwdg now that print frequency has stabilised.
         enableWWDG();
 
-        USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32,
-                   ads1120[0].data.chA, ads1120[0].data.chB, ads1120[1].data.chA,
-                   ads1120[1].data.chB, ads1120[2].data.chA, ads1120[2].data.chB,
-                   ads1120[3].data.chA, ads1120[3].data.chB, ads1120[4].data.chA,
-                   ads1120[4].data.chB, internalTemp, bsGetStatus());
+        USBnprintf(
+            "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n",
+            ads1120[0].data.chA, ads1120[0].data.chB, ads1120[1].data.chA, ads1120[1].data.chB,
+            ads1120[2].data.chA, ads1120[2].data.chB, ads1120[3].data.chA, ads1120[3].data.chB,
+            ads1120[4].data.chA, ads1120[4].data.chB, internalTemp, bsGetStatus());
     }
 }
