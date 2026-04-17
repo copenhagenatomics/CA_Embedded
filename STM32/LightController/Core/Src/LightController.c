@@ -5,50 +5,81 @@
  *      Author: matias
  */
 
-#include <stdbool.h>
-#include <time.h>
-#include <stdlib.h>
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdint.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-#include "LightController.h"
+#include "ADCMonitor.h"
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
-#include "systemInfo.h"
-#include "USBprint.h"
+#include "LightController.h"
 #include "StmGpio.h"
+#include "USBprint.h"
 #include "pcbversion.h"
+#include "systemInfo.h"
+
+/***************************************************************************************************
+** DEFINES
+***************************************************************************************************/
+
+#define ADC_CHANNELS         1     // Number of ADC channels used on the STM32
+#define ADC_CHANNEL_BUF_SIZE 100   // 1 kHz sampling  rate -> 10 Hz
+#define ADC_MAX              4095  // 12-bit
+#define ANALOG_REF_VOLTAGE   3.3f  // [V]
+#define ADC_RATIO            (ANALOG_REF_VOLTAGE / (ADC_MAX + 1))
+
+/***************************************************************************************************
+** PRIVATE FUNCTION DECLARATIONS
+***************************************************************************************************/
+
+static void LightControllerStatus();
+static void LightControllerStatusDef();
+static bool isInputValid(const char *input, int *channel, unsigned int *rgb);
+static int handleInput(unsigned int rgb, uint8_t *red, uint8_t *green, uint8_t *blue);
+
+static void updateLEDCtrl(int channel, unsigned int red, unsigned int green, unsigned int blue,
+                          int whiteOn);
+static void controlLEDStrip(const char *input);
+static void updateLEDs();
+static void checkTimeOut();
+static void updateStatus();
+static void switchTestState();
+static bool controlLightTest();
+static void initPWMs(TIM_HandleTypeDef *htim1, TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3,
+                     TIM_HandleTypeDef *htim4);
+static void adcToFloat(int16_t *pData);
+static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples);
 
 /***************************************************************************************************
 ** PRIVATE VARIABLES
 ***************************************************************************************************/
 
-static StmGpio Ch1_R, Ch1_G, Ch1_B, Ch1_W;
-static StmGpio Ch2_R, Ch2_G, Ch2_B, Ch2_W;
-static StmGpio Ch3_R, Ch3_G, Ch3_B, Ch3_W;
+// Circular buffer
+static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
 
-static StmGpio* ChCtrl[12] = {&Ch1_R, &Ch1_G, &Ch1_B, &Ch1_W,
-                              &Ch2_R, &Ch2_G, &Ch2_B, &Ch2_W,
-                              &Ch3_R, &Ch3_G, &Ch3_B, &Ch3_W};
+static float voltage24V = 0;
 
-static unsigned int rgbwControl[LED_CHANNELS*NO_COLORS] = {0};
-static unsigned int rgbs[LED_CHANNELS] = {0, 0, 0};
+// PWM timers
+static TIM_HandleTypeDef *timers[LED_CHANNELS*NO_COLORS];
+static uint32_t channels[LED_CHANNELS*NO_COLORS];
 
+static uint32_t rgbwControl[LED_CHANNELS*NO_COLORS] = {0};
+static uint32_t rgbs[LED_CHANNELS] = {0, 0, 0};
+
+// For timeout
 static uint32_t lastCmdTime = 0;
 
-static TIM_HandleTypeDef* loopTimer = NULL;
-static TIM_HandleTypeDef* ledUpdateTimer = NULL;
-static WWDG_HandleTypeDef* hwwdg_ = NULL;
-
-// variables for keeping track of the time elapsed to control the LED test
+// Variables for keeping track of the time elapsed to control the LED test
 static uint32_t timer_start = 0;
 static uint32_t time_now = 0;
 
-// states
+// States
 typedef enum {
     OFF,
     RED,
@@ -60,53 +91,43 @@ typedef enum {
 static bool isInTest = false;
 static test_mode_state testState = OFF;
 
-/***************************************************************************************************
-** PRIVATE FUNCTION DECLARATIONS
-***************************************************************************************************/
+// Buffer shared by adcCallback, status and statusDef
+static char buf[600];
 
-static void controlLEDStrip(const char *input);
-static bool isInputValid(const char *input, int *channel, unsigned int *rgb);
-static int handleInput(unsigned int rgb, uint8_t *red, uint8_t *green, uint8_t *blue);
-static void LightControllerStatus();
-static void updateLEDCtrl(int channel, unsigned int red, unsigned int green, unsigned int blue, int whiteOn);
-static void monitorTimeout();
-static void switchTestState();
-static bool controlLightTest();
-static void printStates();
-static void updateLEDs();
-static void initGpio();
-
-
-static CAProtocolCtx caProto =
-{
-        .undefined = controlLEDStrip,
-        .printHeader = CAPrintHeader,
-        .printStatus = LightControllerStatus,
-        .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = NULL,
-        .calibrationRW = NULL,
-        .logging = NULL,
-        .otpRead = CAotpRead,
-        .otpWrite = NULL
-};
+static CAProtocolCtx caProto = {.undefined        = controlLEDStrip,
+                                .printHeader      = CAPrintHeader,
+                                .printStatus      = LightControllerStatus,
+                                .printStatusDef   = LightControllerStatusDef,
+                                .jumpToBootLoader = HALJumpToBootloader,
+                                .calibration      = NULL,
+                                .calibrationRW    = NULL,
+                                .logging          = NULL,
+                                .otpRead          = CAotpRead,
+                                .otpWrite         = NULL};
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
 
-static void LightControllerStatus()
-{
-     static char buf[600] = { 0 };
+static void LightControllerStatus() {
     int len = 0;
 
-    for (int i = 0; i < LED_CHANNELS; i++)
-    {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %" PRIu32 "\r\n", 
-                        i+1, (bsGetStatus() & LIGHT_PORT_STATUS_Msk(i)) >> i);
+    for (int i = 0; i < LED_CHANNELS; i++) {
+        CA_SNPRINTF(buf, len, "Port %d: On: %" PRIu32 "\r\n", i + 1,
+                    bsGetField(LIGHT_PORT_STATUS_Msk(i)));
     }
     writeUSB(buf, len);
 }
 
+static void LightControllerStatusDef() {
+    int len = 0;
+
+    for (int i = 0; i < LED_CHANNELS; i++) {
+        len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIu32 ",Status port %d\r\n",
+                        (uint32_t)LIGHT_PORT_STATUS_Msk(i), i + 1);
+    }
+    writeUSB(buf, len);
+}
 
 static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
 {
@@ -135,7 +156,7 @@ static bool isInputValid(const char *input, int *channel, unsigned int *rgb)
         return true;
 
     // Check the RGB format is exactly 6 hex characters long
-    char* idx = index((char*)input, ' ');
+    char* idx = strchr((char*)input, ' ');
     if (strlen(&idx[1]) != 6)
         return false;
 
@@ -185,10 +206,10 @@ static void controlLEDStrip(const char *input)
     unsigned int rgb = 0x000000;
 
     // If the SW Version does not match,
-    // do not allow user to control GPIOs.
+    // do not allow user to control PWMs.
     if (bsGetField(BS_VERSION_ERROR_Msk))
     {
-        USBnprintf("SW mismatch. Rejecting MCU GPIO control.\r\n");
+        USBnprintf("SW mismatch. Rejecting MCU PWM control.\r\n");
         return;
     }
 
@@ -207,50 +228,32 @@ static void controlLEDStrip(const char *input)
     rgbs[channel] = rgb;
 }
 
-static void updateLEDs()
-{
-    // Interrupt speed of ledUpdateTimer is 25 kHz.
-    // For each 25 kHz update, the counter is incremented from 0-255 and reset
-    // Hence, the update speed of the led channels are 25 kHz/256 ~= 98Hz.
-    static unsigned int count = 0;
-    for (int i = 0; i < LED_CHANNELS*NO_COLORS; i++)
-    {
-        stmSetGpio(*ChCtrl[i], (count < rgbwControl[i]));
+static void updateLEDs() {
+    for (uint32_t i = 0; i < LED_CHANNELS * NO_COLORS; i++) {
+        // Directly applies 8 bit value as PWM resolution (ARR) is 255
+        __HAL_TIM_SET_COMPARE(timers[i], channels[i], rgbwControl[i]);
     }
-
-    count = (count + 1 <= MAX_PWM) ? count + 1 : 0;
 }
 
-static void printStates()
-{
-    if (!isUsbPortOpen())
-        return;
-
-    if (bsGetField(BS_VERSION_ERROR_Msk))
-    {
-        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
-        return;
-    }
-
-    USBnprintf("%x, %x, %x, 0x%08" PRIx32 "\r\n", rgbs[0], rgbs[1], rgbs[2], bsGetStatus());
-}
-
-static void monitorTimeout()
-{
+static void checkTimeOut() {
     // If more than ACTUATION_TIMEOUT has passed since last command turn off output.
-    if ((HAL_GetTick() - lastCmdTime) >= ACTUATION_TIMEOUT)
-    {
-        for (int i=0; i<LED_CHANNELS*NO_COLORS; i++)
-        {
+    if ((HAL_GetTick() - lastCmdTime) >= ACTUATION_TIMEOUT) {
+        for (uint32_t i = 0; i < LED_CHANNELS * NO_COLORS; i++) {
             rgbwControl[i] = 0;
 
-            if (i < LED_CHANNELS)
-            {
+            if (i < LED_CHANNELS) {
                 rgbs[i] = 0;
                 bsClearField(LIGHT_PORT_STATUS_Msk(i));
             }
         }
     }
+}
+
+static void updateStatus() {
+    static const float MIN_VOLTAGE = 21.0;  // [V]
+
+    setBoardVoltage(voltage24V);
+    bsUpdateError(BS_UNDER_VOLTAGE_Msk, voltage24V < MIN_VOLTAGE, BS_SYSTEM_ERRORS_Msk);
 }
 
 static void switchTestState()
@@ -351,78 +354,109 @@ static bool controlLightTest()
     return false;
 }
 
-static void initGpio()
-{
-    stmGpioInit(&Ch1_R, Ch1_Ctrl_R_GPIO_Port, Ch1_Ctrl_R_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch1_G, Ch1_Ctrl_G_GPIO_Port, Ch1_Ctrl_G_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch1_B, Ch1_Ctrl_B_GPIO_Port, Ch1_Ctrl_B_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch1_W, Ch1_Ctrl_W_GPIO_Port, Ch1_Ctrl_W_Pin, STM_GPIO_OUTPUT);
+static void initPWMs(TIM_HandleTypeDef *htim1, TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3,
+                    TIM_HandleTypeDef *htim4) {
+    // Led strip 1
+    timers[0]   = htim2;
+    timers[1]   = htim1;
+    timers[2]   = htim1;
+    timers[3]   = htim1;
+    channels[0] = TIM_CHANNEL_3;
+    channels[1] = TIM_CHANNEL_1;
+    channels[2] = TIM_CHANNEL_2;
+    channels[3] = TIM_CHANNEL_3;
 
-    stmGpioInit(&Ch2_R, Ch2_Ctrl_R_GPIO_Port, Ch2_Ctrl_R_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch2_G, Ch2_Ctrl_G_GPIO_Port, Ch2_Ctrl_G_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch2_B, Ch2_Ctrl_B_GPIO_Port, Ch2_Ctrl_B_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch2_W, Ch2_Ctrl_W_GPIO_Port, Ch2_Ctrl_W_Pin, STM_GPIO_OUTPUT);
+    // Led strip 2
+    timers[4]   = htim3;
+    timers[5]   = htim3;
+    timers[6]   = htim3;
+    timers[7]   = htim3;
+    channels[4] = TIM_CHANNEL_1;
+    channels[5] = TIM_CHANNEL_2;
+    channels[6] = TIM_CHANNEL_3;
+    channels[7] = TIM_CHANNEL_4;
 
-    stmGpioInit(&Ch3_R, Ch3_Ctrl_R_GPIO_Port, Ch3_Ctrl_R_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch3_G, Ch3_Ctrl_G_GPIO_Port, Ch3_Ctrl_G_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch3_B, Ch3_Ctrl_B_GPIO_Port, Ch3_Ctrl_B_Pin, STM_GPIO_OUTPUT);
-    stmGpioInit(&Ch3_W, Ch3_Ctrl_W_GPIO_Port, Ch3_Ctrl_W_Pin, STM_GPIO_OUTPUT);
+    // Led strip 3
+    timers[8]    = htim4;
+    timers[9]    = htim4;
+    timers[10]   = htim2;
+    timers[11]   = htim2;
+    channels[8]  = TIM_CHANNEL_1;
+    channels[9]  = TIM_CHANNEL_2;
+    channels[10] = TIM_CHANNEL_4;
+    channels[11] = TIM_CHANNEL_1;
 
-    for (int i = 0; i < LED_CHANNELS*NO_COLORS; i++)
+    for (uint32_t i = 0; i < LED_CHANNELS * NO_COLORS; i++)
     {
-        stmSetGpio(*ChCtrl[i], false);
+        HAL_TIM_PWM_Start(timers[i], channels[i]);
     }
+
+    HAL_TIM_Base_Start(htim1);
+    HAL_TIM_Base_Start(htim3);
+    HAL_TIM_Base_Start(htim4);
+}
+
+static void adcToFloat(int16_t *pData) {
+    static const float SCALAR_24V = ADC_RATIO * 43.743; // Measured experimentally
+
+    voltage24V = ADCMean(pData, 0) * SCALAR_24V;
+}
+
+static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
+    if (!isUsbPortOpen()) {
+        return;
+    }
+
+    if (bsGetField(BS_VERSION_ERROR_Msk)) {
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
+        return;
+    }
+
+    adcToFloat(pData);
+    updateStatus();
+
+    int len = 0;
+    for (uint32_t i = 0; i < LED_CHANNELS; i++) {
+        CA_SNPRINTF(buf, len, "%06" PRIx32 ", ", rgbs[i]);
+    }
+
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 "\r\n", bsGetStatus());
+    writeUSB(buf, len);
 }
 
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-// Callback: timer has rolled over
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-    if (htim == ledUpdateTimer)
-    {
-        updateLEDs();
-        return;
-    }
-
-    // loopTimer corresponds to htim5 which triggers with a frequency of 10Hz
-    if (htim == loopTimer)
-    {
-        HAL_WWDG_Refresh(hwwdg_);
-        printStates();
-        return;
-    }
-}
-
 // Initialize board
-void LightControllerInit(TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim5, WWDG_HandleTypeDef *hwwdg)
-{
+void LightControllerInit(ADC_HandleTypeDef *hadc, TIM_HandleTypeDef *htim1,
+                         TIM_HandleTypeDef *htim2, TIM_HandleTypeDef *htim3,
+                         TIM_HandleTypeDef *htim4) {
     initCAProtocol(&caProto, usbRx);
-
-    HAL_TIM_Base_Start_IT(htim5);
-    loopTimer = htim5;
-    hwwdg_ = hwwdg;
+    (void)HAL_TIM_Base_Start(htim2);  // ADC timer
+    ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
 
     /* Don't initialise any outputs or act on them if the board isn't correct */
     if (boardSetup(LightController, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
-                   BS_SYSTEM_ERRORS_Msk) == -1) {
+                   BS_SYSTEM_ERRORS_Msk) != 0) {
         return;
     }
 
-    initGpio();
-    HAL_TIM_Base_Start_IT(htim2);
-    ledUpdateTimer = htim2;
+    initPWMs(htim1, htim2, htim3, htim4);
 }
 
 // Main loop - Board only reacts on user inputs
-void LightControllerLoop(const char* bootMsg)
-{
-    CAhandleUserInputs(&caProto, bootMsg);
-    monitorTimeout();
+void LightControllerLoop(const char *bootMsg) {
+    CAhandleUserInputs(&caProto, bootMsg); // Always allow DFU upload
+    ADCMonitorLoop(adcCallback);
 
-    if (isInTest){
+    if (bsGetField(BS_VERSION_ERROR_Msk)) {
+        return;
+    }
+
+    checkTimeOut();
+    if (isInTest) {
         switchTestState();
     }
+    updateLEDs();
 }
