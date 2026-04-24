@@ -4,16 +4,12 @@
 ** @date   08/04/2024
 */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
-/* Fakes */
-#include "fake_StmGpio.h"
-#include "fake_stm32xxxx_hal.h"
-#include "fake_USBprint.h"
-
+/* CA unit tests */
+#include "caBoardUnitTests.h"
+#include "serialStatus_tests.h"
 
 /* Real supporting units */
+#include "ADCmonitor.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
 
@@ -22,260 +18,111 @@
 
 using ::testing::Contains;
 using ::testing::ElementsAre;
+
 using namespace std;
 
 /***************************************************************************************************
 ** TEST FIXTURES
 ***************************************************************************************************/
 
-class LightControllerTest: public ::testing::Test 
-{
-    protected:
-        /*******************************************************************************************
-        ** METHODS
-        *******************************************************************************************/
-        LightControllerTest()
-        {
-            /* OTP code to allow initialisation of the board to pass */
-            /* TODO: Make this use a define for the board release, so that tests fail if the someone
-            ** forgets to update the version numbers */
-            BoardInfo bi = {
-                .v2 = {
-                    .otpVersion = OTP_VERSION_2,
-                    .boardType  = LightController,
-                    .subBoardType = 0,
-                    .reserved = {0},
-                    .pcbVersion = {
-                        .major = 1,
-                        .minor = 1
-                    },
-                    .productionDate = 0
-                }
-            };
-            HAL_otpWrite(&bi);
-            forceTick(0);
-            hostUSBConnect();
-        }
+class LightControllerTests : public CaBoardUnitTest {
+   protected:
+    /*******************************************************************************************
+    ** METHODS
+    *******************************************************************************************/
+    LightControllerTests()
+        : CaBoardUnitTest(&LightControllerLoop, LightController, {LATEST_MAJOR, LATEST_MINOR}) {
+        hadc1.Init.NbrOfConversion = 1;
+    }
 
-        void writeLightControllerMessage(const char * msg)
-        {
-            hostUSBprintf(msg);
-            LightControllerLoop(bootMsg);
-        }
-
-        void simTick(int numTicks = 1)
-        {
-            for(int i = tickCounter + 1; i <= tickCounter + numTicks; i++) 
-            {
-                HAL_TIM_PeriodElapsedCallback(&htim2);
+    void simTick() {
+        // ADC buffer should be half full every 100 ms
+        if (tickCounter != 0) {
+            if (tickCounter % 200 == 0) {
+                HAL_ADC_ConvCpltCallback(&hadc1);
             }
-            tickCounter = tickCounter + numTicks;
-        }
-
-        void goToTick(int tickDest) {
-            while(tickCounter < tickDest) {
-                simTick();
-            }
-
-            // Reset counter
-            if (tickDest == 0){
-                while (tickCounter < TICK_COUNTER_OVERFLOW){
-                    simTick();
-                }
-                tickCounter = 0;
+            else if (tickCounter % 200 == 100) {
+                HAL_ADC_ConvHalfCpltCallback(&hadc1);
             }
         }
+        LightControllerLoop(bootMsg);
+    }
 
-        /*******************************************************************************************
-        ** MEMBERS
-        *******************************************************************************************/
-        TIM_HandleTypeDef htim2;
-        TIM_HandleTypeDef htim5;
-        WWDG_HandleTypeDef hwwdg;
-        const char * bootMsg = "Boot Unit Test\r\n";
-        const int TICK_COUNTER_OVERFLOW = 256;
-        int tickCounter = 0;
+    void setVoltage(int16_t adcVal) {
+        int ch_dma_len = ADC_CHANNEL_BUF_SIZE * 2;
+
+        for (int i = 0; i < ch_dma_len; i++) {
+            ((int16_t*)hadc1.dma_address)[i] = adcVal;
+        }
+    }
+
+    /*******************************************************************************************
+    ** MEMBERS
+    *******************************************************************************************/
+
+    ADC_HandleTypeDef hadc1 = {0};
+    TIM_HandleTypeDef htim1 = {.Instance = TIM1};
+    TIM_HandleTypeDef htim2 = {.Instance = TIM2};
+    TIM_HandleTypeDef htim3 = {.Instance = TIM3};
+    TIM_HandleTypeDef htim4 = {.Instance = TIM4};
+
+    SerialStatusTest sst = {
+        .boundInit   = bind(LightControllerInit, &hadc1, &htim1, &htim2, &htim3, &htim4),
+        .testFixture = this};
 };
 
 /***************************************************************************************************
 ** TESTS
 ***************************************************************************************************/
 
-TEST_F(LightControllerTest, CorrectBoardParams)
-{
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-
-    /* Basic test, was everything OK?  */
-    EXPECT_FALSE(bsGetField(BS_VERSION_ERROR_Msk));
-
-    /* This should force a print on the USB bus */
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-
-    /* Check the printout is correct */
-    EXPECT_READ_USB(Contains("0, 0, 0, 0x00000000\r"));
+TEST_F(LightControllerTests, incorrectBoard) {
+    incorrectBoardTest(sst);
 }
 
-TEST_F(LightControllerTest, WrongBoardParams)
-{
-    // Set wrong minor version
-    BoardInfo bi = {
-        .v2 = {
-            .otpVersion = OTP_VERSION_2,
-            .boardType  = LightController,
-            .subBoardType = 0,
-            .reserved = {0},
-            .pcbVersion = {
-                .major = 1,
-                .minor = 0
-            },
-            .productionDate = 0
-        }
-    };
-    HAL_otpWrite(&bi);
-
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-
-    /* Minor version does not add up. Produce error.  */
-    EXPECT_TRUE(bsGetField(BS_VERSION_ERROR_Msk));
-
-    /* This should force a print on the USB bus */
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-
-    /* Check that it prints the status error code */
-    EXPECT_FLUSH_USB(Contains("0x84000000\r"));
-    
-
-    /* Reset to correct params */
-    bsClearField(BS_VERSION_ERROR_Msk);
-    bsClearError(BS_VERSION_ERROR_Msk);
-    bi.v2.pcbVersion.minor=1;
-    HAL_otpWrite(&bi);
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-    EXPECT_FALSE(bsGetField(BS_VERSION_ERROR_Msk));
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre("0, 0, 0, 0x00000000\r"));
-
-    /* Run with wrong board type */
-    bi.v2.boardType = AC_Board;
-    HAL_otpWrite(&bi);
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-    EXPECT_TRUE(bsGetField(BS_VERSION_ERROR_Msk));
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre("0x84000000\r"));
+TEST_F(LightControllerTests, incorrectBoardVersion) {
+    incorrectBoardVersionTest(sst);
 }
 
-
-TEST_F(LightControllerTest, printSerial) 
-{
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
-    ** printing anything */
-    LightControllerLoop(bootMsg);
-    writeLightControllerMessage("Serial\n");
-    
-    EXPECT_FLUSH_USB(ElementsAre(
-        "Boot Unit Test\r", 
-        "Serial Number: 000\r", 
-        "Product Type: LightController\r", 
-        "Sub Product Type: 0\r", 
-        "MCU Family: Unknown 0x  0 Rev 0\r", 
-        "Software Version: 0\r", 
-        "Compile Date: 0\r", 
-        "Git SHA: 0\r", 
-        "PCB Version: 1.1\r"
-    ));
+TEST_F(LightControllerTests, testPrintStatus) {
+    statusPrintoutTest(sst, {"The board is operating normally.\r", "Port 1: On: 0\r",
+                             "Port 2: On: 0\r", "Port 3: On: 0\r"});
 }
 
-TEST_F(LightControllerTest, printStatus) 
-{
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
-    ** printing anything */
-    LightControllerLoop(bootMsg);
-    writeLightControllerMessage("Status\n");
-    
-    EXPECT_FLUSH_USB(ElementsAre(
-        "Boot Unit Test\r",
-        "Start of board status:\r",
-        "The board is operating normally.\r",  
-        "Port 1: On: 0\r",
-        "Port 2: On: 0\r",
-        "Port 3: On: 0\r",
-        "End of board status.\r"
-    ));
+TEST_F(LightControllerTests, testPrintStatusDef) {
+    statusDefPrintoutTest(
+        sst, "0x7e000000,System errors\r",
+        {"0x00000001,Status port 1\r", "0x00000002,Status port 2\r", "0x00000004,Status port 3\r"});
 }
 
-
-/* Note: this test uses some knowledge of internals of LightController.c (e.g. white box), which isn't 
-** perfect */
-TEST_F(LightControllerTest, GpioInit) 
-{
-    auto expectStmNull = [](StmGpio* stm) {
-        EXPECT_EQ(stm->set,    nullptr);
-        EXPECT_EQ(stm->get,    nullptr);
-        EXPECT_EQ(stm->toggle, nullptr);
-    };
-
-    auto expectStmNotNull = [](StmGpio* stm) {
-        ASSERT_NE(stm->set,    nullptr);
-        ASSERT_NE(stm->get,    nullptr);
-        ASSERT_NE(stm->toggle, nullptr);
-    };
-
-    /* The GPIOs should be null prior to init function */
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++) expectStmNull(ChCtrl[i]);
-
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-
-    /* The GPIOs should be instatiated after init function */
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++) expectStmNotNull(ChCtrl[i]);
-
-    /* The GPIOs should be off after init */
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++) EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
+TEST_F(LightControllerTests, testPrintSerial) {
+    serialPrintoutTest(sst, "LightController");
 }
 
-TEST_F(LightControllerTest, InputHandler) 
-{
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-    /* Note: usb RX buffer is flushed during the first loop, so a single loop must be done before
-    ** printing anything */
-    LightControllerLoop(bootMsg);
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-
-    // Initial flush
-    EXPECT_FLUSH_USB(ElementsAre(
-        "Boot Unit Test\r",
-        "0, 0, 0, 0x00000000\r"
-    ));
-
+TEST_F(LightControllerTests, InputHandler) {
+    sst.boundInit();
+    simTicks(100);
+    (void)hostUSBread(true);
+    setVoltage(681);  // 24 V
 
     /* ----- VALID INPUTS ----- */
-    writeLightControllerMessage("p1 ABAB10\n");
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "abab10, 0, 0, 0x00000001\r"
-    ));
+    writeBoardMessage("p1 ABAB10\n");
+    simTicks(100);
+    EXPECT_FLUSH_USB(ElementsAre("abab10, 000000, 000000, 0x00000001\r"));
 
-    writeLightControllerMessage("p2 105020\n");
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "abab10, 105020, 0, 0x00000003\r"
-    ));
+    writeBoardMessage("p2 105020\n");
+    simTicks(100);
+    EXPECT_FLUSH_USB(ElementsAre("abab10, 105020, 000000, 0x00000003\r"));
 
-    writeLightControllerMessage("p3 FFFFFF\n");
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "abab10, 105020, ffffff, 0x00000007\r"
-    ));
+    writeBoardMessage("p3 ffffff\n");
+    simTicks(100);
+    EXPECT_FLUSH_USB(ElementsAre("abab10, 105020, ffffff, 0x00000007\r"));
 
     // Reset all ports
-    writeLightControllerMessage("p1 000000\n");
-    writeLightControllerMessage("p2 000000\n");
-    writeLightControllerMessage("p3 000000\n");
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "0, 0, 0, 0x00000000\r"
-    ));
+    writeBoardMessage("p1 000000\n");
+    writeBoardMessage("p2 000000\n");
+    writeBoardMessage("p3 000000\n");
+    simTicks(100);
+    EXPECT_FLUSH_USB(ElementsAre("000000, 000000, 000000, 0x00000000\r"));
 
     /* ----- INVALID INPUTS ----- */
 
@@ -283,196 +130,44 @@ TEST_F(LightControllerTest, InputHandler)
        since the MISREAD messages are pushed to the USB by the standard
        protocol.*/
 
-    // Invalid port   
-    writeLightControllerMessage("p4 FFFFFF\n");
-    EXPECT_FLUSH_USB(ElementsAre(
-        "MISREAD: p4 FFFFFF\r"
-    ));
+    // Invalid port
+    writeBoardMessage("p4 FFFFFF\n");
+    EXPECT_FLUSH_USB(ElementsAre("MISREAD: p4 FFFFFF\r"));
 
-    writeLightControllerMessage("p0 0xFFFFFF\n");
-    EXPECT_FLUSH_USB(ElementsAre(
-        "MISREAD: p0 0xFFFFFF\r"
-    ));
+    writeBoardMessage("p0 0xFFFFFF\n");
+    EXPECT_FLUSH_USB(ElementsAre("MISREAD: p0 0xFFFFFF\r"));
 
     // Wrong hex code (too short)
-    writeLightControllerMessage("p1 13908\n");
-    EXPECT_FLUSH_USB(ElementsAre(
-        "MISREAD: p1 13908\r"
-    ));
+    writeBoardMessage("p1 13908\n");
+    EXPECT_FLUSH_USB(ElementsAre("MISREAD: p1 13908\r"));
 
     // Wrong hex code (too long)
-    writeLightControllerMessage("p1 13908CC\n");
-    EXPECT_FLUSH_USB(ElementsAre(
-        "MISREAD: p1 13908CC\r"
-    ));
+    writeBoardMessage("p1 13908CC\n");
+    EXPECT_FLUSH_USB(ElementsAre("MISREAD: p1 13908CC\r"));
 
     // Wrong hex code (non valid hex characters)
-    writeLightControllerMessage("p1 ACACFM\n");
-    EXPECT_FLUSH_USB(ElementsAre(
-        "MISREAD: p1 ACACFM\r"
-    ));
+    writeBoardMessage("p1 ACACFM\n");
+    EXPECT_FLUSH_USB(ElementsAre("MISREAD: p1 ACACFM\r"));
 }
 
-TEST_F(LightControllerTest, LEDSwitching)
-{
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-    LightControllerLoop(bootMsg);
-
-    /* --- Turn on p1 minimum amount of time for each RGB component --- */
-    writeLightControllerMessage("p1 010101\n");
-    LightControllerLoop(bootMsg);
-
-    // LED switching interrupt 
-    goToTick(1);
-
-    // First three GPIOs should be on and the rest should be off
-    for(int i = 0; i < 3; i++) EXPECT_TRUE(stmGetGpio(*ChCtrl[i]));
-    for(int i = 3; i < LED_CHANNELS*NO_COLORS; i++) EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-
-    goToTick(2);
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++) EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-
-    // Reset counter
-    goToTick(0);
-
-    // Check that it keeps switching correctly after overflow
-    goToTick(1);
-
-    // First three GPIOs should be on and the rest should be off
-    for(int i = 0; i < 3; i++) EXPECT_TRUE(stmGetGpio(*ChCtrl[i]));
-    for(int i = 3; i < LED_CHANNELS*NO_COLORS; i++) EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-
-
-    /* --- Turn on p1 white LED all time --- */
-    goToTick(0);
-    writeLightControllerMessage("p1 FFFFFF\n");
-    LightControllerLoop(bootMsg);
-
-    // LED switching interrupt 
-    goToTick(100);
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++){
-        if (i == 3){
-            EXPECT_TRUE(stmGetGpio(*ChCtrl[i]));
-            continue;
-        }
-        EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-    } 
-
-
-    /* --- Turn on p2 RGB --- */
-    goToTick(0);
-    writeLightControllerMessage("p1 000000\n");
-
-    // 0xAA = 170
-    writeLightControllerMessage("p2 AAAAAA\n");
-    LightControllerLoop(bootMsg);
-    goToTick(170);
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++){
-        if (i >= 4 && i < 7){
-            EXPECT_TRUE(stmGetGpio(*ChCtrl[i]));
-            continue;
-        }
-        EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-    } 
-
-    goToTick(171);
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++) EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-
-
-    /* --- Turn on p3 white while p2 is running and tick is non-zero --- */
-    writeLightControllerMessage("p3 FFFFFF\n");
-    LightControllerLoop(bootMsg);
-    goToTick(0);
-
-    goToTick(170);
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++){
-        if ((i >= 4 && i < 7) || i == 11){
-            EXPECT_TRUE(stmGetGpio(*ChCtrl[i]));
-            continue;
-        }
-        EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-    } 
-
-    // p2 should turn off, but p3 white should still be on
-    goToTick(171);
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS - 1; i++) EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
-} 
-
-TEST_F(LightControllerTest, LEDSwitchingTimeout)
-{
-    LightControllerInit(&htim2, &htim5, &hwwdg);
-    LightControllerLoop(bootMsg);
+TEST_F(LightControllerTests, LEDSwitchingTimeout) {
+    sst.boundInit();
+    simTicks(100);
+    (void)hostUSBread(true);
+    setVoltage(681);  // 24 V
 
     /* --- Turn on white LED for p1-3  --- */
-    writeLightControllerMessage("p1 FFFFFF\n");
-    writeLightControllerMessage("p2 FFFFFF\n");
-    writeLightControllerMessage("p3 FFFFFF\n");
+    writeBoardMessage("p1 FFFFFF\n");
+    writeBoardMessage("p2 FFFFFF\n");
+    writeBoardMessage("p3 FFFFFF\n");
+    simTicks(100);
+    EXPECT_FLUSH_USB(ElementsAre("ffffff, ffffff, ffffff, 0x00000007\r"));
 
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "Boot Unit Test\r",
-        "ffffff, ffffff, ffffff, 0x00000007\r"
-    )); 
+    simTicks(29800);
+    (void)hostUSBread(true);
+    simTicks(100); // Just before timeout
+    EXPECT_FLUSH_USB(ElementsAre("ffffff, ffffff, ffffff, 0x00000007\r"));
 
-    forceTick(1);                   // Set system tick to 1
-    LightControllerLoop(bootMsg);   // Run main loop which monitors ACTUATION_TIMEOUT
-    goToTick(1);                    // LED switching interrupt
-
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "ffffff, ffffff, ffffff, 0x00000007\r"
-    )); 
-
-    // All white GPIOs should be on
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
-
-    forceTick(25123);               // Set system tick to 25123 i.e. < ACTUATION_TIMEOUT - 1
-    LightControllerLoop(bootMsg);   // Run main loop which monitors ACTUATION_TIMEOUT
-    goToTick(2);                    // LED switching interrupt
-
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "ffffff, ffffff, ffffff, 0x00000007\r"
-    )); 
-
-    // All white GPIOs should still be on since the ACTUATION_TIMEOUT has not yet occured
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
-
-    forceTick(ACTUATION_TIMEOUT + 1); // Set tick after ACTUATION_TIMEOUT
-    LightControllerLoop(bootMsg);     // Run main loop to turn off outputs
-    goToTick(3);                      // LED switching interrupt
-
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "0, 0, 0, 0x00000000\r"
-    )); 
-
-    // Everything should be turned off because of timeout.
-    for(int i = 0; i < LED_CHANNELS*NO_COLORS; i++)
-    { 
-        EXPECT_FALSE(stmGetGpio(*ChCtrl[i]));
-    }
-
-    /* --- Turn on white LED for p1-3  --- */
-    writeLightControllerMessage("p1 FFFFFF\n");
-    writeLightControllerMessage("p2 FFFFFF\n");
-    writeLightControllerMessage("p3 FFFFFF\n");
-
-    forceTick(ACTUATION_TIMEOUT + 2); // Set system tick to 1
-    LightControllerLoop(bootMsg);     // Run main loop which monitors ACTUATION_TIMEOUT
-    goToTick(4);                      // LED switching interrupt 
-
-    HAL_TIM_PeriodElapsedCallback(&htim5);
-    EXPECT_FLUSH_USB(ElementsAre(
-        "ffffff, ffffff, ffffff, 0x00000007\r"
-    )); 
-
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[3]));
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[7]));
-    EXPECT_TRUE(stmGetGpio(*ChCtrl[11]));
+    simTicks(100); // Just after timeout
+    EXPECT_FLUSH_USB(ElementsAre("000000, 000000, 000000, 0x00000000\r"));
 }
