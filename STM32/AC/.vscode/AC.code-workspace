@@ -1,0 +1,16 @@
+{
+  "folders": [
+    { 
+      "name": "Firmware",
+      "path": "../"
+    },
+    { 
+      "name": "Libraries",
+      "path": "../../../CA_Embedded_Libraries"
+    },
+    {
+      "name": "Tests",
+      "path": "../../../unit_testing/AC"
+    }
+  ]
+}

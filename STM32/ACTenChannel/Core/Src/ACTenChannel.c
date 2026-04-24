@@ -91,8 +91,8 @@ static void printAcTenChannelStatus() {
     int len = 0;
 
     for (int i = 0; i < AC_TEN_CH_NUM_PORTS; i++) {
-        len += snprintf(&buf[len], sizeof(buf) - len, "Port %d: On: %d, PWM percent: %d\r\n", i,
-                        stmGetGpio(heaterPorts[i]), getPWMPinPercent(i));
+        CA_SNPRINTF(buf, len, "Port %d: On: %d, PWM percent: %d\r\n", i, stmGetGpio(heaterPorts[i]),
+                    getPWMPinPercent(i));
     }
 
     CA_SNPRINTF(buf, len, "Power   On: %d\r\n", (int)round(isMainsConnected));
@@ -168,7 +168,7 @@ static void printCurrentArray(int16_t* pData, int noOfChannels, int noOfSamples)
 
     /* If the version is incorrect, there is no point printing data or doing maths */
     if (bsGetField(BS_VERSION_ERROR_Msk)) {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
@@ -185,7 +185,7 @@ static void printCurrentArray(int16_t* pData, int noOfChannels, int noOfSamples)
         ADCSetOffset(pData, current_calibration[i], i);
     }
 
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, 0x%08" PRIx32,
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, 0x%08" PRIx32 "\r\n",
                ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)),
                ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)),
                ADCtoCurrent(ADCrms(pData, 4)), ADCtoCurrent(ADCrms(pData, 5)),

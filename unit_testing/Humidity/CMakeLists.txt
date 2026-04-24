@@ -34,9 +34,16 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../../STM32/Humidity)
 set(LIB ../../CA_Embedded_Libraries/STM32)
-set(INC_LIB ${LIB}/circularBuffer/Inc ${LIB}/Crc/Inc 
-            ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
-            ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
+
+set(INC_LIB
+${LIB}/circularBuffer/Inc
+${LIB}/Crc/Inc 
+${LIB}/FLASH_readwrite/Inc
+${LIB}/I2C/Inc
+${LIB}/jumpToBootloader/Inc 
+${LIB}/USBprint/Inc
+${LIB}/Util/Inc)
+
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
 set(UT_STUBS ${UT_LIB}/stubs)
@@ -51,8 +58,29 @@ enable_testing()
 include(GoogleTest)
 
 # Humidity tests
-add_executable(humidity_tests humidity_tests.cpp ${UT_FAKES}/fake_HAL_otp.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_LIB}/Util/serialStatus_tests.cpp)
-target_include_directories(humidity_tests PRIVATE ${INC_LIB} ${UT_FAKES} ${SRC}/Core/Src ${SRC}/Core/Inc ${DRIV}/Inc ${DRIV}/Src ${LIB}/Util/Src ${LIB}/I2C/Src ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util ${LIB}/Crc/Src)
+add_executable(humidity_tests humidity_tests.cpp
+${UT_FAKES}/fake_FLASH_readwrite.cpp
+${UT_FAKES}/fake_HAL_otp.cpp
+${UT_FAKES}/fake_USBprint.cpp
+${UT_FAKES}/fake_StmGpio.cpp
+${UT_FAKES}/fake_stm32xxxx_hal.cpp
+${UT_STUBS}/stub_jumpToBootloader.cpp
+${UT_LIB}/Util/serialStatus_tests.cpp
+${LIB}/Util/Src/systeminfo.c)
+
+target_include_directories(humidity_tests PRIVATE
+${INC_LIB}
+${UT_FAKES}
+${SRC}/Core/Src
+${SRC}/Core/Inc
+${DRIV}/Inc
+${DRIV}/Src
+${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
+${LIB}/Util/Src
+${LIB}/I2C/Src
+${LIB}/Crc/Src
+${UT_LIB}/Util)
+
 target_link_libraries(humidity_tests GTest::gtest_main gmock_main)
 target_compile_definitions(humidity_tests PUBLIC UNIT_TESTING)
 target_compile_options(humidity_tests PRIVATE -Wall)

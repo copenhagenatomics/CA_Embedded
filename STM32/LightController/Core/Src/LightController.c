@@ -188,7 +188,7 @@ static void controlLEDStrip(const char *input)
     // do not allow user to control GPIOs.
     if (bsGetField(BS_VERSION_ERROR_Msk))
     {
-        USBnprintf("SW mismatch. Rejecting MCU GPIO control.");
+        USBnprintf("SW mismatch. Rejecting MCU GPIO control.\r\n");
         return;
     }
 
@@ -228,11 +228,11 @@ static void printStates()
 
     if (bsGetField(BS_VERSION_ERROR_Msk))
     {
-        USBnprintf("0x%x", bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
-    USBnprintf("%x, %x, %x, 0x%x", rgbs[0], rgbs[1], rgbs[2], bsGetStatus());
+    USBnprintf("%x, %x, %x, 0x%08" PRIx32 "\r\n", rgbs[0], rgbs[1], rgbs[2], bsGetStatus());
 }
 
 static void monitorTimeout()

@@ -89,11 +89,12 @@ class SaltLeakBoard : public CaBoardUnitTest {
 ***************************************************************************************************/
 
 TEST_F(SaltLeakBoard, CorrectBoardParams) {
-    goldenPathTest(sst, "-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000005");
+    goldenPathTest(sst, "-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000005\r");
 }
 
 TEST_F(SaltLeakBoard, testPrintStatus) {
     statusPrintoutTest(sst, {
+        "The board is operating normally.\r",
         "Boost error: NO\r",
         "Boost switch: NO\r",
         "Boost pin: OFF\r"
@@ -126,7 +127,7 @@ TEST_F(SaltLeakBoard, boostMode) {
     // Initial state, boost mode OFF, but boost pin ON by default
     goToTick(999);
     EXPECT_TRUE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000005"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000005\r"));
 
     // Start switching sequence
     writeBoardMessage("boost 1 2\n");
@@ -134,36 +135,36 @@ TEST_F(SaltLeakBoard, boostMode) {
     // Boost mode activated, but boost pin still ON
     goToTick(1000);
     EXPECT_FALSE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000007"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000007\r"));
 
     // GPIO turns OFF
     goToTick(1100);
     EXPECT_FALSE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000002"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000002\r"));
 
     goToTick(2900);
     EXPECT_FALSE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000002"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000002\r"));
 
     // GPIO turns ON
     goToTick(3000);
     EXPECT_TRUE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000002"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000002\r"));
 
     // Status updated
     goToTick(3100);
     EXPECT_TRUE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000007"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000007\r"));
 
     // GPIO turns OFF
     goToTick(4000);
     EXPECT_FALSE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000007"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000007\r"));
 
     // Status updated
     goToTick(4100);
     EXPECT_FALSE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000002"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000002\r"));
 
     // Stops switching sequence
     writeBoardMessage("switch off\n");
@@ -171,40 +172,40 @@ TEST_F(SaltLeakBoard, boostMode) {
     // Switch mode turns OFF and GPIO turns ON (default behavior)
     goToTick(4200);
     EXPECT_TRUE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000000"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 5, 5, 5, 5, 5, 5, 0.00, 0xa0000000\r"));
 
     // Status updated
     goToTick(4300);
     EXPECT_TRUE(stmGetGpio(BoostEn));
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000005"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000005\r"));
 }
 
 TEST_F(SaltLeakBoard, voltageFeedbackState) {
     saltleakInit(&hadc, &hcrc);
 
     goToTick(100);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000005"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 0.00, 0xa0000005\r"));
 
     // Boost voltage
     setAdcBufferChannel(6, 3858); // 48.01 V
 
     // Status update and voltage printed
     goToTick(200);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 3, 3, 3, 3, 3, 3, 48.01, 0xa0000001"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 3, 3, 3, 3, 3, 3, 48.01, 0xa0000001\r"));
 
     // VCC voltage
     setAdcBufferChannel(7, 3656); // 5.00 V
 
     // Status update and voltage printed
     goToTick(300);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 3, 3, 3, 3, 3, 3, 48.01, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 3, 3, 3, 3, 3, 3, 48.01, 0x00000001\r"));
 
     // Boost voltage too low
     setAdcBufferChannel(6, 3536); // 44.00 V
 
     // Status update and voltage printed
     goToTick(400);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 44.00, 0x80000005"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -1.00, -1.00, -1.00, -1.00, 4, 4, 4, 4, 4, 4, 44.00, 0x80000005\r"));
 }
 
 TEST_F(SaltLeakBoard, resistanceCalculation) {
@@ -214,21 +215,21 @@ TEST_F(SaltLeakBoard, resistanceCalculation) {
 
     setAdcBufferChannel(2, 560); // Sensor voltage - 6.97 V - Very high resistance (~52 MOhm)
     goToTick(100);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, 51754.25, -1.00, -1.00, -1.00, 3, 3, 0, 3, 3, 3, 48.01, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, 51754.25, -1.00, -1.00, -1.00, 3, 3, 0, 3, 3, 3, 48.01, 0x00000001\r"));
 
     setAdcBufferChannel(2, 1607); // Sensor voltage - 20.0 V - Medium resistance (~23 kOhm)
     goToTick(200);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, 23.48, -1.00, -1.00, -1.00, 3, 3, 0, 3, 3, 3, 48.01, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, 23.48, -1.00, -1.00, -1.00, 3, 3, 0, 3, 3, 3, 48.01, 0x00000001\r"));
 
     setAdcBufferChannel(2, 2867); // Sensor voltage - 35.68 V - Very low resistance (~20 Ohm) - Leak
     goToTick(300);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, 0.02, -1.00, -1.00, -1.00, 3, 3, 1, 3, 3, 3, 48.01, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, 0.02, -1.00, -1.00, -1.00, 3, 3, 1, 3, 3, 3, 48.01, 0x00000001\r"));
 
     setAdcBufferChannel(2, 3215); // Sensor voltage - 40.0 V - Broken sensor
     goToTick(400);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -2.53, -1.00, -1.00, -1.00, 3, 3, 2, 3, 3, 3, 48.01, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -2.53, -1.00, -1.00, -1.00, 3, 3, 2, 3, 3, 3, 48.01, 0x00000001\r"));
 
     setAdcBufferChannel(2, 402); // Sensor voltage - 5.0 V - Broken sensor
     goToTick(500);
-    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -305.99, -1.00, -1.00, -1.00, 3, 3, 2, 3, 3, 3, 48.01, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("-1.00, -1.00, -305.99, -1.00, -1.00, -1.00, 3, 3, 2, 3, 3, 3, 48.01, 0x00000001\r"));
 }

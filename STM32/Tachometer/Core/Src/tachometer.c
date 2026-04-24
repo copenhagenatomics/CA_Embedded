@@ -5,11 +5,11 @@
 ** @author: Luke W
 */
 
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "stm32f4xx_hal.h"
-
 #include "tachometer.h"
 #include "USBprint.h"
 #include "systemInfo.h"
@@ -141,11 +141,11 @@ static void printFrequencies()
         return;
 
     if(bsGetStatus() & BS_VERSION_ERROR_Msk) {
-        USBnprintf("0x%08x", bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x", freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], bsGetStatus());
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n", freq[0], freq[1], freq[2], freq[3], freq[4], freq[5], bsGetStatus());
 }
 
 static void resetFlow()
