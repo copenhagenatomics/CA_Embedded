@@ -76,11 +76,12 @@ target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
 target_compile_options(heatCtrl_test PRIVATE -Wall)
 gtest_discover_tests(heatCtrl_test)
 
-add_executable(ac_test AC_tests.cpp 
-                 ${UT_STUBS}/stub_jumpToBootloader.cpp 
-                 ${LIB}/Util/Src/systeminfo.c 
+add_executable(ac_test AC_tests.cpp
+                 ${UT_STUBS}/stub_jumpToBootloader.cpp
+                 ${LIB}/Util/Src/systeminfo.c
+                 ${LIB}/Filtering/Src/array-math.c
                  ${UT_FAKES}/fake_USBprint.cpp
-                 ${LIB}/Util/Src/time32.c 
+                 ${LIB}/Util/Src/time32.c
                  ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
                  ${UT_FAKES}/fake_StmGpio.cpp 
                  ${UT_FAKES}/fake_HAL_otp.cpp  

@@ -72,7 +72,7 @@ _ProgramMemoryEnd = ORIGIN(FLASH) + LENGTH(FLASH);
 
 
 /* FLASH areas dedicated to user data storage */
-_FlashAddrFault = ORIGIN(FLASHCAL);
+_FlashAddrCal = ORIGIN(FLASHCAL);
 
 /* Define output sections */
 SECTIONS

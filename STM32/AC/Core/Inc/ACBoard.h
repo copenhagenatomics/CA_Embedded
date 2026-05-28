@@ -38,7 +38,7 @@
 ** PUBLIC OBJECTS
 ***************************************************************************************************/
 
-extern uint32_t _FlashAddrFault;   // Variable defined in ld linker script.
+extern uint32_t _FlashAddrCal;   // Variable defined in ld linker script.
 
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS

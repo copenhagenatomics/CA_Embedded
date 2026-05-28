@@ -16,9 +16,9 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#ifndef FLASH_ADDR_FAULT
-    extern uint32_t _FlashAddrFault;   // Variable defined in ld linker script.
-    #define FLASH_ADDR_FAULT ((uint32_t) &_FlashAddrFault)
+#ifndef FLASH_ADDR_CAL
+    extern uint32_t _FlashAddrCal;   // Variable defined in ld linker script.
+    #define FLASH_ADDR_CAL ((uint32_t) &_FlashAddrCal)
 #endif
 
 /***************************************************************************************************
@@ -48,5 +48,5 @@ typedef struct depositUnit_t {
 faultInfo_t* fhGetFaultInfo()    {return &(dpu.fault_info);}
 float*       fhGetCurrentLimits() {return dpu.currentLimits;}
 
-void fhLoadDeposit() {readFromFlash(FLASH_ADDR_FAULT, (uint8_t*) &dpu, sizeof(dpu));}
-void fhSaveDeposit() {writeToFlash (FLASH_ADDR_FAULT, (uint8_t*) &dpu, sizeof(dpu));}
+void fhLoadDeposit() {readFromFlash(FLASH_ADDR_CAL, (uint8_t*) &dpu, sizeof(dpu));}
+void fhSaveDeposit() {writeToFlash (FLASH_ADDR_CAL, (uint8_t*) &dpu, sizeof(dpu));}

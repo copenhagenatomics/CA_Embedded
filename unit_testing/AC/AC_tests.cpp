@@ -23,7 +23,7 @@
 #include "faultHandlers.c"
 
 /* Prevents attempting to access non-existent linker script variables */
-#define FLASH_ADDR_FAULT ((uint32_t) 0U)
+#define FLASH_ADDR_CAL ((uint32_t) 0U)
 
 #include "flashHandler.c"
 
@@ -51,8 +51,9 @@ class ACBoard: public CaBoardUnitTest
             hadc.Init.NbrOfConversion = 8;
 
             /* Prevent fault info triggering automatically at startup */
-            faultInfo_t tmp = {.fault = NO_FAULT};
-            writeToFlash(FLASH_ADDR_FAULT, (uint8_t*)&tmp, sizeof(faultInfo_t));
+            depositUnit_t tmp = {};
+            tmp.fault_info.fault = NO_FAULT;
+            writeToFlash(FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
         }
 
         void simTick()
@@ -133,13 +134,17 @@ TEST_F(ACBoard, printStatus) {
 }
 
 TEST_F(ACBoard, printStatusDef) {
-    statusDefPrintoutTest(sst, "0x7e000020,System errors\r", 
-                          {"0x00000020,Mains not-connected error\r", 
-                           "0x00000010,Port 4 switching state\r", 
-                           "0x00000008,Port 3 switching state\r", 
-                           "0x00000004,Port 2 switching state\r", 
-                           "0x00000002,Port 1 switching state\r", 
-                           "0x00000001,Fan state\r"});
+    statusDefPrintoutTest(sst, "0x7e0007a0,System errors\r",
+                          {"0x00000020,Mains not-connected error\r",
+                           "0x00000010,Port 4 switching state\r",
+                           "0x00000008,Port 3 switching state\r",
+                           "0x00000004,Port 2 switching state\r",
+                           "0x00000002,Port 1 switching state\r",
+                           "0x00000001,Fan state\r",
+                           "0x00000080,Port 1 e-fuse overcurrent error\r",
+                           "0x00000100,Port 2 e-fuse overcurrent error\r",
+                           "0x00000200,Port 3 e-fuse overcurrent error\r",
+                           "0x00000400,Port 4 e-fuse overcurrent error\r"});
 }
 
 TEST_F(ACBoard, printSerial) {
@@ -349,8 +354,9 @@ TEST_F(ACBoard, heatsinkLoop)
 }
 
 TEST_F(ACBoard, faultInfoPrintout) {
-    faultInfo_t tmp = {.fault = HARD_FAULT};
-    writeToFlash(FLASH_ADDR_FAULT, (uint8_t*)&tmp, sizeof(faultInfo_t));
+    depositUnit_t tmp = {};
+    tmp.fault_info.fault = HARD_FAULT;
+    writeToFlash(FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
 
     ACBoardInit(&hadc);
     ACBoardLoop(bootMsg);
