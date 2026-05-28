@@ -22,10 +22,14 @@
 #define AC_POWER_ERROR_Msk           (1UL << 5UL)
 
 /* Is on if user requests more than 10 seconds on time for a port until next request */
-#define AC_LIMIT_ON_TIME_STATUS_Msk  (1UL << 6UL)              
+#define AC_LIMIT_ON_TIME_STATUS_Msk  (1UL << 6UL)
+
+/* Per-channel e-fuse overcurrent error bits: channel x (1-indexed) occupies bit 6+x (bits 7-10) */
+#define AC_EFUSE_OVERCURRENT_Msk(x)  (1UL << (6UL + (uint32_t)(x)))
+#define AC_EFUSE_OVERCURRENT_ALL_Msk (0xFUL << 7UL)
 
 /* Define showing which bits are "errors" and which are only for information */
-#define AC_BOARD_No_Error_Msk         (BS_SYSTEM_ERRORS_Msk | AC_POWER_ERROR_Msk)
+#define AC_BOARD_No_Error_Msk         (BS_SYSTEM_ERRORS_Msk | AC_POWER_ERROR_Msk | AC_EFUSE_OVERCURRENT_ALL_Msk)
 
 /* Common definitions for AC Board */
 #define AC_BOARD_NUM_PORTS            4

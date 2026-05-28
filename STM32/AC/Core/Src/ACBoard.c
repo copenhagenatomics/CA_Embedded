@@ -39,6 +39,9 @@
 
 #define USB_COMMS_TIMEOUT_MS     5000
 
+#define EFUSE_DEFAULT_CURRENT_LIMIT_A  10.0f
+#define EFUSE_WINDOW_SIZE              10   // ADC callbacks per PWM period (10 Hz × 1 s)
+
 /***************************************************************************************************
 ** PRIVATE TYPEDEFS
 ***************************************************************************************************/
@@ -67,7 +70,10 @@ static void GpioInit();
 static double ADCtoCurrent(double adc_val);
 static double ADCtoTemperature(double adc_val);
 static void actuatePins(ActuationInfo actuationInfo);
-static void heatSinkLoop(); 
+static void heatSinkLoop();
+static void ACcalibration(int noOfCalibrations, const CACalibration* calibrations);
+static void ACcalibrationRW(bool write);
+static void efuseLoop(const double *currents);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -85,6 +91,7 @@ static double heatSinkTemperatures[NUM_TEMP_CHANNELS] = {0};
 static double heatSinkMaxTemp = 0;
 static float isMainsConnected = 0;
 static bool isFanForceOn = false;
+static float *efuseCurrentLimits = NULL;
 
 static ACDCProtocolCtx acProto =
 {
@@ -99,8 +106,8 @@ static CAProtocolCtx caProto =
         .printStatus = printAcStatus,
         .printStatusDef = printAcStatusDef,
         .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = NULL, 
-        .calibrationRW = NULL,
+        .calibration = ACcalibration,
+        .calibrationRW = ACcalibrationRW,
         .logging = NULL,
         .otpRead = CAotpRead
 };
@@ -108,6 +115,67 @@ static CAProtocolCtx caProto =
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
 ***************************************************************************************************/
+
+/*!
+** @brief Updates calibration memory with per-channel e-fuse current limits.
+**        Command format: "calibration p<N>,<limit_amps>,0,0"
+*/
+static void ACcalibration(int noOfCalibrations, const CACalibration* calibrations) {
+    for (int i = 0; i < noOfCalibrations; i++) {
+        int port = calibrations[i].port;
+        if (port >= 1 && port <= AC_BOARD_NUM_PORTS && calibrations[i].alpha > 0) {
+            efuseCurrentLimits[port - 1] = (float)calibrations[i].alpha;
+        }
+    }
+}
+
+/*!
+** @brief Reads or writes e-fuse current limits to/from flash.
+*/
+static void ACcalibrationRW(bool write) {
+    if (write) {
+        fhSaveDeposit();
+    }
+    else {
+        char buf[300];
+        int len = 0;
+
+        CA_SNPRINTF(buf, len, "Calibration: CAL");
+        for (int ch = 0; ch < AC_BOARD_NUM_PORTS; ch++) {
+            CA_SNPRINTF(buf, len, " %d,%.2f,0,0", ch + 1, efuseCurrentLimits[ch]);
+        }
+        CA_SNPRINTF(buf, len, "\r\n");
+        writeUSB(buf, len);
+    }
+}
+
+/*!
+** @brief Checks per-channel average current over one PWM period and trips the e-fuse if exceeded.
+**
+** Accumulates current measurements across EFUSE_WINDOW_SIZE ADC callbacks (= 1 PWM period).
+** On overflow: disables the channel and sets the overcurrent error bit.
+*/
+static void efuseLoop(const double* currents) {
+    static double accumulator[AC_BOARD_NUM_PORTS] = {0};
+    static int sampleCount                        = 0;
+
+    for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
+        accumulator[i] += currents[i];
+    }
+
+    if (++sampleCount < EFUSE_WINDOW_SIZE) {
+        return;
+    }
+
+    for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
+        if ((accumulator[i] / EFUSE_WINDOW_SIZE) > efuseCurrentLimits[i]) {
+            turnOffPin(i);
+            bsSetError(AC_EFUSE_OVERCURRENT_Msk(i + 1));
+        }
+        accumulator[i] = 0;
+    }
+    sampleCount = 0;
+}
 
 /*!
 ** @brief Printout of the general board info, e.g. serial number, sw version, etc...
@@ -138,7 +206,7 @@ static void printAcStatus() {
  * @brief Definition of status definition information when the 'StatusDef' command is received
 */
 static void printAcStatusDef() {
-    static char buf[300] = {0};
+    static char buf[600] = {0};
     int len              = 0;
     CA_SNPRINTF(buf, len, "0x%08lx,Mains not-connected error\r\n", AC_POWER_ERROR_Msk);
     CA_SNPRINTF(buf, len, "0x%08lx,Port 4 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(4));
@@ -146,6 +214,10 @@ static void printAcStatusDef() {
     CA_SNPRINTF(buf, len, "0x%08lx,Port 2 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(2));
     CA_SNPRINTF(buf, len, "0x%08lx,Port 1 switching state\r\n", AC_BOARD_PORT_x_STATUS_Msk(1));
     CA_SNPRINTF(buf, len, "0x%08lx,Fan state\r\n", AC_BOARD_PORT_x_STATUS_Msk(0));
+    for (int i = 1; i <= AC_BOARD_NUM_PORTS; i++) {
+        CA_SNPRINTF(buf, len, "0x%08lx,Port %d e-fuse overcurrent error\r\n",
+                    AC_EFUSE_OVERCURRENT_Msk(i), i);
+    }
 
     writeUSB(buf, len);
 }
@@ -264,11 +336,18 @@ static void printCurrentArray(int16_t *pData, int noOfChannels, int noOfSamples)
 
     computeHeatSinkTemperatures(pData);
 
-    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n",  ADCtoCurrent(ADCrms(pData, 0)), ADCtoCurrent(ADCrms(pData, 1)), 
-                                                                                ADCtoCurrent(ADCrms(pData, 2)), ADCtoCurrent(ADCrms(pData, 3)), 
-                                                                                heatSinkTemperatures[0], heatSinkTemperatures[1],
-                                                                                heatSinkTemperatures[2], heatSinkTemperatures[3],
-                                                                                bsGetStatus());
+    double currents[NUM_CURRENT_CHANNELS];
+    for (int i = 0; i < NUM_CURRENT_CHANNELS; i++) {
+        currents[i] = ADCtoCurrent(ADCrms(pData, i));
+    }
+
+    efuseLoop(currents);
+
+    USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n", 
+               currents[0], currents[1], currents[2], currents[3], 
+               heatSinkTemperatures[0], heatSinkTemperatures[1], 
+               heatSinkTemperatures[2], heatSinkTemperatures[3],
+               bsGetStatus());
 }
 
 /*!
@@ -326,6 +405,7 @@ static void CAallOn(bool isOn, int duration)
         }
         else
         {
+            bsClearField(AC_EFUSE_OVERCURRENT_ALL_Msk);
             allOn(1000*duration);
         }
     }
@@ -347,8 +427,10 @@ static void CAportState(int port, bool state, int percent, int duration)
         snprintf(buf, 20, "p%d on %d", port, duration);
         HALundefined(buf);
     }
-    else 
+    else
     {
+        bsClearField(AC_EFUSE_OVERCURRENT_Msk(port));
+
         if (duration > MAX_ON_TIME_REQUEST)
         {
             duration = MAX_ON_TIME_REQUEST;
@@ -451,6 +533,14 @@ void ACBoardInit(ADC_HandleTypeDef* hadc)
     /* Setup flash handling */
     fhLoadDeposit();
     setLocalFaultInfo(fhGetFaultInfo());
+
+    /* Initialise e-fuse current limits; use default for any channel not yet written to flash */
+    efuseCurrentLimits = fhGetCurrentLimits();
+    for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
+        if (!isfinite(efuseCurrentLimits[i]) || efuseCurrentLimits[i] <= 0) {
+            efuseCurrentLimits[i] = EFUSE_DEFAULT_CURRENT_LIMIT_A;
+        }
+    }
 }
 
 /*!
