@@ -24,6 +24,7 @@
 #include "pcbversion.h"
 #include "flashHandler.h"
 #include "CAProtocolACDC.h"
+#include "array-math.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -40,7 +41,7 @@
 #define USB_COMMS_TIMEOUT_MS     5000
 
 #define EFUSE_DEFAULT_CURRENT_LIMIT_A  10.0f
-#define EFUSE_WINDOW_SIZE              10   // ADC callbacks per PWM period (10 Hz × 1 s)
+#define EFUSE_MA_WINDOW                10   // samples per PWM period (10 Hz × 1 s)
 
 /***************************************************************************************************
 ** PRIVATE TYPEDEFS
@@ -92,6 +93,8 @@ static double heatSinkMaxTemp = 0;
 static float isMainsConnected = 0;
 static bool isFanForceOn = false;
 static float *efuseCurrentLimits = NULL;
+static moving_avg_cbuf_t efuseMaFilter[AC_BOARD_NUM_PORTS];
+static double efuseMaBuffer[AC_BOARD_NUM_PORTS][EFUSE_MA_WINDOW];
 
 static ACDCProtocolCtx acProto =
 {
@@ -150,31 +153,19 @@ static void ACcalibrationRW(bool write) {
 }
 
 /*!
-** @brief Checks per-channel average current over one PWM period and trips the e-fuse if exceeded.
+** @brief Checks per-channel average current and trips the e-fuse if exceeded.
 **
-** Accumulates current measurements across EFUSE_WINDOW_SIZE ADC callbacks (= 1 PWM period).
-** On overflow: disables the channel and sets the overcurrent error bit.
+** Uses a sliding window average over the last EFUSE_MA_WINDOW callbacks (= 1 PWM period),
+** checked on every ADC callback for the fastest possible response.
 */
 static void efuseLoop(const double* currents) {
-    static double accumulator[AC_BOARD_NUM_PORTS] = {0};
-    static int sampleCount                        = 0;
-
     for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
-        accumulator[i] += currents[i];
-    }
-
-    if (++sampleCount < EFUSE_WINDOW_SIZE) {
-        return;
-    }
-
-    for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
-        if ((accumulator[i] / EFUSE_WINDOW_SIZE) > efuseCurrentLimits[i]) {
+        double avg = maMean(&efuseMaFilter[i], currents[i]);
+        if (avg > efuseCurrentLimits[i]) {
             turnOffPin(i);
             bsSetError(AC_EFUSE_OVERCURRENT_Msk(i + 1));
         }
-        accumulator[i] = 0;
     }
-    sampleCount = 0;
 }
 
 /*!
@@ -540,6 +531,7 @@ void ACBoardInit(ADC_HandleTypeDef* hadc)
         if (!isfinite(efuseCurrentLimits[i]) || efuseCurrentLimits[i] <= 0) {
             efuseCurrentLimits[i] = EFUSE_DEFAULT_CURRENT_LIMIT_A;
         }
+        maInit(&efuseMaFilter[i], efuseMaBuffer[i], EFUSE_MA_WINDOW);
     }
 }
 

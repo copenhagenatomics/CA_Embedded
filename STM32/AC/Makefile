@@ -57,6 +57,7 @@ C_SOURCES =  \
 ../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/time32.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/faultHandlers.c \
+../../CA_Embedded_Libraries/STM32/Filtering/Src/array-math.c \
 Core/Src/main.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
@@ -167,6 +168,7 @@ C_INCLUDES =  \
 -I../../CA_Embedded_Libraries/STM32/Util/Inc \
 -I../../CA_Embedded_Libraries/STM32/USBprint/Inc \
 -I../../CA_Embedded_Libraries/STM32/jumpToBootloader/Inc \
+-I../../CA_Embedded_Libraries/STM32/Filtering/Inc \
 -IHeatCtrl/Inc
 
 
