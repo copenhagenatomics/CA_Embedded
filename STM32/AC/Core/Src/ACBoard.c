@@ -75,6 +75,7 @@ static void heatSinkLoop();
 static void ACcalibration(int noOfCalibrations, const CACalibration* calibrations);
 static void ACcalibrationRW(bool write);
 static void efuseLoop(const double *currents);
+static void clearOvercurrentFields(int field);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -164,6 +165,7 @@ static void efuseLoop(const double* currents) {
         if (avg > efuseCurrentLimits[i]) {
             turnOffPin(i);
             bsSetError(AC_EFUSE_OVERCURRENT_Msk(i + 1));
+            bsSetError(BS_OVER_CURRENT_Msk);
         }
     }
 }
@@ -405,6 +407,21 @@ static void CAallOn(bool isOn, int duration)
         allOff();
     }
 }
+
+/*!
+** @brief Clears the overcurrent fields for a specific port and clears the generic overcurrent 
+**        error if no ports are currently in overcurrent anymore.
+**
+** @param field The field to clear.
+*/
+static void clearOvercurrentFields(int field) {
+    bsClearField(AC_EFUSE_OVERCURRENT_Msk(field));
+
+    if(!(bsGetStatus() & AC_EFUSE_OVERCURRENT_ALL_Msk)) {
+        bsClearField(BS_OVER_CURRENT_Msk);
+    }
+}
+
 static void CAportState(int port, bool state, int percent, int duration)
 {
     // If heat sink has reached the maximum allowed temperature and user
@@ -420,7 +437,7 @@ static void CAportState(int port, bool state, int percent, int duration)
     }
     else
     {
-        bsClearField(AC_EFUSE_OVERCURRENT_Msk(port));
+        clearOvercurrentFields(port);
 
         if (duration > MAX_ON_TIME_REQUEST)
         {
