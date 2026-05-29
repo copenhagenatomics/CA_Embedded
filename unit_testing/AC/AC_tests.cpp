@@ -396,6 +396,7 @@ TEST_F(ACBoard, efuse_tripOnOvercurrent)
     EXPECT_FALSE(stmGetGpio(heaterPorts[0].heater));
     uint32_t status = flushAndGetUSBStatus();
     EXPECT_TRUE(status & AC_EFUSE_OVERCURRENT_Msk(1));
+    EXPECT_TRUE(status & BS_OVER_CURRENT_Msk);
     /* Other channels must not be affected */
     for(int i = 2; i <= AC_BOARD_NUM_PORTS; i++) {
         EXPECT_FALSE(status & AC_EFUSE_OVERCURRENT_Msk(i));
@@ -446,11 +447,52 @@ TEST_F(ACBoard, efuse_clearOnNextCommand)
     writeBoardMessage("p1 on 5\n");
     EXPECT_TRUE(stmGetGpio(heaterPorts[0].heater));
     simTicks(100);
-    EXPECT_FALSE(flushAndGetUSBStatus() & AC_EFUSE_OVERCURRENT_Msk(1));
+    uint32_t status = flushAndGetUSBStatus();
+    EXPECT_FALSE(status & AC_EFUSE_OVERCURRENT_Msk(1));
+    EXPECT_FALSE(status & BS_OVER_CURRENT_Msk);
 
     /* Channel works normally for the rest of the requested duration */
     simTicks(4800);
     EXPECT_TRUE(stmGetGpio(heaterPorts[0].heater));
+}
+
+TEST_F(ACBoard, efuse_clearWithTwoChannels)
+{
+    ACBoardInit(&hadc);
+    ACBoardLoop(bootMsg);
+
+    simTicks(100); /* calibration */
+
+    /* Trip the e-fuse on channel 1 */
+    setAdcChannelBuffer(0, ADC_OVERCURRENT);
+    setAdcChannelBuffer(1, ADC_OVERCURRENT);
+    writeBoardMessage("p1 on 10\n");
+    writeBoardMessage("p2 on 10\n");
+    simTicks(1000);
+    ASSERT_FALSE(stmGetGpio(heaterPorts[0].heater));
+    uint32_t status = flushAndGetUSBStatus();
+    ASSERT_TRUE(status & AC_EFUSE_OVERCURRENT_Msk(1));
+    ASSERT_TRUE(status & AC_EFUSE_OVERCURRENT_Msk(2));
+    ASSERT_TRUE(status & BS_OVER_CURRENT_Msk);
+    /* Drop current to zero and wait a full window for the moving average to drain */
+    setAdcChannelBuffer(0, 0);
+    simTicks(1100);
+
+    /* Bit must still be set — only a command can clear it */
+    EXPECT_TRUE(flushAndGetUSBStatus() & AC_EFUSE_OVERCURRENT_Msk(1));
+    EXPECT_FALSE(stmGetGpio(heaterPorts[0].heater));
+
+    /* New command clears the bit and re-enables the channel */
+    writeBoardMessage("p1 on 5\n");
+    EXPECT_TRUE(stmGetGpio(heaterPorts[0].heater));
+    simTicks(100);
+    status = flushAndGetUSBStatus();
+    EXPECT_FALSE(status & AC_EFUSE_OVERCURRENT_Msk(1));
+
+    /* Since the other channel overcurrent is still active, the overall overcurrent flag should 
+    ** remain set */
+    EXPECT_TRUE(status & AC_EFUSE_OVERCURRENT_Msk(2));
+    EXPECT_TRUE(status & BS_OVER_CURRENT_Msk);
 }
 
 TEST_F(ACBoard, efuse_configurableLimit)
