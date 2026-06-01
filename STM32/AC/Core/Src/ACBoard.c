@@ -167,6 +167,7 @@ static void efuseLoop(const double* currents) {
 */
 static void printAcHeader() {
     CAPrintHeader();
+    ACcalibrationRW(false);
 }
 
 /*!

@@ -171,7 +171,23 @@ TEST_F(ACBoard, printStatusDef) {
 }
 
 TEST_F(ACBoard, printSerial) {
-    serialPrintoutTest(sst, "AC Board");
+    serialPrintoutTest(sst, "AC Board", "Calibration: CAL 1,10.00,0,0 2,10.00,0,0 3,10.00,0,0 4,10.00,0,0\r");
+}
+
+TEST_F(ACBoard, calibrationUpdate)
+{
+    ACBoardInit(&hadc);
+    ACBoardLoop(bootMsg);
+    hostUSBread(true);
+
+    /* Verify default limits appear in Serial response */
+    writeBoardMessage("Serial\n");
+    EXPECT_READ_USB(Contains("Calibration: CAL 1,10.00,0,0 2,10.00,0,0 3,10.00,0,0 4,10.00,0,0\r"));
+
+    /* Set a custom limit on port 2 and verify it is reflected in the next Serial response */
+    writeBoardMessage("CAL 2,15.0,0,0\n");
+    writeBoardMessage("Serial\n");
+    EXPECT_READ_USB(Contains("Calibration: CAL 1,10.00,0,0 2,15.00,0,0 3,10.00,0,0 4,10.00,0,0\r"));
 }
 
 TEST_F(ACBoard, incorrectBoardParams) {
