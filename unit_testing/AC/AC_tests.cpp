@@ -188,6 +188,16 @@ TEST_F(ACBoard, calibrationUpdate)
     writeBoardMessage("CAL 2,15.0,0,0\n");
     writeBoardMessage("Serial\n");
     EXPECT_READ_USB(Contains("Calibration: CAL 1,10.00,0,0 2,15.00,0,0 3,10.00,0,0 4,10.00,0,0\r"));
+
+    /* Invalid calibration commands must produce a MISREAD error and leave limits unchanged */
+    writeBoardMessage("CAL 12,-5,0,0\n");
+    EXPECT_FLUSH_USB(Contains("Invalid calibration input: 12,-5.00,0,0\r"));
+
+    writeBoardMessage("CAL bad\n");
+    EXPECT_FLUSH_USB(Contains("MISREAD: CAL bad\r"));
+
+    writeBoardMessage("Serial\n");
+    EXPECT_READ_USB(Contains("Calibration: CAL 1,10.00,0,0 2,15.00,0,0 3,10.00,0,0 4,10.00,0,0\r"));
 }
 
 TEST_F(ACBoard, incorrectBoardParams) {

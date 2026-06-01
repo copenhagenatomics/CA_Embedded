@@ -18,7 +18,7 @@ This document contains the specification for the AC board/box project. Sub-compo
   * all on shall be specified with a duration (in seconds), otherwise return an undefined command message
 * Implementation of portState:
   * portState "on" commands must specify a duration (in seconds), otherwise return an undefined command message
-  * If portState "on" commands specify a percentage, the AC signal must be PWM-d with the corresponding frequency (See below)
+  * If portState "on" commands specify a percentage, the AC signal must be PWM-d with a corresponding duty cycle. For other PWM details, see below.
   * Any command to turn a pin on 100% (e.g. all on, pX on) shall take effect immediately
   * Any command to turn a pin on 0% to 100% (e.g. pX on YY%) should take effect on the next PWM period
   * Any command to turn a pin off, or on 0% (e.g. pX on 0%, all off) should take effect immediately

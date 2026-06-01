@@ -114,13 +114,16 @@ static CAProtocolCtx caProto = {.undefined        = ACInputHandler,
 
 /*!
 ** @brief Updates calibration memory with per-channel e-fuse current limits.
-**        Command format: "calibration p<N>,<limit_amps>,0,0"
+**        Command format: "CAL p<N>,<limit_amps>,0,0"
 */
 static void ACcalibration(int noOfCalibrations, const CACalibration* calibrations) {
     for (int i = 0; i < noOfCalibrations; i++) {
         int port = calibrations[i].port;
         if (port >= 1 && port <= AC_BOARD_NUM_PORTS && calibrations[i].alpha > 0) {
             efuseCurrentLimits[port - 1] = (float)calibrations[i].alpha;
+        }
+        else {
+            USBnprintf("Invalid calibration input: %d,%.2f,0,0\r\n", port, calibrations[i].alpha);
         }
     }
 }
@@ -379,7 +382,7 @@ static void CAallOn(bool isOn, int duration) {
 static void clearOvercurrentFields(int field) {
     bsClearField(AC_EFUSE_OVERCURRENT_Msk(field));
 
-    if (!(bsGetStatus() & AC_EFUSE_OVERCURRENT_ALL_Msk)) {
+    if (!(bsGetField(AC_EFUSE_OVERCURRENT_ALL_Msk))) {
         bsClearField(BS_OVER_CURRENT_Msk);
     }
 }
