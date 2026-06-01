@@ -31,9 +31,9 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../../STM32)
 set(LIB ../../CA_Embedded_Libraries/STM32)
-set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Filtering/Inc 
-            ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc 
-            ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc 
+set(INC_LIB ${LIB}/ADCMonitor/Inc ${LIB}/circularBuffer/Inc ${LIB}/Crc/Inc ${LIB}/Filtering/Inc
+            ${LIB}/FLASH_readwrite/Inc ${LIB}/I2C/Inc ${LIB}/jumpToBootloader/Inc
+            ${LIB}/Regulation/Inc ${LIB}/SPI/Inc ${LIB}/TransformationFunctions/Inc
             ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
@@ -49,7 +49,7 @@ enable_testing()
 include(GoogleTest)
 
 # DC tests
-add_executable(dc_test DC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp ${UT_LIB}/Util/serialStatus_tests.cpp)
+add_executable(dc_test DC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${LIB}/Filtering/Src/array-math.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp ${UT_FAKES}/fake_FLASH_readwrite.cpp ${UT_LIB}/Util/serialStatus_tests.cpp)
 target_include_directories(dc_test PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/DC/Core/Src ${SRC}/DC/Core/Inc ${SRC}/DC/HeatCtrl/Inc ${SRC}/DC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
 target_link_libraries(dc_test GTest::gtest_main gmock_main)
 target_compile_definitions(dc_test PUBLIC UNIT_TESTING)

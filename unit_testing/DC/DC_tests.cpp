@@ -20,11 +20,17 @@
 #include "CAProtocolStm.c"
 #include "CAProtocolACDC.c"
 
+/* Prevents attempting to access non-existent linker script variables */
+#define FLASH_ADDR_CAL ((uint32_t) 0U)
+
+#include "flashHandler.c"
+
 /* UUT */
 #include "DCBoard.c"
 
 using ::testing::Contains;
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 using namespace std;
 
 /***************************************************************************************************
@@ -100,6 +106,24 @@ class DCBoard: public CaBoardUnitTest
         };
 };
 
+/* ADC values for e-fuse tests.
+** meanCurrent(adc) = (3.3/4096.0)/0.264 * adc - 6.25
+** ADC_OVERCURRENT  = 3700 → ~5.04 A (above default 5 A limit)
+** ADC_SAFE_CURRENT = 3000 → ~2.91 A (below default 5 A limit)
+** ADC_MID_CURRENT  = 3800 → ~5.35 A (above 5 A default, below 7 A custom limit) */
+static const int16_t ADC_OVERCURRENT  = 3700;
+static const int16_t ADC_SAFE_CURRENT = 3000;
+static const int16_t ADC_MID_CURRENT  = 3800;
+
+/* Flush USB buffer and return the status flags from the most recent data line */
+static uint32_t flushAndGetUSBStatus() {
+    vector<string> lines = hostUSBread(true);
+    string dataLine;
+    for (auto& l : lines)
+        if (l.find(',') != string::npos) dataLine = l;
+    return getLineStatus(dataLine);
+}
+
 /***************************************************************************************************
 ** TESTS
 ***************************************************************************************************/
@@ -117,7 +141,8 @@ TEST_F(DCBoard, incorrectBoard) {
 
 TEST_F(DCBoard, printSerial) 
 {
-    serialPrintoutTest(sst, "DC Board");
+    serialPrintoutTest(sst, "DC Board", 
+        "Calibration: CAL 1,5.00,0,0 2,5.00,0,0 3,5.00,0,0 4,5.00,0,0 5,5.00,0,0 6,5.00,0,0\r");
 }
 
 TEST_F(DCBoard, printStatus) 
@@ -469,9 +494,10 @@ TEST_F(DCBoard, testCurrentBuffer) {
 
         char buf[100] = {0};
         double curr = ((h / 4096.0) * 3.3 - 1.65) / 0.264;
-        sprintf(buf, "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x00000000\r", 
+        /* Match only the current values — status word varies once e-fuse trips */
+        sprintf(buf, "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f,",
                 curr, curr, curr, curr, curr, curr);
-        EXPECT_FLUSH_USB(Contains(buf));
+        EXPECT_FLUSH_USB(Contains(::testing::HasSubstr(buf)));
     }
 } 
 
@@ -520,6 +546,151 @@ TEST_F(DCBoard, testPortShutOffAtUSBDisconnect)
     goToTick(25100);
     /* Ports should not turn off until 5 seconds after USB disconnect */
     for(int j = 0; j < ACTUATIONPORTS; j++) {
-        ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;    
+        ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
     }
+}
+
+TEST_F(DCBoard, efuse_tripOnOvercurrent)
+{
+    dcSetup();
+    goToTick(1);
+
+    /* Set channel 0 to overcurrent and turn port on */
+    setADCChannelBuffer(0, ADC_OVERCURRENT);
+    writeDcMessage("p1 on 30\n");
+    EXPECT_EQ(*getTimerCCR(0), 999);
+
+    /* After 10 ADC callbacks (1000 ms) the 1-second moving average exceeds 5 A.
+    ** Run to 1100 ms so the callback after the trip generates a printout with the
+    ** error bits already set. */
+    simTicks(1100);
+
+    uint32_t status = flushAndGetUSBStatus();
+    EXPECT_TRUE(status & DC_EFUSE_OVERCURRENT_Msk(1));
+    EXPECT_TRUE(status & BS_OVER_CURRENT_Msk);
+    EXPECT_EQ(*getTimerCCR(0), 0);
+    /* Other channels must not be affected */
+    for (int i = 2; i <= ACTUATIONPORTS; i++) {
+        EXPECT_FALSE(status & DC_EFUSE_OVERCURRENT_Msk(i));
+    }
+}
+
+TEST_F(DCBoard, efuse_noTripBelowLimit)
+{
+    dcSetup();
+    goToTick(1);
+
+    /* Set channel 0 to ~2.9 A (below the 5 A default limit) */
+    setADCChannelBuffer(0, ADC_SAFE_CURRENT);
+    writeDcMessage("p1 on 30\n");
+
+    /* Run well past a full window */
+    simTicks(2000);
+
+    EXPECT_EQ(*getTimerCCR(0), 999);
+    EXPECT_FALSE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
+}
+
+TEST_F(DCBoard, efuse_clearOnNextCommand)
+{
+    dcSetup();
+    goToTick(1);
+
+    /* Trip the e-fuse on channel 1 */
+    setADCChannelBuffer(0, ADC_OVERCURRENT);
+    writeDcMessage("p1 on 30\n");
+    EXPECT_EQ(*getTimerCCR(0), 999);
+    simTicks(1100);
+    ASSERT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
+
+    /* Drop current to safe level and wait for the window to drain */
+    setADCChannelBuffer(0, ADC_SAFE_CURRENT);
+    simTicks(1100);
+
+    /* Bit must still be set — only a command clears it */
+    EXPECT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
+
+    /* New command clears the bit and re-enables the channel */
+    writeDcMessage("p1 on 10\n");
+    simTicks(100);
+
+    EXPECT_EQ(*getTimerCCR(0), 999);
+    uint32_t status = flushAndGetUSBStatus();
+    EXPECT_FALSE(status & DC_EFUSE_OVERCURRENT_Msk(1));
+    EXPECT_FALSE(status & BS_OVER_CURRENT_Msk);
+}
+
+TEST_F(DCBoard, efuse_buttonHeldThroughTrip)
+{
+    dcSetup();
+    goToTick(1);
+
+    /* Press and hold button before any overcurrent */
+    stmSetGpio(buttonGpio[0], false);
+    setADCChannelBuffer(0, ADC_OVERCURRENT);
+    writeDcMessage("p1 on 30\n");
+    EXPECT_EQ(*getTimerCCR(0), 999);
+
+    /* Wait for e-fuse to trip (1-second moving average window) */
+    simTicks(1100);
+
+    /* Channel must be off — efuse wins over held button */
+    EXPECT_EQ(*getTimerCCR(0), 0);
+    EXPECT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
+
+    /* Channel must stay off while button remains held */
+    simTicks(200);
+    EXPECT_EQ(*getTimerCCR(0), 0);
+    EXPECT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
+}
+
+TEST_F(DCBoard, efuse_buttonPressAfterTripClearsAndEnables)
+{
+    dcSetup();
+    goToTick(1);
+
+    /* Trip the e-fuse on channel 1 */
+    setADCChannelBuffer(0, ADC_OVERCURRENT);
+    writeDcMessage("p1 on 30\n");
+    simTicks(1100);
+    ASSERT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
+    EXPECT_EQ(*getTimerCCR(0), 0);
+
+    /* Drop to safe current and let the moving average drain */
+    setADCChannelBuffer(0, ADC_SAFE_CURRENT);
+    simTicks(1100);
+
+    /* Error bit must still be set — only a command clears it */
+    ASSERT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
+
+    /* Button press is a command: clears error and enables channel */
+    stmSetGpio(buttonGpio[0], false);
+    simTicks(100);
+    uint32_t status = flushAndGetUSBStatus();
+    EXPECT_FALSE(status & DC_EFUSE_OVERCURRENT_Msk(1));
+    EXPECT_FALSE(status & BS_OVER_CURRENT_Msk);
+    EXPECT_EQ(*getTimerCCR(0), 999);
+
+    /* Release button — no pending SW command so channel turns off */
+    stmSetGpio(buttonGpio[0], true);
+    simTicks(100);
+    EXPECT_EQ(*getTimerCCR(0), 0);
+}
+
+TEST_F(DCBoard, efuse_configurableLimit)
+{
+    dcSetup();
+    goToTick(1);
+
+    /* Raise channel 1 limit to 7 A via calibration command */
+    writeDcMessage("CAL 1,7.0,0,0\n");
+
+    /* Set current to ~5.35 A — above the default 5 A but below the new 7 A limit */
+    setADCChannelBuffer(0, ADC_MID_CURRENT);
+    writeDcMessage("p1 on 30\n");
+
+    /* Run a full window; would trip with the default limit but must not with 7 A */
+    simTicks(2000);
+
+    EXPECT_FALSE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
 }

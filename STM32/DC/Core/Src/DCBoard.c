@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <inttypes.h>
+#include <math.h>
 #include <stdio.h>
 
 #include "main.h"
@@ -20,6 +21,8 @@
 #include "CAProtocol.h"
 #include "CAProtocolStm.h"
 #include "CAProtocolACDC.h"
+#include "array-math.h"
+#include "flashHandler.h"
 #include "time32.h"
 #include "StmGpio.h"
 #include "pcbversion.h"
@@ -29,7 +32,7 @@
 ***************************************************************************************************/
 
 #define ADC_CHANNELS    7               // Order: Hall1 - Hall6, 24V sense
-#define ACTUATIONPORTS 6
+#define ACTUATIONPORTS  DC_BOARD_NUM_PORTS
 #define ADC_CHANNEL_BUF_SIZE    400
 #define INPUT_V_CHANNEL_IDX    6
 
@@ -47,6 +50,9 @@
 #define UNDER_VOLTAGE_THRESHOLD 10
 #define OVER_VOLTAGE_THRESHOLD  27
 
+#define EFUSE_DEFAULT_CURRENT_LIMIT_A 5.0f
+#define EFUSE_MA_WINDOW               10  // 10 Hz × 1 s = 10 samples
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
@@ -54,6 +60,10 @@
 static void DCInputHandler(const char* input);
 static void CAallOn(bool isOn, int duration_ms);
 static void CAportState(int port, bool state, int percent, int duration);
+static void DCcalibration(int noOfCalibrations, const CACalibration* calibrations);
+static void DCcalibrationRW(bool write);
+static void efuseLoop(const double* currents);
+static void clearOvercurrentFields(int port);
 static volatile uint32_t* getTimerCCR(int pinNumber);
 static void printDcStatus();
 static void updateBoardStatus();
@@ -71,6 +81,8 @@ static void handlePorts();
 static void autoOff();
 static void handleButtonPress();
 static void checkButtonPress();
+static void printDCHeader();
+
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -85,11 +97,11 @@ static ACDCProtocolCtx dcProto =
 static CAProtocolCtx caProto =
 {
         .undefined = DCInputHandler,
-        .printHeader = CAPrintHeader,
+        .printHeader = printDCHeader,
         .printStatus = printDcStatus,
         .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = NULL,
-        .calibrationRW = NULL,
+        .calibration = DCcalibration,
+        .calibrationRW = DCcalibrationRW,
         .logging = NULL,
         .otpRead = CAotpRead,
         .otpWrite = NULL
@@ -100,6 +112,11 @@ static int actuationDuration[ACTUATIONPORTS] = { 0 };
 static uint32_t actuationStart[ACTUATIONPORTS] = { 0 };
 static uint32_t port_state[ACTUATIONPORTS] = { 0 };
 static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
+
+/* E-fuse */
+static float* efuseCurrentLimits = NULL;
+static moving_avg_cbuf_t efuseMaFilter[ACTUATIONPORTS];
+static double efuseMaBuffer[ACTUATIONPORTS][EFUSE_MA_WINDOW];
 
 /* Button ports */
 static GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port, 
@@ -115,11 +132,77 @@ static float inputVoltage = 24;
 ***************************************************************************************************/
 
 /*!
+** @brief Prints the DC board header information
+*/
+static void printDCHeader() {
+    CAPrintHeader();
+    DCcalibrationRW(false);
+}
+
+/*!
 ** @brief Call command handler for DC board
 */
 static void DCInputHandler(const char* input)
 {
     ACDCInputHandler(&dcProto, input);
+}
+
+/*!
+** @brief Updates calibration memory with per-channel e-fuse current limits.
+**        Command format: "CAL <N>,<limit_amps>,0,0"
+*/
+static void DCcalibration(int noOfCalibrations, const CACalibration* calibrations) {
+    for (int i = 0; i < noOfCalibrations; i++) {
+        int port = calibrations[i].port;
+        if (port >= 1 && port <= ACTUATIONPORTS && calibrations[i].alpha > 0) {
+            efuseCurrentLimits[port - 1] = (float)calibrations[i].alpha;
+        }
+    }
+}
+
+/*!
+** @brief Reads or writes e-fuse current limits to/from flash.
+*/
+static void DCcalibrationRW(bool write) {
+    if (write) {
+        fhSaveDeposit();
+    }
+    else {
+        char buf[300];
+        int len = 0;
+        CA_SNPRINTF(buf, len, "Calibration: CAL");
+        for (int ch = 0; ch < ACTUATIONPORTS; ch++) {
+            CA_SNPRINTF(buf, len, " %d,%.2f,0,0", ch + 1, efuseCurrentLimits[ch]);
+        }
+        CA_SNPRINTF(buf, len, "\r\n");
+        writeUSB(buf, len);
+    }
+}
+
+/*!
+** @brief Clears the overcurrent fields for a specific port and clears the generic overcurrent
+**        error if no ports are currently in overcurrent anymore.
+*/
+static void clearOvercurrentFields(int port) {
+    bsClearField(DC_EFUSE_OVERCURRENT_Msk(port));
+    if (!(bsGetStatus() & DC_EFUSE_OVERCURRENT_ALL_Msk)) {
+        bsClearField(BS_OVER_CURRENT_Msk);
+    }
+}
+
+/*!
+** @brief Checks per-channel average current and trips the e-fuse if exceeded.
+*/
+static void efuseLoop(const double* currents) {
+    for (int i = 0; i < ACTUATIONPORTS; i++) {
+        double avg = maMean(&efuseMaFilter[i], currents[i]);
+        if (avg > efuseCurrentLimits[i]) {
+            turnOffPin(i);
+            port_state[i] &= ~PORT_STATE_ON_BTN;
+            bsSetError(DC_EFUSE_OVERCURRENT_Msk(i + 1));
+            bsSetError(BS_OVER_CURRENT_Msk);
+        }
+    }
 }
 
 /*!
@@ -230,11 +313,17 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
     inputVoltage = adcToInputVoltage(ADCMean(pBuffer, INPUT_V_CHANNEL_IDX));
     setBoardVoltage(inputVoltage);
 
+    double currents[ACTUATIONPORTS];
+    for (int i = 0; i < ACTUATIONPORTS; i++) {
+        currents[i] = meanCurrent(pBuffer, i);
+    }
+
     USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x\r\n",
-            meanCurrent(pBuffer, 0), meanCurrent(pBuffer, 1),
-            meanCurrent(pBuffer, 2), meanCurrent(pBuffer, 3),
-            meanCurrent(pBuffer, 4), meanCurrent(pBuffer, 5),
+            currents[0], currents[1], currents[2],
+            currents[3], currents[4], currents[5],
             bsGetStatus());
+
+    efuseLoop(currents);
 }
 
 static void setPWMPin(int pinNumber, int pwmState, int duration)
@@ -343,11 +432,20 @@ static void actuatePins(ActuationInfo actuationInfo)
 
 static void CAallOn(bool isOn, int duration)
 {
-    (isOn) ? allOn(1000*duration) : allOff();
+    if (isOn) {
+        for (int i = 1; i <= ACTUATIONPORTS; i++) {
+            clearOvercurrentFields(i);
+        }
+        allOn(1000*duration);
+    }
+    else {
+        allOff();
+    }
 }
 
 static void CAportState(int port, bool state, int percent, int duration)
 {
+    clearOvercurrentFields(port);
     actuatePins((ActuationInfo) { port - 1, percent, 1000*duration});
 }
 
@@ -366,16 +464,20 @@ static void autoOff()
 
 static void handleButtonPress()
 {
+    static int prev_gpio[ACTUATIONPORTS] = {1, 1, 1, 1, 1, 1};
+
     for (int i = 0; i < ACTUATIONPORTS; i++)
     {
+        int gpio = stmGetGpio(buttonGpio[i]);
+
         /* Button GPIO are pulled up, so "0" is a positive input (e.g. button is pressed) */
-        if (stmGetGpio(buttonGpio[i]) == 0)
-        {
+        if (gpio == 0 && prev_gpio[i] == 1) {
+            /* Press edge: treat as a new command — clears any active e-fuse error */
+            clearOvercurrentFields(i + 1);
             port_state[i] |= PORT_STATE_ON_BTN;
-            
         }
-        else if (stmGetGpio(buttonGpio[i]) == 1)
-        {
+        else if (gpio == 1 && prev_gpio[i] == 0) {
+            /* Release edge */
             if (port_state[i] & PORT_STATE_ON_SW)
             {
                 unsigned long now = HAL_GetTick();
@@ -384,6 +486,8 @@ static void handleButtonPress()
             }
             port_state[i] &= ~PORT_STATE_ON_BTN;
         }
+
+        prev_gpio[i] = gpio;
     }
 }
 
@@ -466,6 +570,15 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
     hwwdg_ = hwwdg;
+
+    fhLoadDeposit();
+    efuseCurrentLimits = fhGetCurrentLimits();
+    for (int i = 0; i < ACTUATIONPORTS; i++) {
+        if (!isfinite(efuseCurrentLimits[i]) || efuseCurrentLimits[i] <= 0) {
+            efuseCurrentLimits[i] = EFUSE_DEFAULT_CURRENT_LIMIT_A;
+        }
+        maInit(&efuseMaFilter[i], efuseMaBuffer[i], EFUSE_MA_WINDOW);
+    }
 }
 
 /*!

@@ -93,6 +93,8 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
 ../../CA_Embedded_Libraries/STM32/ADCMonitor/Src/ADCmonitor.c \
+../../CA_Embedded_Libraries/STM32/Filtering/Src/array-math.c \
+Core/Src/flashHandler.c \
 Core/Src/sysmem.c
 
 # ASM sources
@@ -161,6 +163,7 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Include \
 -I../../CA_Embedded_Libraries/STM32/ADCMonitor/Inc \
 -I../../CA_Embedded_Libraries/STM32/circularBuffer/Inc \
+-I../../CA_Embedded_Libraries/STM32/Filtering/Inc \
 -I../../CA_Embedded_Libraries/STM32/FLASH_readwrite/Inc \
 -I../../CA_Embedded_Libraries/STM32/Util/Inc \
 -I../../CA_Embedded_Libraries/STM32/USBprint/Inc \
