@@ -7,39 +7,39 @@
  ******************************************************************************
  */
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <inttypes.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
-#include "main.h"
-#include "USBprint.h"
-#include "systemInfo.h"
-#include "DCBoard.h"
 #include "ADCMonitor.h"
 #include "CAProtocol.h"
-#include "CAProtocolStm.h"
 #include "CAProtocolACDC.h"
+#include "CAProtocolStm.h"
+#include "DCBoard.h"
+#include "StmGpio.h"
+#include "USBprint.h"
 #include "array-math.h"
 #include "flashHandler.h"
-#include "time32.h"
-#include "StmGpio.h"
+#include "main.h"
 #include "pcbversion.h"
+#include "systemInfo.h"
+#include "time32.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
 
-#define ADC_CHANNELS    7               // Order: Hall1 - Hall6, 24V sense
-#define ACTUATIONPORTS  DC_BOARD_NUM_PORTS
-#define ADC_CHANNEL_BUF_SIZE    400
-#define INPUT_V_CHANNEL_IDX    6
+#define ADC_CHANNELS         7  // Order: Hall1 - Hall6, 24V sense
+#define ACTUATIONPORTS       DC_BOARD_NUM_PORTS
+#define ADC_CHANNEL_BUF_SIZE 400
+#define INPUT_V_CHANNEL_IDX  6
 
 // PWM control
-#define TURNONPWM 999
+#define TURNONPWM  999
 #define TURNOFFPWM 0
-#define MAX_PWM TURNONPWM
+#define MAX_PWM    TURNONPWM
 
 /* Port control flags */
 #define PORT_STATE_ON_SW  0x01U
@@ -67,9 +67,9 @@ static void clearOvercurrentFields(int port);
 static volatile uint32_t* getTimerCCR(int pinNumber);
 static void printDcStatus();
 static void updateBoardStatus();
-static double meanCurrent(const int16_t *pData, uint16_t channel);
+static double meanCurrent(const int16_t* pData, uint16_t channel);
 static double adcToInputVoltage(double adcMean);
-static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples);
+static void printResult(int16_t* pBuffer, int noOfChannels, int noOfSamples);
 static void setPWMPin(int pinNumber, int pwmState, int duration);
 static void allOn(int duration);
 static void allOff();
@@ -83,35 +83,27 @@ static void handleButtonPress();
 static void checkButtonPress();
 static void printDCHeader();
 
-
 /***************************************************************************************************
 ** PRIVATE OBJECTS
 ***************************************************************************************************/
 
-static ACDCProtocolCtx dcProto =
-{
-        .allOn = CAallOn,
-        .portState = CAportState
-};
+static ACDCProtocolCtx dcProto = {.allOn = CAallOn, .portState = CAportState};
 
-static CAProtocolCtx caProto =
-{
-        .undefined = DCInputHandler,
-        .printHeader = printDCHeader,
-        .printStatus = printDcStatus,
-        .jumpToBootLoader = HALJumpToBootloader,
-        .calibration = DCcalibration,
-        .calibrationRW = DCcalibrationRW,
-        .logging = NULL,
-        .otpRead = CAotpRead,
-        .otpWrite = NULL
-};
+static CAProtocolCtx caProto = {.undefined        = DCInputHandler,
+                                .printHeader      = printDCHeader,
+                                .printStatus      = printDcStatus,
+                                .jumpToBootLoader = HALJumpToBootloader,
+                                .calibration      = DCcalibration,
+                                .calibrationRW    = DCcalibrationRW,
+                                .logging          = NULL,
+                                .otpRead          = CAotpRead,
+                                .otpWrite         = NULL};
 
 /* General */
-static int actuationDuration[ACTUATIONPORTS] = { 0 };
-static uint32_t actuationStart[ACTUATIONPORTS] = { 0 };
-static uint32_t port_state[ACTUATIONPORTS] = { 0 };
-static uint32_t ccr_states[ACTUATIONPORTS] = { 0 };
+static int actuationDuration[ACTUATIONPORTS]   = {0};
+static uint32_t actuationStart[ACTUATIONPORTS] = {0};
+static uint32_t port_state[ACTUATIONPORTS]     = {0};
+static uint32_t ccr_states[ACTUATIONPORTS]     = {0};
 
 /* E-fuse */
 static float* efuseCurrentLimits = NULL;
@@ -119,10 +111,10 @@ static moving_avg_cbuf_t efuseMaFilter[ACTUATIONPORTS];
 static double efuseMaBuffer[ACTUATIONPORTS][EFUSE_MA_WINDOW];
 
 /* Button ports */
-static GPIO_TypeDef *button_ports[] = { Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port, 
-                                        Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
-static const uint16_t buttonPins[] = { Btn_1_Pin, Btn_2_Pin, Btn_3_Pin, 
-                                       Btn_4_Pin, Btn_5_Pin, Btn_6_Pin };
+static GPIO_TypeDef* button_ports[]       = {Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port,
+                                             Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
+static const uint16_t buttonPins[]        = {Btn_1_Pin, Btn_2_Pin, Btn_3_Pin,
+                                             Btn_4_Pin, Btn_5_Pin, Btn_6_Pin};
 static StmGpio buttonGpio[ACTUATIONPORTS] = {};
 
 static float inputVoltage = 24;
@@ -142,8 +134,7 @@ static void printDCHeader() {
 /*!
 ** @brief Call command handler for DC board
 */
-static void DCInputHandler(const char* input)
-{
+static void DCInputHandler(const char* input) {
     ACDCInputHandler(&dcProto, input);
 }
 
@@ -208,10 +199,9 @@ static void efuseLoop(const double* currents) {
 /*!
 ** @brief Verbose print of the DC board status
 */
-static void printDcStatus()
-{
-    static char buf[600] = { 0 };
-    int len = 0;
+static void printDcStatus() {
+    static char buf[600] = {0};
+    int len              = 0;
 
     for (int i = 0; i < ACTUATIONPORTS; i++) {
         CA_SNPRINTF(buf, len, "Port %d: On: %" PRIu32 ", PWM percent: %" PRIu32 "\r\n", i,
@@ -227,12 +217,11 @@ static void printDcStatus()
 ** Adds the port status bits into the error field, and clears the error bit if there are no
 ** more errors.
 */
-static void updateBoardStatus() 
-{
+static void updateBoardStatus() {
     /* If a port is turned on or not */
-    for(int i = 0; i < ACTUATIONPORTS; i++)
-    {
-        *getTimerCCR(i) != TURNOFFPWM ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i)) : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
+    for (int i = 0; i < ACTUATIONPORTS; i++) {
+        *getTimerCCR(i) != TURNOFFPWM ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i))
+                                      : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
     }
 
     if (inputVoltage < UNDER_VOLTAGE_THRESHOLD) {
@@ -243,8 +232,7 @@ static void updateBoardStatus()
         // Above ~27V
         bsSetError(BS_OVER_VOLTAGE_Msk);
     }
-    else
-    {
+    else {
         bsClearField(BS_OVER_VOLTAGE_Msk);
         bsClearField(BS_UNDER_VOLTAGE_Msk);
     }
@@ -254,49 +242,43 @@ static void updateBoardStatus()
     bsClearError(DC_BOARD_No_Error_Msk);
 }
 
-static double meanCurrent(const int16_t *pData, uint16_t channel)
-{
+static double meanCurrent(const int16_t* pData, uint16_t channel) {
     // ADC to current calibration values
-    const float CURRENT_SCALAR = ((3.3 / 4096.0) / 0.264); // From ACS725LLCTR-05AB datasheet
-    const float CURRENT_BIAS   = - 6.25;                        // Offset calibrated to USB hubs.
+    const float CURRENT_SCALAR = ((3.3 / 4096.0) / 0.264);  // From ACS725LLCTR-05AB datasheet
+    const float CURRENT_BIAS   = -6.25;                     // Offset calibrated to USB hubs.
 
     return CURRENT_SCALAR * ADCMean(pData, channel) + CURRENT_BIAS;
 }
 
-static double adcToInputVoltage(double adcMean)
-{
+static double adcToInputVoltage(double adcMean) {
     /* Check input voltage - Values are derived from experimental data:
-    ** https://docs.google.com/spreadsheets/d/1Ol6N_XpXo1H1fYc5LJ2H3Ol09gSS1-E9HtE2mK8wYmI/edit?gid=0#gid=0 
+    ** https://docs.google.com/spreadsheets/d/1Ol6N_XpXo1H1fYc5LJ2H3Ol09gSS1-E9HtE2mK8wYmI/edit?gid=0#gid=0
     **
     ** NOTE: Calibration values can vary alot from board to board meaning voltage calculation
-    **       can be as high as ±2V in the high range. Hence, the input voltage is not very 
+    **       can be as high as ±2V in the high range. Hence, the input voltage is not very
     **       accurate and the output should inspected more carefully if used for diagnostics. */
-    const float VOLTAGE_QUAD = -1.31e-5;
+    const float VOLTAGE_QUAD   = -1.31e-5;
     const float VOLTAGE_SCALAR = 0.0373;
-    const float VOLTAGE_BIAS = 3.17;
+    const float VOLTAGE_BIAS   = 3.17;
 
     return (VOLTAGE_QUAD * adcMean + VOLTAGE_SCALAR) * adcMean + VOLTAGE_BIAS;
 }
 
 WWDG_HandleTypeDef* hwwdg_ = NULL;
-static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
-{
+static void printResult(int16_t* pBuffer, int noOfChannels, int noOfSamples) {
     static uint32_t port_close_time = 0;
 
     // Watch dog refresh. Triggers reset if reset after <90ms or >110ms.
     // Ensures ADC sampling is performed with correct timing.
     HAL_WWDG_Refresh(hwwdg_);
 
-    /* If the USB port is not open, no messages should be printed. Also if the USB port has been 
+    /* If the USB port is not open, no messages should be printed. Also if the USB port has been
     ** closed for more than a timeout, everything should be turned off as a safety measure */
-    if (!isUsbPortOpen())
-    {
-        if (port_close_time == 0)
-        {
+    if (!isUsbPortOpen()) {
+        if (port_close_time == 0) {
             port_close_time = HAL_GetTick();
         }
-        else if ((HAL_GetTick() - port_close_time) >= USB_COMMS_TIMEOUT_MS)
-        {
+        else if ((HAL_GetTick() - port_close_time) >= USB_COMMS_TIMEOUT_MS) {
             port_close_time = 0;
             allOff();
         }
@@ -304,8 +286,7 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
     }
 
     /* If the version is incorrect, there is no point printing data or doing maths */
-    if (bsGetStatus() & BS_VERSION_ERROR_Msk)
-    {
+    if (bsGetStatus() & BS_VERSION_ERROR_Msk) {
         USBnprintf("0x%08x\r\n", bsGetStatus());
         return;
     }
@@ -318,36 +299,29 @@ static void printResult(int16_t *pBuffer, int noOfChannels, int noOfSamples)
         currents[i] = meanCurrent(pBuffer, i);
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x\r\n",
-            currents[0], currents[1], currents[2],
-            currents[3], currents[4], currents[5],
-            bsGetStatus());
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x\r\n", currents[0], currents[1],
+               currents[2], currents[3], currents[4], currents[5], bsGetStatus());
 
     efuseLoop(currents);
 }
 
-static void setPWMPin(int pinNumber, int pwmState, int duration)
-{
-    actuationStart[pinNumber] = HAL_GetTick();
+static void setPWMPin(int pinNumber, int pwmState, int duration) {
+    actuationStart[pinNumber]    = HAL_GetTick();
     actuationDuration[pinNumber] = duration;
-    ccr_states[pinNumber] = pwmState;
+    ccr_states[pinNumber]        = pwmState;
     port_state[pinNumber] |= PORT_STATE_ON_SW;
 }
 
 // Turn on all pins.
-static void allOn(int duration)
-{
-    if (duration <= 0)
-    {
+static void allOn(int duration) {
+    if (duration <= 0) {
         char buf[20] = {0};
         snprintf(buf, 20, "all on %d", duration);
         HALundefined(buf);
     }
-    else
-    {
-        for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++)
-        {
-            actuationStart[pinNumber] = HAL_GetTick();
+    else {
+        for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++) {
+            actuationStart[pinNumber]    = HAL_GetTick();
             actuationDuration[pinNumber] = duration;
             port_state[pinNumber] |= PORT_STATE_ON_SW;
             ccr_states[pinNumber] = TURNONPWM;
@@ -355,47 +329,40 @@ static void allOn(int duration)
     }
 }
 
-static void turnOnPin(int pinNumber)
-{
-    actuationDuration[pinNumber] = 0; // actuationDuration=0 since it should be on indefinitely
+static void turnOnPin(int pinNumber) {
+    actuationDuration[pinNumber] = 0;  // actuationDuration=0 since it should be on indefinitely
     port_state[pinNumber] |= PORT_STATE_ON_SW;
     ccr_states[pinNumber] = TURNONPWM;
 }
 
-static void turnOnPinDuration(int pinNumber, int duration)
-{
-    actuationStart[pinNumber] = HAL_GetTick();
+static void turnOnPinDuration(int pinNumber, int duration) {
+    actuationStart[pinNumber]    = HAL_GetTick();
     actuationDuration[pinNumber] = duration;
     port_state[pinNumber] |= PORT_STATE_ON_SW;
     ccr_states[pinNumber] = TURNONPWM;
 }
 
 // Shuts off all pins.
-static void allOff()
-{
-    for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++)
-    {
+static void allOff() {
+    for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++) {
         actuationDuration[pinNumber] = 0;
         port_state[pinNumber] &= ~PORT_STATE_ON_SW;
         ccr_states[pinNumber] = TURNOFFPWM;
     }
 }
 
-static void turnOffPin(int pinNumber)
-{
+static void turnOffPin(int pinNumber) {
     actuationDuration[pinNumber] = 0;
     port_state[pinNumber] &= ~PORT_STATE_ON_SW;
     ccr_states[pinNumber] = TURNOFFPWM;
 }
 
-typedef struct ActuationInfo
-{
-    int pin; // pins 0-5 are interpreted as single ports
+typedef struct ActuationInfo {
+    int pin;  // pins 0-5 are interpreted as single ports
     int percent;
-    int timeOn; // time on is in seconds - timeOn '-1' is interpreted as indefinitely
+    int timeOn;  // time on is in seconds - timeOn '-1' is interpreted as indefinitely
 } ActuationInfo;
-static void actuatePins(ActuationInfo actuationInfo)
-{
+static void actuatePins(ActuationInfo actuationInfo) {
     if (actuationInfo.pin < 0 || actuationInfo.pin >= ACTUATIONPORTS) {
         char buf[30] = {0};
         snprintf(buf, 30, "Invalid Pin: %d", actuationInfo.pin + 1);
@@ -410,19 +377,20 @@ static void actuatePins(ActuationInfo actuationInfo)
     else if (actuationInfo.timeOn == -1000 && actuationInfo.percent == 0) {
         turnOffPin(actuationInfo.pin);
     }
-    else if (actuationInfo.timeOn != -1000 && actuationInfo.percent == 100)
-    {
+    else if (actuationInfo.timeOn != -1000 && actuationInfo.percent == 100) {
         // pX on YY
         turnOnPinDuration(actuationInfo.pin, actuationInfo.timeOn);
     }
     /* Note: conditions in comments met by implication */
-    else if (actuationInfo.timeOn == -1000) /* && actuationInfo.percent != 0 && actuationInfo.percent != 100 */
+    else if (actuationInfo.timeOn ==
+             -1000) /* && actuationInfo.percent != 0 && actuationInfo.percent != 100 */
     {
         // pX on ZZZ%
         int pwmState = (actuationInfo.percent * MAX_PWM) / 100;
         setPWMPin(actuationInfo.pin, pwmState, 0);
     }
-    else if (actuationInfo.timeOn != -1000 && actuationInfo.percent != 0) /* && actuationInfo.percent != 100 */
+    else if (actuationInfo.timeOn != -1000 &&
+             actuationInfo.percent != 0) /* && actuationInfo.percent != 100 */
     {
         // pX on YY ZZZ%
         int pwmState = (actuationInfo.percent * MAX_PWM) / 100;
@@ -430,44 +398,38 @@ static void actuatePins(ActuationInfo actuationInfo)
     }
 }
 
-static void CAallOn(bool isOn, int duration)
-{
+static void CAallOn(bool isOn, int duration) {
     if (isOn) {
         for (int i = 1; i <= ACTUATIONPORTS; i++) {
             clearOvercurrentFields(i);
         }
-        allOn(1000*duration);
+        allOn(1000 * duration);
     }
     else {
         allOff();
     }
 }
 
-static void CAportState(int port, bool state, int percent, int duration)
-{
+static void CAportState(int port, bool state, int percent, int duration) {
     clearOvercurrentFields(port);
-    actuatePins((ActuationInfo) { port - 1, percent, 1000*duration});
+    actuatePins((ActuationInfo){port - 1, percent, 1000 * duration});
 }
 
-static void autoOff()
-{
+static void autoOff() {
     uint32_t now = HAL_GetTick();
 
-    for (int i = 0; i < ACTUATIONPORTS; i++)
-    {
-        if (((int) tdiff_u32(now, actuationStart[i]) > actuationDuration[i]) && actuationDuration[i] != 0)
-        {
+    for (int i = 0; i < ACTUATIONPORTS; i++) {
+        if (((int)tdiff_u32(now, actuationStart[i]) > actuationDuration[i]) &&
+            actuationDuration[i] != 0) {
             turnOffPin(i);
         }
     }
 }
 
-static void handleButtonPress()
-{
+static void handleButtonPress() {
     static int prev_gpio[ACTUATIONPORTS] = {1, 1, 1, 1, 1, 1};
 
-    for (int i = 0; i < ACTUATIONPORTS; i++)
-    {
+    for (int i = 0; i < ACTUATIONPORTS; i++) {
         int gpio = stmGetGpio(buttonGpio[i]);
 
         /* Button GPIO are pulled up, so "0" is a positive input (e.g. button is pressed) */
@@ -478,10 +440,9 @@ static void handleButtonPress()
         }
         else if (gpio == 1 && prev_gpio[i] == 0) {
             /* Release edge */
-            if (port_state[i] & PORT_STATE_ON_SW)
-            {
+            if (port_state[i] & PORT_STATE_ON_SW) {
                 unsigned long now = HAL_GetTick();
-                int duration = actuationDuration[i] - (int) tdiff_u32(now, actuationStart[i]);
+                int duration      = actuationDuration[i] - (int)tdiff_u32(now, actuationStart[i]);
                 setPWMPin(i, ccr_states[i], duration);
             }
             port_state[i] &= ~PORT_STATE_ON_BTN;
@@ -491,13 +452,11 @@ static void handleButtonPress()
     }
 }
 
-static void checkButtonPress()
-{
+static void checkButtonPress() {
     static uint32_t lastCheckButtonTime = 0;
-    const uint32_t tsButton = 100;
+    const uint32_t tsButton             = 100;
 
-    if (tdiff_u32(HAL_GetTick(), lastCheckButtonTime) > tsButton)
-    {
+    if (tdiff_u32(HAL_GetTick(), lastCheckButtonTime) > tsButton) {
         lastCheckButtonTime = HAL_GetTick();
         handleButtonPress();
     }
@@ -510,26 +469,31 @@ static void checkButtonPress()
 **
 ** @return Address of CCR register, or 0 if an incorrect pinNumber is given
 */
-static volatile uint32_t* getTimerCCR(int pinNumber)
-{
+static volatile uint32_t* getTimerCCR(int pinNumber) {
     /* The map of DC ports to Timer CCR registers has been tested and confirmed on a V3.2 board */
-    switch (pinNumber)
-    {
-        case 0: return &(TIM2->CCR1);
-        case 1: return &(TIM1->CCR2);
-        case 2: return &(TIM1->CCR3);
-        case 3: return &(TIM1->CCR1);
-        case 4: return &(TIM2->CCR2);
-        case 5: return &(TIM2->CCR3);
-        default: return (uint32_t*)0x00000000;
+    switch (pinNumber) {
+        case 0:
+            return &(TIM2->CCR1);
+        case 1:
+            return &(TIM1->CCR2);
+        case 2:
+            return &(TIM1->CCR3);
+        case 3:
+            return &(TIM1->CCR1);
+        case 4:
+            return &(TIM2->CCR2);
+        case 5:
+            return &(TIM2->CCR3);
+        default:
+            return (uint32_t*)0x00000000;
     }
 }
 
 /*!
 ** @brief Initialises GPIO in the system
 */
-static void gpioInit () {
-    for(int i = 0; i < ACTUATIONPORTS; i++) {
+static void gpioInit() {
+    for (int i = 0; i < ACTUATIONPORTS; i++) {
         stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT_PULLUP);
     }
 }
@@ -538,10 +502,10 @@ static void gpioInit () {
 ** @brief Uses port_state and ccr_state variables to determine if a pin should be on or not
 */
 static void handlePorts() {
-    if(!(bsGetStatus() & BS_VERSION_ERROR_Msk)) {
-        for(int i = 0; i < ACTUATIONPORTS; i++) {
-            if(port_state[i]) {
-                if(port_state[i] & PORT_STATE_ON_BTN) {
+    if (!(bsGetStatus() & BS_VERSION_ERROR_Msk)) {
+        for (int i = 0; i < ACTUATIONPORTS; i++) {
+            if (port_state[i]) {
+                if (port_state[i] & PORT_STATE_ON_BTN) {
                     *getTimerCCR(i) = TURNONPWM;
                 }
                 else {
@@ -559,8 +523,7 @@ static void handlePorts() {
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
-{
+void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* hwwdg) {
     boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, DC_BOARD_No_Error_Msk);
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
     initCAProtocol(&caProto, usbRx);
@@ -583,13 +546,12 @@ void DCBoardInit(ADC_HandleTypeDef *_hadc, WWDG_HandleTypeDef* hwwdg)
 
 /*!
 ** @brief Loop function called repeatedly throughout
-** 
+**
 ** * Responds to user input
-** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
-**   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches). 
+** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the
+**   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
 */
-void DCBoardLoop(const char* bootMsg)
-{
+void DCBoardLoop(const char* bootMsg) {
     CAhandleUserInputs(&caProto, bootMsg);
     updateBoardStatus();
 
