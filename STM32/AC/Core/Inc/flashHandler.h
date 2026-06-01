@@ -25,6 +25,7 @@
 ***************************************************************************************************/
 
 faultInfo_t* fhGetFaultInfo();
+float*       fhGetCurrentLimits();
 
 void fhLoadDeposit();
 void fhSaveDeposit();

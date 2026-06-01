@@ -76,17 +76,18 @@ target_link_libraries(heatCtrl_test GTest::gtest_main gmock_main)
 target_compile_options(heatCtrl_test PRIVATE -Wall)
 gtest_discover_tests(heatCtrl_test)
 
-add_executable(ac_test AC_tests.cpp 
-                 ${UT_STUBS}/stub_jumpToBootloader.cpp 
-                 ${LIB}/Util/Src/systeminfo.c 
+add_executable(AC_tests AC_tests.cpp
+                 ${UT_STUBS}/stub_jumpToBootloader.cpp
+                 ${LIB}/Util/Src/systeminfo.c
+                 ${LIB}/Filtering/Src/array-math.c
                  ${UT_FAKES}/fake_USBprint.cpp
-                 ${LIB}/Util/Src/time32.c 
+                 ${LIB}/Util/Src/time32.c
                  ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
                  ${UT_FAKES}/fake_StmGpio.cpp 
                  ${UT_FAKES}/fake_HAL_otp.cpp  
                  ${UT_FAKES}/fake_FLASH_readwrite.cpp 
                  ${UT_LIB}/Util/serialStatus_tests.cpp)
-target_include_directories(ac_test PRIVATE 
+target_include_directories(AC_tests PRIVATE 
                              ${UT_FAKES} 
                              ${UT_STUBS} 
                              ${SRC}/AC/Core/Src 
@@ -98,7 +99,7 @@ target_include_directories(ac_test PRIVATE
                              ${INC_LIB} 
                              ${DRIV}/Inc 
                              ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
-target_link_libraries(ac_test GTest::gtest_main gmock_main)
-target_compile_definitions(ac_test PUBLIC UNIT_TESTING)
-target_compile_options(ac_test PRIVATE -Wall)
-gtest_discover_tests(ac_test)
+target_link_libraries(AC_tests GTest::gtest_main gmock_main)
+target_compile_definitions(AC_tests PUBLIC UNIT_TESTING)
+target_compile_options(AC_tests PRIVATE -Wall)
+gtest_discover_tests(AC_tests)

@@ -10,14 +10,15 @@
 #include "FLASH_readwrite.h"
 #include "flashHandler.h"
 #include "faultHandlers.h"
+#include "ACBoard.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
 
-#ifndef FLASH_ADDR_FAULT
-    extern uint32_t _FlashAddrFault;   // Variable defined in ld linker script.
-    #define FLASH_ADDR_FAULT ((uint32_t) &_FlashAddrFault)
+#ifndef FLASH_ADDR_CAL
+    extern uint32_t _FlashAddrCal;   // Variable defined in ld linker script.
+    #define FLASH_ADDR_CAL ((uint32_t) &_FlashAddrCal)
 #endif
 
 /***************************************************************************************************
@@ -26,6 +27,7 @@
 
 typedef struct depositUnit_t {
     /* Deposit content */
+    float currentLimits[AC_BOARD_NUM_PORTS]; // Per-channel e-fuse current limits in amps
     faultInfo_t fault_info;
 } depositUnit_t;
 
@@ -43,7 +45,8 @@ typedef struct depositUnit_t {
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-faultInfo_t* fhGetFaultInfo() {return &(dpu.fault_info);}
+faultInfo_t* fhGetFaultInfo()    {return &(dpu.fault_info);}
+float*       fhGetCurrentLimits() {return dpu.currentLimits;}
 
-void fhLoadDeposit() {readFromFlash(FLASH_ADDR_FAULT, (uint8_t*) &dpu, sizeof(dpu));}
-void fhSaveDeposit() {writeToFlash (FLASH_ADDR_FAULT, (uint8_t*) &dpu, sizeof(dpu));}
+void fhLoadDeposit() {readFromFlash(FLASH_ADDR_CAL, (uint8_t*) &dpu, sizeof(dpu));}
+void fhSaveDeposit() {writeToFlash (FLASH_ADDR_CAL, (uint8_t*) &dpu, sizeof(dpu));}
