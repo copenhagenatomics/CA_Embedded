@@ -5,3 +5,4 @@
 * Always verify that changes to the code pass unit-tests by running the unit tests. Instructions for the unit tests are in unit_testing/unit_tests.md
 * If adding a new feature to the code, always add (at least one) test to verify its functionality.
 * Wherever possible, reuse existing code in CA_Embedded_Libraries. If a relevant usable code-snippet exists in another project directory, do not reference it directly, but consider moving it to CA_Embedded_Libraries.
+* Make only the minimum changes required to implement the request. Even if existing code is sub-optimal, or uses outdated APIs, it should not be touched unless specifically instructed to do so.
