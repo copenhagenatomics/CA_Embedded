@@ -15,7 +15,7 @@ This document contains the specification for the DC board/box project. Sub-compo
 * Implementation of all on / all off:
   * all on shall be specified with a duration (in seconds), otherwise return an undefined command message
 * Implementation of portState:
-  * If portState "on" commands specify a percentage, the DC signal must be PWM-d with the corresponding frequency (See below)
+  * If portState "on" commands specify a percentage, the DC signal must be PWM-d with a corresponding duty cycle. For other PWM details, see below.
   * All commands may take effect on the subsequent PWM period
 * PWM
   * DC PWM period frequency should be 1 kHz, resolution 1000
@@ -26,11 +26,13 @@ This document contains the specification for the DC board/box project. Sub-compo
   * Turn on behaviour from buttons should operate "OR" with regular commands. E.g. channel on = button on OR command on.
   * Buttons should not effect durations from regular commands, unless the button is held on over the end of a duration, in which case the channel should remain on until the button is released.
 * E-fuse
-  * If the monitored current on a particular channel exceeds the limit (5A default) average, measured over 1 second, the channel shall be disabled and the overcurrent error bit set.
-  * The limit should be assessed and action taken as frequently as possible
+  * If the monitored current on a particular channel exceeds the limit (12.5 A default) the channel shall be disabled and the overcurrent error bit set.
+  * The limit should be assessed and action taken within 0.1 s
   * The overcurrent bit should be cleared at the next command affecting that channel
   * The channel should continue to work as normal at the next command
   * The current limit should be configurable, per channel, in calibration memory (calibration items 1 to 6)
   * The current limiting action should also apply to button presses, with the same logic as regular commands
+* Calibration
+  * Calibration inputs which are out of range should be detected and rejected with an error message
 
 

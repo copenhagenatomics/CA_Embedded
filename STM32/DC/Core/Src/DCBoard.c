@@ -20,7 +20,6 @@
 #include "DCBoard.h"
 #include "StmGpio.h"
 #include "USBprint.h"
-#include "array-math.h"
 #include "flashHandler.h"
 #include "main.h"
 #include "pcbversion.h"
@@ -32,7 +31,6 @@
 ***************************************************************************************************/
 
 #define ADC_CHANNELS         7  // Order: Hall1 - Hall6, 24V sense
-#define ACTUATIONPORTS       DC_BOARD_NUM_PORTS
 #define ADC_CHANNEL_BUF_SIZE 400
 #define INPUT_V_CHANNEL_IDX  6
 
@@ -50,8 +48,8 @@
 #define UNDER_VOLTAGE_THRESHOLD 10
 #define OVER_VOLTAGE_THRESHOLD  27
 
-#define EFUSE_DEFAULT_CURRENT_LIMIT_A 5.0f
-#define EFUSE_MA_WINDOW               10  // 10 Hz × 1 s = 10 samples
+#define MAX_MEASURABLE_CURRENT        6.25f
+#define EFUSE_DEFAULT_CURRENT_LIMIT_A (MAX_MEASURABLE_CURRENT - 0.25)
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -100,22 +98,20 @@ static CAProtocolCtx caProto = {.undefined        = DCInputHandler,
                                 .otpWrite         = NULL};
 
 /* General */
-static int actuationDuration[ACTUATIONPORTS]   = {0};
-static uint32_t actuationStart[ACTUATIONPORTS] = {0};
-static uint32_t port_state[ACTUATIONPORTS]     = {0};
-static uint32_t ccr_states[ACTUATIONPORTS]     = {0};
+static int actuationDuration[DC_BOARD_NUM_PORTS]   = {0};
+static uint32_t actuationStart[DC_BOARD_NUM_PORTS] = {0};
+static uint32_t port_state[DC_BOARD_NUM_PORTS]     = {0};
+static uint32_t ccr_states[DC_BOARD_NUM_PORTS]     = {0};
 
 /* E-fuse */
 static float* efuseCurrentLimits = NULL;
-static moving_avg_cbuf_t efuseMaFilter[ACTUATIONPORTS];
-static double efuseMaBuffer[ACTUATIONPORTS][EFUSE_MA_WINDOW];
 
 /* Button ports */
 static GPIO_TypeDef* button_ports[]       = {Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port,
                                              Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
 static const uint16_t buttonPins[]        = {Btn_1_Pin, Btn_2_Pin, Btn_3_Pin,
                                              Btn_4_Pin, Btn_5_Pin, Btn_6_Pin};
-static StmGpio buttonGpio[ACTUATIONPORTS] = {};
+static StmGpio buttonGpio[DC_BOARD_NUM_PORTS] = {};
 
 static float inputVoltage = 24;
 
@@ -145,8 +141,12 @@ static void DCInputHandler(const char* input) {
 static void DCcalibration(int noOfCalibrations, const CACalibration* calibrations) {
     for (int i = 0; i < noOfCalibrations; i++) {
         int port = calibrations[i].port;
-        if (port >= 1 && port <= ACTUATIONPORTS && calibrations[i].alpha > 0) {
+        if (port >= 1 && port <= DC_BOARD_NUM_PORTS && 
+            calibrations[i].alpha > 0 && calibrations[i].alpha < MAX_MEASURABLE_CURRENT) {
             efuseCurrentLimits[port - 1] = (float)calibrations[i].alpha;
+        }
+        else {
+            USBnprintf("Invalid calibration input: %d,%.2f,0,0\r\n", port, calibrations[i].alpha);
         }
     }
 }
@@ -162,7 +162,7 @@ static void DCcalibrationRW(bool write) {
         char buf[300];
         int len = 0;
         CA_SNPRINTF(buf, len, "Calibration: CAL");
-        for (int ch = 0; ch < ACTUATIONPORTS; ch++) {
+        for (int ch = 0; ch < DC_BOARD_NUM_PORTS; ch++) {
             CA_SNPRINTF(buf, len, " %d,%.2f,0,0", ch + 1, efuseCurrentLimits[ch]);
         }
         CA_SNPRINTF(buf, len, "\r\n");
@@ -176,18 +176,17 @@ static void DCcalibrationRW(bool write) {
 */
 static void clearOvercurrentFields(int port) {
     bsClearField(DC_EFUSE_OVERCURRENT_Msk(port));
-    if (!(bsGetStatus() & DC_EFUSE_OVERCURRENT_ALL_Msk)) {
+    if (!(bsGetField(DC_EFUSE_OVERCURRENT_ALL_Msk))) {
         bsClearField(BS_OVER_CURRENT_Msk);
     }
 }
 
 /*!
-** @brief Checks per-channel average current and trips the e-fuse if exceeded.
+** @brief Checks per-channel current and trips the e-fuse if exceeded.
 */
 static void efuseLoop(const double* currents) {
-    for (int i = 0; i < ACTUATIONPORTS; i++) {
-        double avg = maMean(&efuseMaFilter[i], currents[i]);
-        if (avg > efuseCurrentLimits[i]) {
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
+        if (currents[i] > efuseCurrentLimits[i]) {
             turnOffPin(i);
             port_state[i] &= ~PORT_STATE_ON_BTN;
             bsSetError(DC_EFUSE_OVERCURRENT_Msk(i + 1));
@@ -203,7 +202,7 @@ static void printDcStatus() {
     static char buf[600] = {0};
     int len              = 0;
 
-    for (int i = 0; i < ACTUATIONPORTS; i++) {
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         CA_SNPRINTF(buf, len, "Port %d: On: %" PRIu32 ", PWM percent: %" PRIu32 "\r\n", i,
                     port_state[i], *getTimerCCR(i));
     }
@@ -219,7 +218,7 @@ static void printDcStatus() {
 */
 static void updateBoardStatus() {
     /* If a port is turned on or not */
-    for (int i = 0; i < ACTUATIONPORTS; i++) {
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         *getTimerCCR(i) != TURNOFFPWM ? bsSetField(DC_BOARD_PORT_x_STATUS_Msk(i))
                                       : bsClearField(DC_BOARD_PORT_x_STATUS_Msk(i));
     }
@@ -294,8 +293,8 @@ static void printResult(int16_t* pBuffer, int noOfChannels, int noOfSamples) {
     inputVoltage = adcToInputVoltage(ADCMean(pBuffer, INPUT_V_CHANNEL_IDX));
     setBoardVoltage(inputVoltage);
 
-    double currents[ACTUATIONPORTS];
-    for (int i = 0; i < ACTUATIONPORTS; i++) {
+    double currents[DC_BOARD_NUM_PORTS];
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         currents[i] = meanCurrent(pBuffer, i);
     }
 
@@ -320,7 +319,7 @@ static void allOn(int duration) {
         HALundefined(buf);
     }
     else {
-        for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++) {
+        for (int pinNumber = 0; pinNumber < DC_BOARD_NUM_PORTS; pinNumber++) {
             actuationStart[pinNumber]    = HAL_GetTick();
             actuationDuration[pinNumber] = duration;
             port_state[pinNumber] |= PORT_STATE_ON_SW;
@@ -344,7 +343,7 @@ static void turnOnPinDuration(int pinNumber, int duration) {
 
 // Shuts off all pins.
 static void allOff() {
-    for (int pinNumber = 0; pinNumber < ACTUATIONPORTS; pinNumber++) {
+    for (int pinNumber = 0; pinNumber < DC_BOARD_NUM_PORTS; pinNumber++) {
         actuationDuration[pinNumber] = 0;
         port_state[pinNumber] &= ~PORT_STATE_ON_SW;
         ccr_states[pinNumber] = TURNOFFPWM;
@@ -363,7 +362,7 @@ typedef struct ActuationInfo {
     int timeOn;  // time on is in seconds - timeOn '-1' is interpreted as indefinitely
 } ActuationInfo;
 static void actuatePins(ActuationInfo actuationInfo) {
-    if (actuationInfo.pin < 0 || actuationInfo.pin >= ACTUATIONPORTS) {
+    if (actuationInfo.pin < 0 || actuationInfo.pin >= DC_BOARD_NUM_PORTS) {
         char buf[30] = {0};
         snprintf(buf, 30, "Invalid Pin: %d", actuationInfo.pin + 1);
         HALundefined(buf);
@@ -400,7 +399,7 @@ static void actuatePins(ActuationInfo actuationInfo) {
 
 static void CAallOn(bool isOn, int duration) {
     if (isOn) {
-        for (int i = 1; i <= ACTUATIONPORTS; i++) {
+        for (int i = 1; i <= DC_BOARD_NUM_PORTS; i++) {
             clearOvercurrentFields(i);
         }
         allOn(1000 * duration);
@@ -418,7 +417,7 @@ static void CAportState(int port, bool state, int percent, int duration) {
 static void autoOff() {
     uint32_t now = HAL_GetTick();
 
-    for (int i = 0; i < ACTUATIONPORTS; i++) {
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         if (((int)tdiff_u32(now, actuationStart[i]) > actuationDuration[i]) &&
             actuationDuration[i] != 0) {
             turnOffPin(i);
@@ -427,9 +426,9 @@ static void autoOff() {
 }
 
 static void handleButtonPress() {
-    static int prev_gpio[ACTUATIONPORTS] = {1, 1, 1, 1, 1, 1};
+    static int prev_gpio[DC_BOARD_NUM_PORTS] = {1, 1, 1, 1, 1, 1};
 
-    for (int i = 0; i < ACTUATIONPORTS; i++) {
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         int gpio = stmGetGpio(buttonGpio[i]);
 
         /* Button GPIO are pulled up, so "0" is a positive input (e.g. button is pressed) */
@@ -493,7 +492,7 @@ static volatile uint32_t* getTimerCCR(int pinNumber) {
 ** @brief Initialises GPIO in the system
 */
 static void gpioInit() {
-    for (int i = 0; i < ACTUATIONPORTS; i++) {
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         stmGpioInit(&buttonGpio[i], button_ports[i], buttonPins[i], STM_GPIO_INPUT_PULLUP);
     }
 }
@@ -503,7 +502,7 @@ static void gpioInit() {
 */
 static void handlePorts() {
     if (!(bsGetStatus() & BS_VERSION_ERROR_Msk)) {
-        for (int i = 0; i < ACTUATIONPORTS; i++) {
+        for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
             if (port_state[i]) {
                 if (port_state[i] & PORT_STATE_ON_BTN) {
                     *getTimerCCR(i) = TURNONPWM;
@@ -536,11 +535,10 @@ void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* hwwdg) {
 
     fhLoadDeposit();
     efuseCurrentLimits = fhGetCurrentLimits();
-    for (int i = 0; i < ACTUATIONPORTS; i++) {
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         if (!isfinite(efuseCurrentLimits[i]) || efuseCurrentLimits[i] <= 0) {
             efuseCurrentLimits[i] = EFUSE_DEFAULT_CURRENT_LIMIT_A;
         }
-        maInit(&efuseMaFilter[i], efuseMaBuffer[i], EFUSE_MA_WINDOW);
     }
 }
 

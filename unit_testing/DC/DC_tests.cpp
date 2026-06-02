@@ -87,7 +87,7 @@ class DCBoard: public CaBoardUnitTest
             setADCChannelBuffer(INPUT_V_CHANNEL_IDX, 800);
 
             /* All buttons automatically in "off" position */
-            for(int i = 0; i < ACTUATIONPORTS; i++) {
+            for(int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
                 stmSetGpio(buttonGpio[i], true);
             }
         }
@@ -108,21 +108,10 @@ class DCBoard: public CaBoardUnitTest
 
 /* ADC values for e-fuse tests.
 ** meanCurrent(adc) = (3.3/4096.0)/0.264 * adc - 6.25
-** ADC_OVERCURRENT  = 3700 → ~5.04 A (above default 5 A limit)
-** ADC_SAFE_CURRENT = 3000 → ~2.91 A (below default 5 A limit)
-** ADC_MID_CURRENT  = 3800 → ~5.35 A (above 5 A default, below 7 A custom limit) */
-static const int16_t ADC_OVERCURRENT  = 3700;
+** ADC_OVERCURRENT  = 4027 → ~6.04 A (above default 6 A limit)
+** ADC_SAFE_CURRENT = 3000 → ~2.91 A (below default 6 A limit) */
+static const int16_t ADC_OVERCURRENT  = 4027;
 static const int16_t ADC_SAFE_CURRENT = 3000;
-static const int16_t ADC_MID_CURRENT  = 3800;
-
-/* Flush USB buffer and return the status flags from the most recent data line */
-static uint32_t flushAndGetUSBStatus() {
-    vector<string> lines = hostUSBread(true);
-    string dataLine;
-    for (auto& l : lines)
-        if (l.find(',') != string::npos) dataLine = l;
-    return getLineStatus(dataLine);
-}
 
 /***************************************************************************************************
 ** TESTS
@@ -142,7 +131,7 @@ TEST_F(DCBoard, incorrectBoard) {
 TEST_F(DCBoard, printSerial) 
 {
     serialPrintoutTest(sst, "DC Board", 
-        "Calibration: CAL 1,5.00,0,0 2,5.00,0,0 3,5.00,0,0 4,5.00,0,0 5,5.00,0,0 6,5.00,0,0\r");
+        "Calibration: CAL 1,6.00,0,0 2,6.00,0,0 3,6.00,0,0 4,6.00,0,0 5,6.00,0,0 6,6.00,0,0\r");
 }
 
 TEST_F(DCBoard, printStatus) 
@@ -239,19 +228,19 @@ TEST_F(DCBoard, portsNoTimeout)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i <= ACTUATIONPORTS + 1; i++) {
+    for(int i = 0; i <= DC_BOARD_NUM_PORTS + 1; i++) {
         sprintf(cmd, "p%u on\n", i);
         writeDcMessage(cmd);
 
-        if(i == 0 || i == (ACTUATIONPORTS + 1)) {
-            for(int j = 0; j < ACTUATIONPORTS; j++) {
+        if(i == 0 || i == (DC_BOARD_NUM_PORTS + 1)) {
+            for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
             sprintf(cmd, "MISREAD: Invalid Pin: %d\r", i);
             EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
-            for(int j = 1; j <= ACTUATIONPORTS; j++) {
+            for(int j = 1; j <= DC_BOARD_NUM_PORTS; j++) {
                 if(j != i) {
                     ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j;
                 }
@@ -272,21 +261,21 @@ TEST_F(DCBoard, portsPct)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i <= ACTUATIONPORTS + 1; i++) {
+    for(int i = 0; i <= DC_BOARD_NUM_PORTS + 1; i++) {
         int pct = (i+1) * 10;
         int pct_ccr = (pct * 999) / 100;
         sprintf(cmd, "p%u on %u%%\n", i, pct);
         writeDcMessage(cmd);
 
-        if(i == 0 || i == (ACTUATIONPORTS + 1)) {
-            for(int j = 0; j < ACTUATIONPORTS; j++) {
+        if(i == 0 || i == (DC_BOARD_NUM_PORTS + 1)) {
+            for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
             }
             sprintf(cmd, "MISREAD: Invalid Pin: %d\r", i);
             EXPECT_FLUSH_USB(Contains(cmd));
         }
         else {
-            for(int j = 1; j <= ACTUATIONPORTS; j++) {
+            for(int j = 1; j <= DC_BOARD_NUM_PORTS; j++) {
                 if(j != i) {
                     ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j;
                 }
@@ -307,14 +296,14 @@ TEST_F(DCBoard, portsTimeout)
     goToTick(1);
     
     char cmd[100] = {0};
-    for(int i = 0; i <= ACTUATIONPORTS + 1; i++) {
+    for(int i = 0; i <= DC_BOARD_NUM_PORTS + 1; i++) {
         int timeout_secs = i+1;
         int timeout_ticks = timeout_secs * 1000;
         sprintf(cmd, "p%u on %u\n", i, timeout_secs);
         writeDcMessage(cmd);
 
-        if(i == 0 || i == (ACTUATIONPORTS + 1)) {
-            for(int j = 0; j < ACTUATIONPORTS; j++) {
+        if(i == 0 || i == (DC_BOARD_NUM_PORTS + 1)) {
+            for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j << ", tick = " << tickCounter;
             }
             sprintf(cmd, "MISREAD: Invalid Pin: %d\r", i);
@@ -322,7 +311,7 @@ TEST_F(DCBoard, portsTimeout)
         }
         else {
             simTicks(timeout_ticks);
-            for(int j = 1; j <= ACTUATIONPORTS; j++) {
+            for(int j = 1; j <= DC_BOARD_NUM_PORTS; j++) {
                 if(j != i) {
                     ASSERT_EQ(*getTimerCCR(j-1), 0) << "j = " << j << ", tick = " << tickCounter;
                 }
@@ -344,9 +333,9 @@ TEST_F(DCBoard, onboardButtons)
     dcSetup();
     goToTick(1);
 
-    for(int i = 0; i < ACTUATIONPORTS; i++) {
+    for(int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         /* All ports initially off */
-        for(int j = 0; j < ACTUATIONPORTS; j++) {
+        for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
         }
 
@@ -355,7 +344,7 @@ TEST_F(DCBoard, onboardButtons)
         simTicks(100); /* Should respond within 100 ms */
 
         /* Only the requested port should be on */
-        for(int j = 0; j < ACTUATIONPORTS; j++) {
+        for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
             if(j != i) {
                 ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;    
             } 
@@ -394,11 +383,11 @@ TEST_F(DCBoard, onboardButtonsOff)
     dcSetup();
     goToTick(1);
 
-    for(int i = 0; i < ACTUATIONPORTS; i++) {
+    for(int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         /* All ports initially on */
         writeDcMessage("all on 5\n");
 
-        for(int j = 0; j < ACTUATIONPORTS; j++) {
+        for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
         }
 
@@ -412,7 +401,7 @@ TEST_F(DCBoard, onboardButtonsOff)
         simTicks(100); /* Should respond within 100 ms */
 
         /* There should be no effect */
-        for(int j = 0; j < ACTUATIONPORTS; j++) {
+        for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
         }
 
@@ -438,11 +427,11 @@ TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod)
     dcSetup();
     goToTick(1);
 
-    for(int i = 0; i < ACTUATIONPORTS; i++) {
+    for(int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         /* All ports initially on */
         writeDcMessage("all on 5\n");
 
-        for(int j = 0; j < ACTUATIONPORTS; j++) {
+        for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
         }
 
@@ -456,7 +445,7 @@ TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod)
         simTicks(100); /* Should respond within 100 ms */
 
         /* There should be no effect */
-        for(int j = 0; j < ACTUATIONPORTS; j++) {
+        for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
         }
 
@@ -510,19 +499,19 @@ TEST_F(DCBoard, testPortShutOffAtUSBDisconnect)
     writeDcMessage("all on 20\n");
 
     /* All ports should be on */
-    for(int j = 0; j < ACTUATIONPORTS; j++) {
+    for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
         ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
     }
 
     goToTick(5000);
     /* All ports should still be on */
-    for(int j = 0; j < ACTUATIONPORTS; j++) {
+    for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
         ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
     }
 
     goToTick(20002);
     /* All ports should be shut off after 20 seconds */
-    for(int j = 0; j < ACTUATIONPORTS; j++) {
+    for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
         ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;    
     }
 
@@ -530,7 +519,7 @@ TEST_F(DCBoard, testPortShutOffAtUSBDisconnect)
     writeDcMessage("all on 20\n");
 
     /* All ports should be on */
-    for(int j = 0; j < ACTUATIONPORTS; j++) {
+    for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
         ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
     }
 
@@ -538,14 +527,14 @@ TEST_F(DCBoard, testPortShutOffAtUSBDisconnect)
     hostUSBDisconnect();
     goToTick(22500);
      /* Ports should not turn off until 5 seconds after USB disconnect */
-    for(int j = 0; j < ACTUATIONPORTS; j++) {
+    for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
         ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;    
     }
 
     // Takes a 100 ticks to go to the ADC callback function
     goToTick(25100);
     /* Ports should not turn off until 5 seconds after USB disconnect */
-    for(int j = 0; j < ACTUATIONPORTS; j++) {
+    for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
         ASSERT_EQ(*getTimerCCR(j), 0) << "j = " << j;
     }
 }
@@ -555,22 +544,21 @@ TEST_F(DCBoard, efuse_tripOnOvercurrent)
     dcSetup();
     goToTick(1);
 
-    /* Set channel 0 to overcurrent and turn port on */
-    setADCChannelBuffer(0, ADC_OVERCURRENT);
+    /* Turn port on while ADC buffer still has safe current, then expose overcurrent. */
     writeDcMessage("p1 on 30\n");
     EXPECT_EQ(*getTimerCCR(0), 999);
+    setADCChannelBuffer(0, ADC_OVERCURRENT);
 
-    /* After 10 ADC callbacks (1000 ms) the 1-second moving average exceeds 5 A.
-    ** Run to 1100 ms so the callback after the trip generates a printout with the
-    ** error bits already set. */
-    simTicks(1100);
+    /* Three ADC callbacks guarantee the error bit appears in USB regardless of initial
+    ** ADC sync state: one may be wasted, the next trips the efuse, the third prints the error. */
+    simTicks(300);
 
     uint32_t status = flushAndGetUSBStatus();
     EXPECT_TRUE(status & DC_EFUSE_OVERCURRENT_Msk(1));
     EXPECT_TRUE(status & BS_OVER_CURRENT_Msk);
     EXPECT_EQ(*getTimerCCR(0), 0);
     /* Other channels must not be affected */
-    for (int i = 2; i <= ACTUATIONPORTS; i++) {
+    for (int i = 2; i <= DC_BOARD_NUM_PORTS; i++) {
         EXPECT_FALSE(status & DC_EFUSE_OVERCURRENT_Msk(i));
     }
 }
@@ -580,7 +568,7 @@ TEST_F(DCBoard, efuse_noTripBelowLimit)
     dcSetup();
     goToTick(1);
 
-    /* Set channel 0 to ~2.9 A (below the 5 A default limit) */
+    /* Set channel 0 to ~2.9 A (below the 6 A default limit) */
     setADCChannelBuffer(0, ADC_SAFE_CURRENT);
     writeDcMessage("p1 on 30\n");
 
@@ -597,15 +585,15 @@ TEST_F(DCBoard, efuse_clearOnNextCommand)
     goToTick(1);
 
     /* Trip the e-fuse on channel 1 */
-    setADCChannelBuffer(0, ADC_OVERCURRENT);
     writeDcMessage("p1 on 30\n");
     EXPECT_EQ(*getTimerCCR(0), 999);
-    simTicks(1100);
+    setADCChannelBuffer(0, ADC_OVERCURRENT);
+    simTicks(300);
     ASSERT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
 
-    /* Drop current to safe level and wait for the window to drain */
+    /* Drop current to safe level */
     setADCChannelBuffer(0, ADC_SAFE_CURRENT);
-    simTicks(1100);
+    simTicks(200);
 
     /* Bit must still be set — only a command clears it */
     EXPECT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
@@ -625,14 +613,19 @@ TEST_F(DCBoard, efuse_buttonHeldThroughTrip)
     dcSetup();
     goToTick(1);
 
-    /* Press and hold button before any overcurrent */
+    /* Press and hold button; wait for the press edge to be detected (fires at 100 ms) before
+    ** introducing overcurrent, so the edge does not arrive after the trip and clear the error */
     stmSetGpio(buttonGpio[0], false);
+    simTicks(200);
+
+    /* Now introduce overcurrent and issue the port command */
     setADCChannelBuffer(0, ADC_OVERCURRENT);
     writeDcMessage("p1 on 30\n");
     EXPECT_EQ(*getTimerCCR(0), 999);
 
-    /* Wait for e-fuse to trip (1-second moving average window) */
-    simTicks(1100);
+    /* Wait for e-fuse to trip (instantaneous check on first ADC callback at 100 ms).
+    ** Two ADC callbacks needed: trip fires at the first, error bit appears in USB at the second. */
+    simTicks(300);
 
     /* Channel must be off — efuse wins over held button */
     EXPECT_EQ(*getTimerCCR(0), 0);
@@ -650,15 +643,16 @@ TEST_F(DCBoard, efuse_buttonPressAfterTripClearsAndEnables)
     goToTick(1);
 
     /* Trip the e-fuse on channel 1 */
-    setADCChannelBuffer(0, ADC_OVERCURRENT);
     writeDcMessage("p1 on 30\n");
-    simTicks(1100);
+    EXPECT_EQ(*getTimerCCR(0), 999);
+    setADCChannelBuffer(0, ADC_OVERCURRENT);
+    simTicks(300);
     ASSERT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
     EXPECT_EQ(*getTimerCCR(0), 0);
 
-    /* Drop to safe current and let the moving average drain */
+    /* Drop to safe current */
     setADCChannelBuffer(0, ADC_SAFE_CURRENT);
-    simTicks(1100);
+    simTicks(200);
 
     /* Error bit must still be set — only a command clears it */
     ASSERT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
@@ -682,14 +676,14 @@ TEST_F(DCBoard, efuse_configurableLimit)
     dcSetup();
     goToTick(1);
 
-    /* Raise channel 1 limit to 7 A via calibration command */
-    writeDcMessage("CAL 1,7.0,0,0\n");
+    /* Raise channel 1 limit to 6.1 A via calibration command */
+    writeDcMessage("CAL 1,6.1,0,0\n");
 
-    /* Set current to ~5.35 A — above the default 5 A but below the new 7 A limit */
-    setADCChannelBuffer(0, ADC_MID_CURRENT);
+    /* Set current to ~6.04 A — above the default 6 A but below the new 6.1 A limit */
+    setADCChannelBuffer(0, ADC_OVERCURRENT);
     writeDcMessage("p1 on 30\n");
 
-    /* Run a full window; would trip with the default limit but must not with 7 A */
+    /* Must not trip — current is above default 6 A but below the new 6.1 A limit */
     simTicks(2000);
 
     EXPECT_FALSE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));

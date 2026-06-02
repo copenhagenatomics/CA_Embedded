@@ -23,7 +23,7 @@
 #define DC_BOARD_PORTS_STATUS_Msk     ((1U << DC_BOARD_NUM_PORTS) - 1U)
 
 /* Per-channel e-fuse overcurrent bits (1-indexed port x occupies bit 6+x, i.e. bits 7–12) */
-#define DC_EFUSE_OVERCURRENT_Msk(x)  (1UL << (6UL + (uint32_t)(x)))
+#define DC_EFUSE_OVERCURRENT_Msk(x)  (1UL << (DC_BOARD_NUM_PORTS + (uint32_t)(x)))
 #define DC_EFUSE_OVERCURRENT_ALL_Msk (0x3FUL << 7UL)
 
 /* Define showing which bits are "errors" and which are only for information */

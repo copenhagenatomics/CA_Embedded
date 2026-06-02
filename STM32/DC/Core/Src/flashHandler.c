@@ -7,17 +7,17 @@
 
 #include <stdint.h>
 
+#include "DCBoard.h"
 #include "FLASH_readwrite.h"
 #include "flashHandler.h"
-#include "DCBoard.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
 
 #ifndef FLASH_ADDR_CAL
-    extern uint32_t _FlashAddrCal;
-    #define FLASH_ADDR_CAL ((uint32_t) &_FlashAddrCal)
+extern uint32_t _FlashAddrCal;
+#define FLASH_ADDR_CAL ((uint32_t)&_FlashAddrCal)
 #endif
 
 /***************************************************************************************************
@@ -32,17 +32,19 @@ typedef struct {
 ** PRIVATE VARIABLES
 ***************************************************************************************************/
 
-#ifdef __cplusplus
-    depositUnit_t dpu;
-#else
-    depositUnit_t dpu = {0};
-#endif
+depositUnit_t dpu = {0};
 
 /***************************************************************************************************
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-float* fhGetCurrentLimits() { return dpu.currentLimits; }
+float* fhGetCurrentLimits() {
+    return dpu.currentLimits;
+}
 
-void fhLoadDeposit() { readFromFlash(FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu)); }
-void fhSaveDeposit() { writeToFlash (FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu)); }
+void fhLoadDeposit() {
+    readFromFlash(FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu));
+}
+void fhSaveDeposit() {
+    writeToFlash(FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu));
+}
