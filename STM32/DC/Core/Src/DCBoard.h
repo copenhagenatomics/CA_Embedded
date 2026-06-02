@@ -33,7 +33,7 @@
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* _hwwdg);
+void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* _hwwdg, CRC_HandleTypeDef* _hcrc);
 void DCBoardLoop(const char* bootMsg);
 
 #endif /* SRC_DCBOARD_H_ */

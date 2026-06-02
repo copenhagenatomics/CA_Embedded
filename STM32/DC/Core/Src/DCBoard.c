@@ -80,6 +80,7 @@ static void autoOff();
 static void handleButtonPress();
 static void checkButtonPress();
 static void printDCHeader();
+static bool efuseCurrentInRange(double current);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -105,6 +106,10 @@ static uint32_t ccr_states[DC_BOARD_NUM_PORTS]     = {0};
 
 /* E-fuse */
 static float* efuseCurrentLimits = NULL;
+
+/* HAL handles */
+static WWDG_HandleTypeDef* hwwdg_ = NULL;
+static CRC_HandleTypeDef*  hcrc_  = NULL;
 
 /* Button ports */
 static GPIO_TypeDef* button_ports[]       = {Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port,
@@ -135,14 +140,20 @@ static void DCInputHandler(const char* input) {
 }
 
 /*!
+**  @brief Verifies a current is within the efuse range
+*/
+static bool efuseCurrentInRange(double current) {
+    return (current > 0) && (current < MAX_MEASURABLE_CURRENT);
+}
+
+/*!
 ** @brief Updates calibration memory with per-channel e-fuse current limits.
 **        Command format: "CAL <N>,<limit_amps>,0,0"
 */
 static void DCcalibration(int noOfCalibrations, const CACalibration* calibrations) {
     for (int i = 0; i < noOfCalibrations; i++) {
         int port = calibrations[i].port;
-        if (port >= 1 && port <= DC_BOARD_NUM_PORTS && 
-            calibrations[i].alpha > 0 && calibrations[i].alpha < MAX_MEASURABLE_CURRENT) {
+        if (port >= 1 && port <= DC_BOARD_NUM_PORTS && efuseCurrentInRange(calibrations[i].alpha)) {
             efuseCurrentLimits[port - 1] = (float)calibrations[i].alpha;
         }
         else {
@@ -156,7 +167,7 @@ static void DCcalibration(int noOfCalibrations, const CACalibration* calibration
 */
 static void DCcalibrationRW(bool write) {
     if (write) {
-        fhSaveDeposit();
+        fhSaveDeposit(hcrc_);
     }
     else {
         char buf[300];
@@ -263,7 +274,6 @@ static double adcToInputVoltage(double adcMean) {
     return (VOLTAGE_QUAD * adcMean + VOLTAGE_SCALAR) * adcMean + VOLTAGE_BIAS;
 }
 
-WWDG_HandleTypeDef* hwwdg_ = NULL;
 static void printResult(int16_t* pBuffer, int noOfChannels, int noOfSamples) {
     static uint32_t port_close_time = 0;
 
@@ -522,7 +532,7 @@ static void handlePorts() {
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* hwwdg) {
+void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* hwwdg, CRC_HandleTypeDef* hcrc) {
     boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, DC_BOARD_No_Error_Msk);
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
     initCAProtocol(&caProto, usbRx);
@@ -532,11 +542,12 @@ void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* hwwdg) {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
     hwwdg_ = hwwdg;
+    hcrc_  = hcrc;
 
-    fhLoadDeposit();
+    fhLoadDeposit(hcrc_);
     efuseCurrentLimits = fhGetCurrentLimits();
     for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
-        if (!isfinite(efuseCurrentLimits[i]) || efuseCurrentLimits[i] <= 0) {
+        if (!isfinite(efuseCurrentLimits[i]) || !efuseCurrentInRange(efuseCurrentLimits[i])) {
             efuseCurrentLimits[i] = EFUSE_DEFAULT_CURRENT_LIMIT_A;
         }
     }

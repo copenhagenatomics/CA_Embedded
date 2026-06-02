@@ -75,7 +75,7 @@ class DCBoard: public CaBoardUnitTest
 
         /* Normal board setup */
         void dcSetup() {
-            DCBoardInit(&hadc, &hwwdg);
+            DCBoardInit(&hadc, &hwwdg, &hwcrc);
         
             /* Fill the current buffer with a sensible value
             ** According to default calibration, 2048 yields ~0 current */
@@ -98,10 +98,11 @@ class DCBoard: public CaBoardUnitTest
         
         ADC_HandleTypeDef hadc;
         WWDG_HandleTypeDef hwwdg;
+        CRC_HandleTypeDef hwcrc;
         const char * bootMsg = "Boot Unit Test\r\n";
 
         SerialStatusTest sst = {
-            .boundInit = bind(DCBoardInit, &hadc, &hwwdg),
+            .boundInit = bind(DCBoardInit, &hadc, &hwwdg, &hwcrc),
             .testFixture = this
         };
 };

@@ -26,7 +26,7 @@ This document contains the specification for the DC board/box project. Sub-compo
   * Turn on behaviour from buttons should operate "OR" with regular commands. E.g. channel on = button on OR command on.
   * Buttons should not effect durations from regular commands, unless the button is held on over the end of a duration, in which case the channel should remain on until the button is released.
 * E-fuse
-  * If the monitored current on a particular channel exceeds the limit (12.5 A default) the channel shall be disabled and the overcurrent error bit set.
+  * If the monitored current on a particular channel exceeds the limit (6 A default) the channel shall be disabled and the overcurrent error bit set.
   * The limit should be assessed and action taken within 0.1 s
   * The overcurrent bit should be cleared at the next command affecting that channel
   * The channel should continue to work as normal at the next command
@@ -34,5 +34,7 @@ This document contains the specification for the DC board/box project. Sub-compo
   * The current limiting action should also apply to button presses, with the same logic as regular commands
 * Calibration
   * Calibration inputs which are out of range should be detected and rejected with an error message
+  * Calibration data should be saved using a CRC to detect data corruption. If corrupted data is detected, issue a warning and reset to the default.
+
 
 

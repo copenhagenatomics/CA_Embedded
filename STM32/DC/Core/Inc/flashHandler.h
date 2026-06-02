@@ -8,13 +8,15 @@
 #ifndef DC_FLASH_HANDLER_H_
 #define DC_FLASH_HANDLER_H_
 
+#include "stm32f4xx_hal.h"
+
 /***************************************************************************************************
 ** PUBLIC FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
 float* fhGetCurrentLimits();
 
-void fhLoadDeposit();
-void fhSaveDeposit();
+void fhLoadDeposit(CRC_HandleTypeDef* hcrc);
+void fhSaveDeposit(CRC_HandleTypeDef* hcrc);
 
 #endif /* DC_FLASH_HANDLER_H_ */

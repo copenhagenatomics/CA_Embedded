@@ -5,10 +5,12 @@
 ** @author: Luke W
 */
 
+#include <string.h>
 #include <stdint.h>
 
 #include "DCBoard.h"
 #include "FLASH_readwrite.h"
+#include "USBprint.h"
 #include "flashHandler.h"
 
 /***************************************************************************************************
@@ -42,9 +44,14 @@ float* fhGetCurrentLimits() {
     return dpu.currentLimits;
 }
 
-void fhLoadDeposit() {
-    readFromFlash(FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu));
+void fhLoadDeposit(CRC_HandleTypeDef* hcrc) {
+    if (readFromFlashCRC(hcrc, FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu)) != 0) {
+        /* Will force DCBoard to use defaults */
+        memset(&dpu, 0xFFFFFFFFU, sizeof(dpu));
+        USBnprintf("Warning: calibration CRC error, resetting to defaults\r\n");
+    }
 }
-void fhSaveDeposit() {
-    writeToFlash(FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu));
+
+void fhSaveDeposit(CRC_HandleTypeDef* hcrc) {
+    writeToFlashCRC(hcrc, FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu));
 }
