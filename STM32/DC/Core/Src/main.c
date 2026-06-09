@@ -111,7 +111,7 @@ int main(void)
   MX_TIM3_Init();
   MX_CRC_Init();
   /* USER CODE BEGIN 2 */
-  DCBoardInit(&hadc1, &hcrc);
+  DCBoardInit(&hadc1, &hcrc, bootMsg);
   HAL_TIM_Base_Start_IT(&htim1);
   HAL_TIM_Base_Start_IT(&htim2);
   HAL_TIM_Base_Start_IT(&htim3);

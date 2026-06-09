@@ -22,8 +22,10 @@
 
 /* Prevents attempting to access non-existent linker script variables */
 #define FLASH_ADDR_CAL ((uint32_t) 0U)
+uint32_t _FlashAddrUptime = 0;
 
 #include "flashHandler.c"
+#include "uptime.c"
 
 /* UUT */
 #include "DCBoard.c"
@@ -75,8 +77,8 @@ class DCBoard: public CaBoardUnitTest
 
         /* Normal board setup */
         void dcSetup() {
-            DCBoardInit(&hadc, &hwcrc);
-        
+            DCBoardInit(&hadc, &hwcrc, bootMsg);
+
             /* Fill the current buffer with a sensible value
             ** According to default calibration, 2048 yields ~0 current */
             for (int i = 0; i < ADC_CHANNELS-1; i++) {
@@ -101,7 +103,7 @@ class DCBoard: public CaBoardUnitTest
         const char * bootMsg = "Boot Unit Test\r\n";
 
         SerialStatusTest sst = {
-            .boundInit = bind(DCBoardInit, &hadc, &hwcrc),
+            .boundInit = bind(DCBoardInit, &hadc, &hwcrc, bootMsg),
             .testFixture = this
         };
 };
@@ -687,4 +689,9 @@ TEST_F(DCBoard, efuse_configurableLimit)
     simTicks(2000);
 
     EXPECT_FALSE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
+}
+
+TEST_F(DCBoard, uptime)
+{
+    uptimeTest(sst, (uintptr_t)&_FlashAddrUptime);
 }

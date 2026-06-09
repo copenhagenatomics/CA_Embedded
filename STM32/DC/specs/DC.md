@@ -35,6 +35,8 @@ This document contains the specification for the DC board/box project. Sub-compo
 * Calibration
   * Calibration inputs which are out of range should be detected and rejected with an error message
   * Calibration data should be saved using a CRC to detect data corruption. If corrupted data is detected, issue a warning and reset to the default.
+* Uptime
+  * uptime data should record on time and PWM on-time per channel, in minutes
 
 
 

@@ -21,10 +21,12 @@
 #include "StmGpio.h"
 #include "USBprint.h"
 #include "flashHandler.h"
+#include "githash.h"
 #include "main.h"
 #include "pcbversion.h"
 #include "systemInfo.h"
 #include "time32.h"
+#include "uptime.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -56,6 +58,7 @@
 ***************************************************************************************************/
 
 static void DCInputHandler(const char* input);
+static void DCUptimeHandler(const char* input);
 static void CAallOn(bool isOn, int duration_ms);
 static void CAportState(int port, bool state, int percent, int duration);
 static void DCcalibration(int noOfCalibrations, const CACalibration* calibrations);
@@ -96,7 +99,8 @@ static CAProtocolCtx caProto = {.undefined        = DCInputHandler,
                                 .calibrationRW    = DCcalibrationRW,
                                 .logging          = NULL,
                                 .otpRead          = CAotpRead,
-                                .otpWrite         = NULL};
+                                .otpWrite         = NULL,
+                                .uptime           = DCUptimeHandler};
 
 /* General */
 static int actuationDuration[DC_BOARD_NUM_PORTS]   = {0};
@@ -136,6 +140,13 @@ static void printDCHeader() {
 */
 static void DCInputHandler(const char* input) {
     ACDCInputHandler(&dcProto, input);
+}
+
+/*!
+** @brief Handles the "uptime" command
+*/
+static void DCUptimeHandler(const char* input) {
+    uptime_inputHandler(input, printDCHeader);
 }
 
 /*!
@@ -527,7 +538,7 @@ static void handlePorts() {
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc) {
+void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc, const char* bootMsg) {
     boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, DC_BOARD_No_Error_Msk);
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
     initCAProtocol(&caProto, usbRx);
@@ -537,6 +548,8 @@ void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc) {
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
     hcrc_  = hcrc;
+
+    uptime_init(hcrc, 0, NULL, bootMsg, GIT_VERSION);
 
     fhLoadDeposit(hcrc_);
     efuseCurrentLimits = fhGetCurrentLimits();
@@ -559,6 +572,8 @@ void DCBoardLoop(const char* bootMsg) {
     updateBoardStatus();
 
     ADCMonitorLoop(printResult);
+
+    uptime_update();
 
     // Turn off pins if they have run for requested time
     autoOff();
