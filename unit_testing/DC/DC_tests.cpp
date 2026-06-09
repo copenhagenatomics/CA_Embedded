@@ -49,12 +49,6 @@ class DCBoard: public CaBoardUnitTest
             hadc.Init.NbrOfConversion = ADC_CHANNELS;
         }
 
-        void writeDcMessage(const char * msg)
-        {
-            hostUSBprintf(msg);
-            DCBoardLoop(bootMsg);
-        }
-
         void simTick()
         {
             if(tickCounter != 0 && (tickCounter % 100 == 0)) {
@@ -147,10 +141,10 @@ TEST_F(DCBoard, printStatus)
         "Port 4: On: 0, PWM percent: 0\r",
         "Port 5: On: 0, PWM percent: 0\r"});
     
-    writeDcMessage("p2 on\n");
-    writeDcMessage("p4 on\n");
-    writeDcMessage("p6 on\n");
-    writeDcMessage("Status\n");
+    writeBoardMessage("p2 on\n");
+    writeBoardMessage("p4 on\n");
+    writeBoardMessage("p6 on\n");
+    writeBoardMessage("Status\n");
     
     EXPECT_FLUSH_USB(ElementsAre( 
         "Start of board status:\r",
@@ -200,7 +194,7 @@ TEST_F(DCBoard, status24v)
     // goToTick(200);
     // EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0xa0000000"));
 
-    // writeDcMessage("Status\n");
+    // writeBoardMessage("Status\n");
 
     // EXPECT_FLUSH_USB(ElementsAre(
     //     "\r", 
@@ -232,7 +226,7 @@ TEST_F(DCBoard, portsNoTimeout)
     char cmd[100] = {0};
     for(int i = 0; i <= DC_BOARD_NUM_PORTS + 1; i++) {
         sprintf(cmd, "p%u on\n", i);
-        writeDcMessage(cmd);
+        writeBoardMessage(cmd);
 
         if(i == 0 || i == (DC_BOARD_NUM_PORTS + 1)) {
             for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
@@ -252,7 +246,7 @@ TEST_F(DCBoard, portsNoTimeout)
             }
         }
 
-        writeDcMessage("all off\n");
+        writeBoardMessage("all off\n");
     }
 }
 
@@ -267,7 +261,7 @@ TEST_F(DCBoard, portsPct)
         int pct = (i+1) * 10;
         int pct_ccr = (pct * 999) / 100;
         sprintf(cmd, "p%u on %u%%\n", i, pct);
-        writeDcMessage(cmd);
+        writeBoardMessage(cmd);
 
         if(i == 0 || i == (DC_BOARD_NUM_PORTS + 1)) {
             for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
@@ -287,7 +281,7 @@ TEST_F(DCBoard, portsPct)
             }
         }
 
-        writeDcMessage("all off\n");
+        writeBoardMessage("all off\n");
     }
 }
 
@@ -302,7 +296,7 @@ TEST_F(DCBoard, portsTimeout)
         int timeout_secs = i+1;
         int timeout_ticks = timeout_secs * 1000;
         sprintf(cmd, "p%u on %u\n", i, timeout_secs);
-        writeDcMessage(cmd);
+        writeBoardMessage(cmd);
 
         if(i == 0 || i == (DC_BOARD_NUM_PORTS + 1)) {
             for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
@@ -325,7 +319,7 @@ TEST_F(DCBoard, portsTimeout)
             }
         }
 
-        writeDcMessage("all off\n");
+        writeBoardMessage("all off\n");
     }
 }
 
@@ -387,7 +381,7 @@ TEST_F(DCBoard, onboardButtonsOff)
 
     for(int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         /* All ports initially on */
-        writeDcMessage("all on 5\n");
+        writeBoardMessage("all on 5\n");
 
         for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
@@ -396,7 +390,7 @@ TEST_F(DCBoard, onboardButtonsOff)
         /* Put one port on a timer */
         char cmd[100] = {0};
         sprintf(cmd, "p%u on %u\n", i+1, 1);
-        writeDcMessage(cmd);
+        writeBoardMessage(cmd);
 
         /* Press a button */
         stmSetGpio(buttonGpio[i], false);
@@ -431,7 +425,7 @@ TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod)
 
     for(int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
         /* All ports initially on */
-        writeDcMessage("all on 5\n");
+        writeBoardMessage("all on 5\n");
 
         for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
             ASSERT_EQ(*getTimerCCR(j), 999) << "j = " << j;
@@ -440,7 +434,7 @@ TEST_F(DCBoard, onboardButtonsPortDurationExpiresDuringOnPeriod)
         /* Put one port on a shorter timer */
         char cmd[100] = {0};
         sprintf(cmd, "p%u on %u\n", i+1, 1);
-        writeDcMessage(cmd);
+        writeBoardMessage(cmd);
 
         /* Press a button */
         stmSetGpio(buttonGpio[i], false);
@@ -498,7 +492,7 @@ TEST_F(DCBoard, testPortShutOffAtUSBDisconnect)
     dcSetup();
     goToTick(1);
 
-    writeDcMessage("all on 20\n");
+    writeBoardMessage("all on 20\n");
 
     /* All ports should be on */
     for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
@@ -518,7 +512,7 @@ TEST_F(DCBoard, testPortShutOffAtUSBDisconnect)
     }
 
     // Reset timer and turn on ports on again
-    writeDcMessage("all on 20\n");
+    writeBoardMessage("all on 20\n");
 
     /* All ports should be on */
     for(int j = 0; j < DC_BOARD_NUM_PORTS; j++) {
@@ -547,7 +541,7 @@ TEST_F(DCBoard, efuse_tripOnOvercurrent)
     goToTick(1);
 
     /* Turn port on while ADC buffer still has safe current, then expose overcurrent. */
-    writeDcMessage("p1 on 30\n");
+    writeBoardMessage("p1 on 30\n");
     EXPECT_EQ(*getTimerCCR(0), 999);
     setADCChannelBuffer(0, ADC_OVERCURRENT);
 
@@ -572,7 +566,7 @@ TEST_F(DCBoard, efuse_noTripBelowLimit)
 
     /* Set channel 0 to ~2.9 A (below the 6 A default limit) */
     setADCChannelBuffer(0, ADC_SAFE_CURRENT);
-    writeDcMessage("p1 on 30\n");
+    writeBoardMessage("p1 on 30\n");
 
     /* Run well past a full window */
     simTicks(2000);
@@ -587,7 +581,7 @@ TEST_F(DCBoard, efuse_clearOnNextCommand)
     goToTick(1);
 
     /* Trip the e-fuse on channel 1 */
-    writeDcMessage("p1 on 30\n");
+    writeBoardMessage("p1 on 30\n");
     EXPECT_EQ(*getTimerCCR(0), 999);
     setADCChannelBuffer(0, ADC_OVERCURRENT);
     simTicks(300);
@@ -601,7 +595,7 @@ TEST_F(DCBoard, efuse_clearOnNextCommand)
     EXPECT_TRUE(flushAndGetUSBStatus() & DC_EFUSE_OVERCURRENT_Msk(1));
 
     /* New command clears the bit and re-enables the channel */
-    writeDcMessage("p1 on 10\n");
+    writeBoardMessage("p1 on 10\n");
     simTicks(100);
 
     EXPECT_EQ(*getTimerCCR(0), 999);
@@ -622,7 +616,7 @@ TEST_F(DCBoard, efuse_buttonHeldThroughTrip)
 
     /* Now introduce overcurrent and issue the port command */
     setADCChannelBuffer(0, ADC_OVERCURRENT);
-    writeDcMessage("p1 on 30\n");
+    writeBoardMessage("p1 on 30\n");
     EXPECT_EQ(*getTimerCCR(0), 999);
 
     /* Wait for e-fuse to trip (instantaneous check on first ADC callback at 100 ms).
@@ -645,7 +639,7 @@ TEST_F(DCBoard, efuse_buttonPressAfterTripClearsAndEnables)
     goToTick(1);
 
     /* Trip the e-fuse on channel 1 */
-    writeDcMessage("p1 on 30\n");
+    writeBoardMessage("p1 on 30\n");
     EXPECT_EQ(*getTimerCCR(0), 999);
     setADCChannelBuffer(0, ADC_OVERCURRENT);
     simTicks(300);
@@ -679,11 +673,11 @@ TEST_F(DCBoard, efuse_configurableLimit)
     goToTick(1);
 
     /* Raise channel 1 limit to 6.1 A via calibration command */
-    writeDcMessage("CAL 1,6.1,0,0\n");
+    writeBoardMessage("CAL 1,6.1,0,0\n");
 
     /* Set current to ~6.04 A — above the default 6 A but below the new 6.1 A limit */
     setADCChannelBuffer(0, ADC_OVERCURRENT);
-    writeDcMessage("p1 on 30\n");
+    writeBoardMessage("p1 on 30\n");
 
     /* Must not trip — current is above default 6 A but below the new 6.1 A limit */
     simTicks(2000);
@@ -694,4 +688,58 @@ TEST_F(DCBoard, efuse_configurableLimit)
 TEST_F(DCBoard, uptime)
 {
     uptimeTest(sst, (uintptr_t)&_FlashAddrUptime);
+}
+
+TEST_F(DCBoard, portUptimeChannelsLongOn)
+{
+    dcSetup();
+    goToTick(1);  // Handle first-write boot message before sending commands
+
+    /* Verify no uptime data exists initially */
+    writeBoardMessage("uptime\n");
+    vector<string> ss = hostUSBread(true);
+    EXPECT_THAT(ss, Contains("Port 1 full on minutes, 4, 0, 0\r"));
+    EXPECT_THAT(ss, Contains("Port 1 PWM on minutes, 5, 0, 0\r"));
+
+    /* Turn port 1 on at 100% and advance one minute */
+    writeBoardMessage("p1 on\n");
+    simTicks(60001);
+
+    writeBoardMessage("uptime\n");
+    EXPECT_FLUSH_USB(Contains("Port 1 full on minutes, 4, 0, 1\r"));
+
+    /* Switch port 1 to 50% PWM and advance another minute */
+    writeBoardMessage("p1 on 50%\n");
+    simTicks(60001);
+
+    writeBoardMessage("uptime\n");
+    EXPECT_FLUSH_USB(Contains("Port 1 PWM on minutes, 5, 0, 1\r"));
+}
+
+TEST_F(DCBoard, portUptimeChannelsShortOn)
+{
+    dcSetup();
+    goToTick(1);  // Handle first-write boot message before sending commands
+
+    /* Verify no uptime data exists initially */
+    writeBoardMessage("uptime\n");
+    vector<string> ss = hostUSBread(true);
+    EXPECT_THAT(ss, Contains("Port 1 full on minutes, 4, 0, 0\r"));
+    EXPECT_THAT(ss, Contains("Port 2 PWM on minutes, 7, 0, 0\r"));
+
+    /* Turn port 1 on at 100% and advance one second, wait a second. Repeat 60 times */
+    for(int i = 0; i < 60; i++) {
+        writeBoardMessage("p1 on 1\n");
+        writeBoardMessage("p2 on 1 50%\n");
+        simTicks(2000);
+    }
+
+    /* Flush massive buffer */
+    (void) hostUSBread(true);
+
+    /* Evaluate uptime */
+    writeBoardMessage("uptime\n");
+    ss = hostUSBread(true);
+    EXPECT_THAT(ss, Contains("Port 1 full on minutes, 4, 0, 1\r"));
+    EXPECT_THAT(ss, Contains("Port 2 PWM on minutes, 7, 0, 1\r"));
 }

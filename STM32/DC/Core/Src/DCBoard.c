@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "ADCMonitor.h"
 #include "CAProtocol.h"
@@ -53,6 +54,12 @@
 #define MAX_MEASURABLE_CURRENT        6.25f
 #define EFUSE_DEFAULT_CURRENT_LIMIT_A (MAX_MEASURABLE_CURRENT - 0.25)
 
+/* Custom uptime channel indices (after the NUM_DEFAULT_CHANNELS defaults) */
+#define DC_NUM_CUSTOM_UPTIME_CHANNELS (DC_BOARD_NUM_PORTS * 2)
+#define DC_UPTIME_FULL_ON_CH(port)    (NUM_DEFAULT_CHANNELS + (port) * 2)
+#define DC_UPTIME_PWM_ON_CH(port)     (NUM_DEFAULT_CHANNELS + (port) * 2 + 1)
+#define UPTIME_1_MIN_MS              60000
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
@@ -79,6 +86,7 @@ static void turnOnPinDuration(int pinNumber, int duration);
 static void turnOffPin(int pinNumber);
 static void gpioInit();
 static void handlePorts();
+static void updatePortUptime();
 static void autoOff();
 static void handleButtonPress();
 static void checkButtonPress();
@@ -122,6 +130,19 @@ static const uint16_t buttonPins[]        = {Btn_1_Pin, Btn_2_Pin, Btn_3_Pin,
 static StmGpio buttonGpio[DC_BOARD_NUM_PORTS] = {};
 
 static float inputVoltage = 24;
+
+/* Per-port uptime tracking */
+static const char* dcUptimeChannelDesc[DC_NUM_CUSTOM_UPTIME_CHANNELS] = {
+    "Port 1 full on minutes", "Port 1 PWM on minutes",
+    "Port 2 full on minutes", "Port 2 PWM on minutes",
+    "Port 3 full on minutes", "Port 3 PWM on minutes",
+    "Port 4 full on minutes", "Port 4 PWM on minutes",
+    "Port 5 full on minutes", "Port 5 PWM on minutes",
+    "Port 6 full on minutes", "Port 6 PWM on minutes",
+};
+static uint32_t prevCCR[DC_BOARD_NUM_PORTS]            = {0};
+static uint32_t portFullOnCounter[DC_BOARD_NUM_PORTS] = {0};
+static uint32_t portPwmOnCounter[DC_BOARD_NUM_PORTS]  = {0};
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -505,6 +526,45 @@ static volatile uint32_t* getTimerCCR(int pinNumber) {
 }
 
 /*!
+** @brief Increments per-port uptime counters based on the current CCR state.
+**
+** Detects transitions into each on-mode to avoid a spurious count on the first
+** loop tick after the port turns on.
+*/
+static void updatePortUptime() {
+    /* Allows calculation of time since last iteration*/
+    static uint32_t last_check = HAL_GetTick();
+
+    /* Calculate time difference since last check */
+    uint32_t now = HAL_GetTick();
+    uint32_t diff = now - last_check;
+    last_check = now;
+
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
+        uint32_t ccr     = *getTimerCCR(i);
+
+        if (ccr == TURNONPWM) {
+            /* Allows recording even quite small on-times */
+            portFullOnCounter[i] += diff;
+            if (portFullOnCounter[i] >= UPTIME_1_MIN_MS) {  // Convert milliseconds to minutes
+                uptime_incChannel(DC_UPTIME_FULL_ON_CH(i));
+                portFullOnCounter[i] -= UPTIME_1_MIN_MS;
+            }
+        }
+        else if (ccr > 0) { /* PWM by implication */
+            /* Allows recording even quite small on-times */
+            portPwmOnCounter[i] += diff;
+            if (portPwmOnCounter[i] >= UPTIME_1_MIN_MS) {  // Convert milliseconds to minutes
+                uptime_incChannel(DC_UPTIME_PWM_ON_CH(i));
+                portPwmOnCounter[i] -= UPTIME_1_MIN_MS;
+            }
+        }
+
+        prevCCR[i] = ccr;
+    }
+}
+
+/*!
 ** @brief Initialises GPIO in the system
 */
 static void gpioInit() {
@@ -549,7 +609,7 @@ void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc, const char* 
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
     hcrc_  = hcrc;
 
-    uptime_init(hcrc, 0, NULL, bootMsg, GIT_VERSION);
+    uptime_init(hcrc, DC_NUM_CUSTOM_UPTIME_CHANNELS, dcUptimeChannelDesc, bootMsg, GIT_VERSION);
 
     fhLoadDeposit(hcrc_);
     efuseCurrentLimits = fhGetCurrentLimits();
@@ -579,4 +639,5 @@ void DCBoardLoop(const char* bootMsg) {
     autoOff();
     checkButtonPress();
     handlePorts();
+    updatePortUptime();
 }
