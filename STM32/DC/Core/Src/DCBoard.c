@@ -108,7 +108,6 @@ static uint32_t ccr_states[DC_BOARD_NUM_PORTS]     = {0};
 static float* efuseCurrentLimits = NULL;
 
 /* HAL handles */
-static WWDG_HandleTypeDef* hwwdg_ = NULL;
 static CRC_HandleTypeDef*  hcrc_  = NULL;
 
 /* Button ports */
@@ -276,10 +275,6 @@ static double adcToInputVoltage(double adcMean) {
 
 static void printResult(int16_t* pBuffer, int noOfChannels, int noOfSamples) {
     static uint32_t port_close_time = 0;
-
-    // Watch dog refresh. Triggers reset if reset after <90ms or >110ms.
-    // Ensures ADC sampling is performed with correct timing.
-    HAL_WWDG_Refresh(hwwdg_);
 
     /* If the USB port is not open, no messages should be printed. Also if the USB port has been
     ** closed for more than a timeout, everything should be turned off as a safety measure */
@@ -532,7 +527,7 @@ static void handlePorts() {
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* hwwdg, CRC_HandleTypeDef* hcrc) {
+void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc) {
     boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, DC_BOARD_No_Error_Msk);
     /* Always allow for DFU also if programmed on non-matching board or PCB version. */
     initCAProtocol(&caProto, usbRx);
@@ -541,7 +536,6 @@ void DCBoardInit(ADC_HandleTypeDef* _hadc, WWDG_HandleTypeDef* hwwdg, CRC_Handle
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
-    hwwdg_ = hwwdg;
     hcrc_  = hcrc;
 
     fhLoadDeposit(hcrc_);
