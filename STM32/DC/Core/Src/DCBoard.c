@@ -143,6 +143,7 @@ static const char* dcUptimeChannelDesc[DC_NUM_CUSTOM_UPTIME_CHANNELS] = {
 static uint32_t prevCCR[DC_BOARD_NUM_PORTS]            = {0};
 static uint32_t portFullOnCounter[DC_BOARD_NUM_PORTS] = {0};
 static uint32_t portPwmOnCounter[DC_BOARD_NUM_PORTS]  = {0};
+static uint32_t last_check = 0;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -532,9 +533,6 @@ static volatile uint32_t* getTimerCCR(int pinNumber) {
 ** loop tick after the port turns on.
 */
 static void updatePortUptime() {
-    /* Allows calculation of time since last iteration*/
-    static uint32_t last_check = HAL_GetTick();
-
     /* Calculate time difference since last check */
     uint32_t now = HAL_GetTick();
     uint32_t diff = now - last_check;
@@ -610,6 +608,7 @@ void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc, const char* 
     hcrc_  = hcrc;
 
     uptime_init(hcrc, DC_NUM_CUSTOM_UPTIME_CHANNELS, dcUptimeChannelDesc, bootMsg, GIT_VERSION);
+    last_check = HAL_GetTick();
 
     fhLoadDeposit(hcrc_);
     efuseCurrentLimits = fhGetCurrentLimits();
