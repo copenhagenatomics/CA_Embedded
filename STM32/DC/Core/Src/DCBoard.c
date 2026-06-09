@@ -58,7 +58,7 @@
 #define DC_NUM_CUSTOM_UPTIME_CHANNELS (DC_BOARD_NUM_PORTS * 2)
 #define DC_UPTIME_FULL_ON_CH(port)    (NUM_DEFAULT_CHANNELS + (port) * 2)
 #define DC_UPTIME_PWM_ON_CH(port)     (NUM_DEFAULT_CHANNELS + (port) * 2 + 1)
-#define UPTIME_1_MIN_MS              60000
+#define UPTIME_1_MIN_MS               60000
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
@@ -120,30 +120,28 @@ static uint32_t ccr_states[DC_BOARD_NUM_PORTS]     = {0};
 static float* efuseCurrentLimits = NULL;
 
 /* HAL handles */
-static CRC_HandleTypeDef*  hcrc_  = NULL;
+static CRC_HandleTypeDef* hcrc_ = NULL;
 
 /* Button ports */
-static GPIO_TypeDef* button_ports[]       = {Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port,
-                                             Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
-static const uint16_t buttonPins[]        = {Btn_1_Pin, Btn_2_Pin, Btn_3_Pin,
-                                             Btn_4_Pin, Btn_5_Pin, Btn_6_Pin};
+static GPIO_TypeDef* button_ports[]           = {Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port,
+                                                 Btn_4_GPIO_Port, Btn_5_GPIO_Port, Btn_6_GPIO_Port};
+static const uint16_t buttonPins[]            = {Btn_1_Pin, Btn_2_Pin, Btn_3_Pin,
+                                                 Btn_4_Pin, Btn_5_Pin, Btn_6_Pin};
 static StmGpio buttonGpio[DC_BOARD_NUM_PORTS] = {};
 
 static float inputVoltage = 24;
 
 /* Per-port uptime tracking */
 static const char* dcUptimeChannelDesc[DC_NUM_CUSTOM_UPTIME_CHANNELS] = {
-    "Port 1 full on minutes", "Port 1 PWM on minutes",
-    "Port 2 full on minutes", "Port 2 PWM on minutes",
-    "Port 3 full on minutes", "Port 3 PWM on minutes",
-    "Port 4 full on minutes", "Port 4 PWM on minutes",
-    "Port 5 full on minutes", "Port 5 PWM on minutes",
-    "Port 6 full on minutes", "Port 6 PWM on minutes",
+    "Port 1 full on minutes", "Port 1 PWM on minutes",  "Port 2 full on minutes",
+    "Port 2 PWM on minutes",  "Port 3 full on minutes", "Port 3 PWM on minutes",
+    "Port 4 full on minutes", "Port 4 PWM on minutes",  "Port 5 full on minutes",
+    "Port 5 PWM on minutes",  "Port 6 full on minutes", "Port 6 PWM on minutes",
 };
-static uint32_t prevCCR[DC_BOARD_NUM_PORTS]            = {0};
+static uint32_t prevCCR[DC_BOARD_NUM_PORTS]           = {0};
 static uint32_t portFullOnCounter[DC_BOARD_NUM_PORTS] = {0};
 static uint32_t portPwmOnCounter[DC_BOARD_NUM_PORTS]  = {0};
-static uint32_t last_check = 0;
+static uint32_t last_check                            = 0;
 
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
@@ -534,12 +532,12 @@ static volatile uint32_t* getTimerCCR(int pinNumber) {
 */
 static void updatePortUptime() {
     /* Calculate time difference since last check */
-    uint32_t now = HAL_GetTick();
+    uint32_t now  = HAL_GetTick();
     uint32_t diff = now - last_check;
-    last_check = now;
+    last_check    = now;
 
     for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
-        uint32_t ccr     = *getTimerCCR(i);
+        uint32_t ccr = *getTimerCCR(i);
 
         if (ccr == TURNONPWM) {
             /* Allows recording even quite small on-times */
@@ -605,7 +603,7 @@ void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc, const char* 
 
     static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
-    hcrc_  = hcrc;
+    hcrc_ = hcrc;
 
     uptime_init(hcrc, DC_NUM_CUSTOM_UPTIME_CHANNELS, dcUptimeChannelDesc, bootMsg, GIT_VERSION);
     last_check = HAL_GetTick();
