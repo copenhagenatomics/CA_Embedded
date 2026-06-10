@@ -50,7 +50,7 @@ include(GoogleTest)
 
 # DC tests
 add_executable(DC_tests DC_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp ${LIB}/Util/Src/systeminfo.c ${LIB}/Filtering/Src/array-math.c ${LIB}/Crc/Src/crc.c ${UT_FAKES}/fake_USBprint.cpp ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp ${UT_FAKES}/fake_FLASH_readwrite.cpp ${UT_LIB}/Util/serialStatus_tests.cpp)
-target_include_directories(DC_tests PRIVATE ${UT_FAKES} ${UT_STUBS} ${SRC}/DC/Core/Src ${SRC}/DC/Core/Inc ${SRC}/DC/HeatCtrl/Inc ${SRC}/DC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
+target_include_directories(DC_tests PRIVATE . ${UT_FAKES} ${UT_STUBS} ${SRC}/DC/Core/Src ${SRC}/DC/Core/Inc ${SRC}/DC/HeatCtrl/Inc ${SRC}/DC/HeatCtrl/Src ${LIB}/ADCMonitor/Src ${LIB}/Util/Src ${INC_LIB} ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include ${UT_LIB}/Util)
 target_link_libraries(DC_tests GTest::gtest_main gmock_main)
 target_compile_definitions(DC_tests PUBLIC UNIT_TESTING)
 target_compile_options(DC_tests PRIVATE -Wall)
