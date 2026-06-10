@@ -48,7 +48,9 @@ void fhLoadDeposit(CRC_HandleTypeDef* hcrc) {
     if (readFromFlashCRC(hcrc, FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu)) != 0) {
         /* Will force DCBoard to use defaults */
         memset(&dpu, 0xFFFFFFFFU, sizeof(dpu));
-        USBnprintf("Warning: calibration CRC error, resetting to defaults\r\n");
+        if(isUsbPortOpen()) {
+            USBnprintf("Warning: calibration CRC error, resetting to defaults\r\n");
+        }
     }
 }
 
