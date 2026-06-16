@@ -79,7 +79,6 @@ gtest_discover_tests(heatCtrl_test)
 add_executable(AC_tests AC_tests.cpp
                  ${UT_STUBS}/stub_jumpToBootloader.cpp
                  ${LIB}/Util/Src/systeminfo.c
-                 ${LIB}/Filtering/Src/array-math.c
                  ${UT_FAKES}/fake_USBprint.cpp
                  ${LIB}/Util/Src/time32.c
                  ${UT_FAKES}/fake_stm32xxxx_hal.cpp 

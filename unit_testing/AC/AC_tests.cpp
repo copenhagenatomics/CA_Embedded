@@ -102,17 +102,8 @@ class ACBoard: public CaBoardUnitTest
 static const int16_t ADC_OVERCURRENT   = 1000;
 /* ADC raw value that produces ~9.2A: ADCtoCurrent(700) = 0.013138*700 - 0.01 = 9.19A */
 static const int16_t ADC_SAFE_CURRENT  = 700;
-/* ADC raw value that produces ~10.5A: above default 10A limit, below a 15A custom limit */
-static const int16_t ADC_MID_CURRENT   = 800;
-
-/* Flush USB buffer and return the status flags from the most recent data line */
-static uint32_t flushAndGetUSBStatus() {
-    vector<string> lines = hostUSBread(true);
-    string dataLine;
-    for (auto& l : lines)
-        if (l.find(',') != string::npos) dataLine = l;
-    return getLineStatus(dataLine);
-}
+/* ADC raw value that produces ~12.5A: above default 12A limit, below a 15A custom limit */
+static const int16_t ADC_MID_CURRENT   = 950;
 
 /***************************************************************************************************
 ** TESTS
@@ -171,7 +162,7 @@ TEST_F(ACBoard, printStatusDef) {
 }
 
 TEST_F(ACBoard, printSerial) {
-    serialPrintoutTest(sst, "AC Board", "Calibration: CAL 1,10.00,0,0 2,10.00,0,0 3,10.00,0,0 4,10.00,0,0\r");
+    serialPrintoutTest(sst, "AC Board", "Calibration: CAL 1,12.00,0,0 2,12.00,0,0 3,12.00,0,0 4,12.00,0,0\r");
 }
 
 TEST_F(ACBoard, calibrationUpdate)
@@ -182,12 +173,12 @@ TEST_F(ACBoard, calibrationUpdate)
 
     /* Verify default limits appear in Serial response */
     writeBoardMessage("Serial\n");
-    EXPECT_READ_USB(Contains("Calibration: CAL 1,10.00,0,0 2,10.00,0,0 3,10.00,0,0 4,10.00,0,0\r"));
+    EXPECT_READ_USB(Contains("Calibration: CAL 1,12.00,0,0 2,12.00,0,0 3,12.00,0,0 4,12.00,0,0\r"));
 
     /* Set a custom limit on port 2 and verify it is reflected in the next Serial response */
     writeBoardMessage("CAL 2,15.0,0,0\n");
     writeBoardMessage("Serial\n");
-    EXPECT_READ_USB(Contains("Calibration: CAL 1,10.00,0,0 2,15.00,0,0 3,10.00,0,0 4,10.00,0,0\r"));
+    EXPECT_READ_USB(Contains("Calibration: CAL 1,12.00,0,0 2,15.00,0,0 3,12.00,0,0 4,12.00,0,0\r"));
 
     /* Invalid calibration commands must produce a MISREAD error and leave limits unchanged */
     writeBoardMessage("CAL 12,-5,0,0\n");
@@ -197,7 +188,7 @@ TEST_F(ACBoard, calibrationUpdate)
     EXPECT_FLUSH_USB(Contains("MISREAD: CAL bad\r"));
 
     writeBoardMessage("Serial\n");
-    EXPECT_READ_USB(Contains("Calibration: CAL 1,10.00,0,0 2,15.00,0,0 3,10.00,0,0 4,10.00,0,0\r"));
+    EXPECT_READ_USB(Contains("Calibration: CAL 1,12.00,0,0 2,15.00,0,0 3,12.00,0,0 4,12.00,0,0\r"));
 }
 
 TEST_F(ACBoard, incorrectBoardParams) {
@@ -415,9 +406,8 @@ TEST_F(ACBoard, efuse_tripOnOvercurrent)
     writeBoardMessage("p1 on 10\n");
     EXPECT_TRUE(stmGetGpio(heaterPorts[0].heater));
 
-    /* Run 9 more ADC callbacks (ticks 200-1000). The 10-sample moving average exceeds
-    ** 10A after 8 samples: avg = 8 * 13.13 / 10 = 10.5A > 10A. */
-    simTicks(1000);
+    /* Run more ADC callbacks. ~13.1A exceeds the 12A limit immediately on the first callback. */
+    simTicks(100);
 
     EXPECT_FALSE(stmGetGpio(heaterPorts[0].heater));
     uint32_t status = flushAndGetUSBStatus();
@@ -461,11 +451,10 @@ TEST_F(ACBoard, efuse_clearOnNextCommand)
     ASSERT_FALSE(stmGetGpio(heaterPorts[0].heater));
     ASSERT_TRUE(flushAndGetUSBStatus() & AC_EFUSE_OVERCURRENT_Msk(1));
 
-    /* Drop current to zero and wait a full window for the moving average to drain */
+    /* Drop current to zero — bit must still be set, only a command can clear it */
     setAdcChannelBuffer(0, 0);
     simTicks(1100);
 
-    /* Bit must still be set — only a command can clear it */
     EXPECT_TRUE(flushAndGetUSBStatus() & AC_EFUSE_OVERCURRENT_Msk(1));
     EXPECT_FALSE(stmGetGpio(heaterPorts[0].heater));
 
@@ -500,11 +489,10 @@ TEST_F(ACBoard, efuse_clearWithTwoChannels)
     ASSERT_TRUE(status & AC_EFUSE_OVERCURRENT_Msk(1));
     ASSERT_TRUE(status & AC_EFUSE_OVERCURRENT_Msk(2));
     ASSERT_TRUE(status & BS_OVER_CURRENT_Msk);
-    /* Drop current to zero and wait a full window for the moving average to drain */
+    /* Drop current to zero — bit must still be set, only a command can clear it */
     setAdcChannelBuffer(0, 0);
     simTicks(1100);
 
-    /* Bit must still be set — only a command can clear it */
     EXPECT_TRUE(flushAndGetUSBStatus() & AC_EFUSE_OVERCURRENT_Msk(1));
     EXPECT_FALSE(stmGetGpio(heaterPorts[0].heater));
 
@@ -531,11 +519,11 @@ TEST_F(ACBoard, efuse_configurableLimit)
     /* Raise channel 1 limit to 15A via calibration command (format: port,current,x,x) */
     writeBoardMessage("CAL 1,15.0,0,0\n");
 
-    /* Set current to ~10.5A — above the default 10A but below the new 15A limit */
+    /* Set current to ~12.5A — above the default 12A but below the new 15A limit */
     setAdcChannelBuffer(0, ADC_MID_CURRENT);
     writeBoardMessage("p1 on 10\n");
 
-    /* Run a full window; would trip with the default limit but must not with 15A */
+    /* Run several callbacks; would trip with the default 12A limit but must not with 15A */
     simTicks(2000);
 
     EXPECT_TRUE(stmGetGpio(heaterPorts[0].heater));
