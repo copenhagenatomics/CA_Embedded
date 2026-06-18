@@ -99,7 +99,7 @@ static CAProtocolCtx caProto = {.undefined        = ACInputHandler,
                                 .printHeader      = printAcHeader,
                                 .printStatus      = printAcStatus,
                                 .printStatusDef   = printAcStatusDef,
-        .jumpToBootLoader = HALJumpToBootloader,
+                                .jumpToBootLoader = HALJumpToBootloader,
                                 .calibration      = ACcalibration,
                                 .calibrationRW    = ACcalibrationRW,
                                 .logging          = NULL,
@@ -183,7 +183,7 @@ static void printAcStatus() {
 
 /*!
  * @brief Definition of status definition information when the 'StatusDef' command is received
-*/
+ */
 static void printAcStatusDef() {
     static char buf[600] = {0};
     int len              = 0;
@@ -262,7 +262,7 @@ static void printCurrentArray(int16_t* pData, int noOfChannels, int noOfSamples)
     static int16_t current_calibration[ADC_CHANNELS];
     static uint32_t port_close_time = 0;
 
-    /* If the USB port is not open, no messages should be printed. Also if the USB port has been 
+    /* If the USB port is not open, no messages should be printed. Also if the USB port has been
     ** closed for more than a timeout, everything should be turned off as a safety measure */
     if (!isUsbPortOpen()) {
         if (port_close_time == 0) {
@@ -304,17 +304,19 @@ static void printCurrentArray(int16_t* pData, int noOfChannels, int noOfSamples)
 
     efuseLoop(currents);
 
+    /* clang-format off */
     USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n", 
                currents[0], currents[1], currents[2], currents[3], 
                heatSinkTemperatures[0], heatSinkTemperatures[1], 
                heatSinkTemperatures[2], heatSinkTemperatures[3],
                bsGetStatus());
+    /* clang-format on */
 }
 
 /*!
 ** @brief Calls appropriate backend function based on inputs
 **
-** Depending on the inputs (which are received from communication link), chooses the appropriate 
+** Depending on the inputs (which are received from communication link), chooses the appropriate
 ** backend function and calls it.
 */
 static void actuatePins(ActuationInfo actuationInfo) {
@@ -329,7 +331,7 @@ static void actuatePins(ActuationInfo actuationInfo) {
             allOn(actuationInfo.timeOn);
         }
         /* It doesn't really make sense to allow setting all pins to the same PWM */
-    } 
+    }
     else {
         if (actuationInfo.pwmDutyCycle == 0) {
             // pX off
@@ -422,7 +424,7 @@ static void heatSinkLoop() {
         bsClearField(BS_OVER_TEMPERATURE_Msk);
     }
     else {
-        /* Board is running above max temperature 
+        /* Board is running above max temperature
         ** NOTE: As the max on time per request is 10 seconds, it is deemed safe
         **       to let the board run until the next timeout (<=10 sec) occurs.
         **       While the board is above max temperature it ignores any new requests. */
@@ -497,11 +499,11 @@ void ACBoardInit(ADC_HandleTypeDef* hadc) {
 
 /*!
 ** @brief Loop function called repeatedly throughout
-** 
+**
 ** * Responds to user input
-** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
+** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the
 **   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
-** * Runs the closed loop control system for board temperature and PWMs the heaters as per user 
+** * Runs the closed loop control system for board temperature and PWMs the heaters as per user
 **   input
 */
 void ACBoardLoop(const char* bootMsg) {
