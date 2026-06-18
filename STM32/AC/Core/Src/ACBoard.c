@@ -145,6 +145,9 @@ static void ACcalibrationRW(bool write) {
     }
 }
 
+/*!
+** @brief Checks per-channel average current and trips the e-fuse if exceeded.
+*/
 static void efuseLoop(const double* currents) {
     for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
         if (currents[i] > efuseCurrentLimits[i]) {
