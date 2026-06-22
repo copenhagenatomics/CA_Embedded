@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "FLASH_readwrite.h"
+#include "USBprint.h"
 #include "flashHandler.h"
 #include "faultHandlers.h"
 #include "ACBoard.h"
@@ -35,11 +36,13 @@ typedef struct depositUnit_t {
 ** PRIVATE VARIABLES
 ***************************************************************************************************/
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
     depositUnit_t dpu;
-#else 
+#else
     depositUnit_t dpu = {0};
 #endif
+
+static CRC_HandleTypeDef* hcrc_ = NULL;
 
 /***************************************************************************************************
 ** PUBLIC FUNCTION DEFINITIONS
@@ -48,5 +51,16 @@ typedef struct depositUnit_t {
 faultInfo_t* fhGetFaultInfo()    {return &(dpu.fault_info);}
 float*       fhGetCurrentLimits() {return dpu.currentLimits;}
 
-void fhLoadDeposit() {readFromFlash(FLASH_ADDR_CAL, (uint8_t*) &dpu, sizeof(dpu));}
-void fhSaveDeposit() {writeToFlash (FLASH_ADDR_CAL, (uint8_t*) &dpu, sizeof(dpu));}
+void fhLoadDeposit(CRC_HandleTypeDef* hcrc) {
+    hcrc_ = hcrc;
+    if (readFromFlashCRC(hcrc_, FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu)) != 0) {
+        memset(&dpu, 0xFFFFFFFFU, sizeof(dpu));
+        if (isUsbPortOpen()) {
+            USBnprintf("Warning: calibration CRC error, resetting to defaults\r\n");
+        }
+    }
+}
+
+void fhSaveDeposit() {
+    writeToFlashCRC(hcrc_, FLASH_ADDR_CAL, (uint8_t*)&dpu, sizeof(dpu));
+}

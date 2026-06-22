@@ -47,7 +47,7 @@ extern uint32_t _FlashAddrCal;  // Variable defined in ld linker script.
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-void ACBoardInit(ADC_HandleTypeDef* hadc);
+void ACBoardInit(ADC_HandleTypeDef* hadc, CRC_HandleTypeDef* hcrc, const char* bootMsg);
 void ACBoardLoop(const char* startMsg);
 
 #endif /* SRC_ACBOARD_H_ */

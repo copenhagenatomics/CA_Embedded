@@ -61,18 +61,20 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 /* Specify the memory areas */
 MEMORY
 {
-RAM (xrw)       : ORIGIN = 0x20000000, LENGTH = 64K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 128K
-FLASHCAL (rw)  : ORIGIN = 0x8020000, LENGTH = 128K
+RAM           (xrw) : ORIGIN = 0x20000000, LENGTH = 64K
+FLASHISR        (r) : ORIGIN = 0x08000000, LENGTH = 16K
+FLASHCAL        (r) : ORIGIN = 0x08004000, LENGTH = 16K
+FLASHUPTIME     (r) : ORIGIN = 0x08008000, LENGTH = 16K
+FLASH          (rx) : ORIGIN = 0x0800C000, LENGTH = 208K
 }
 
 /* Main program area. Area may not be used for user data storage */
 _ProgramMemoryStart = ORIGIN(FLASH);
 _ProgramMemoryEnd = ORIGIN(FLASH) + LENGTH(FLASH);
 
-
 /* FLASH areas dedicated to user data storage */
-_FlashAddrCal = ORIGIN(FLASHCAL);
+_FlashAddrCal    = ORIGIN(FLASHCAL);
+_FlashAddrUptime = ORIGIN(FLASHUPTIME);
 
 /* Define output sections */
 SECTIONS
@@ -83,7 +85,7 @@ SECTIONS
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
-  } >FLASH
+  } >FLASHISR
 
   /* The program code and other data goes into FLASH */
   .text :

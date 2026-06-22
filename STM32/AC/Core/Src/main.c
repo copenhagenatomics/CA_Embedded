@@ -37,6 +37,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
+CRC_HandleTypeDef hcrc;
 DMA_HandleTypeDef hdma_adc1;
 
 IWDG_HandleTypeDef hiwdg;
@@ -57,6 +58,7 @@ static void MX_ADC1_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_WWDG_Init(void);
 static void MX_IWDG_Init(void);
+static void MX_CRC_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -98,11 +100,12 @@ int main(void)
   MX_TIM2_Init();
   MX_WWDG_Init();
   MX_IWDG_Init();
+  MX_CRC_Init();
   /* USER CODE BEGIN 2 */
   // Initialization of timers takes time which will force a wwdg reset,
   // hence disable timers momentarily during setup.
   __HAL_RCC_WWDG_CLK_DISABLE();
-  ACBoardInit(&hadc1);
+  ACBoardInit(&hadc1, &hcrc, bootMsg);
   HAL_TIM_Base_Start_IT(&htim2);
   __HAL_RCC_WWDG_CLK_ENABLE();
   /* USER CODE END 2 */
@@ -450,6 +453,20 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 /* USER CODE END 4 */
+
+/**
+  * @brief CRC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_CRC_Init(void)
+{
+  hcrc.Instance = CRC;
+  if (HAL_CRC_Init(&hcrc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.

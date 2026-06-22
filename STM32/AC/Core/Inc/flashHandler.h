@@ -8,6 +8,7 @@
 #ifndef FLASH_HANDLER_H_
 #define FLASH_HANDLER_H_
 
+#include "stm32f4xx_hal.h"
 #include "faultHandlers.h"
 
 /*
@@ -27,7 +28,7 @@
 faultInfo_t* fhGetFaultInfo();
 float*       fhGetCurrentLimits();
 
-void fhLoadDeposit();
+void fhLoadDeposit(CRC_HandleTypeDef* hcrc);
 void fhSaveDeposit();
 
 #endif /* FLASH_HANDLER_H_ */

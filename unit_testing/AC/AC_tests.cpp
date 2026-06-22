@@ -24,8 +24,10 @@
 
 /* Prevents attempting to access non-existent linker script variables */
 #define FLASH_ADDR_CAL ((uint32_t) 0U)
+uint32_t _FlashAddrUptime = 0;
 
 #include "flashHandler.c"
+#include "uptime.c"
 
 /* UUT */
 #include "ACBoard.c"
@@ -53,7 +55,7 @@ class ACBoard: public CaBoardUnitTest
             /* Prevent fault info triggering automatically at startup */
             depositUnit_t tmp = {};
             tmp.fault_info.fault = NO_FAULT;
-            writeToFlash(FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
+            writeToFlashCRC(nullptr, FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
         }
 
         void simTick()
@@ -71,7 +73,7 @@ class ACBoard: public CaBoardUnitTest
 
         void setPowerStatus(bool state)
         {
-            ACBoardInit(&hadc);
+            ACBoardInit(&hadc, &hwcrc, bootMsg);
             powerStatus.state = state;
             for (int i = 0; i < 1000; i++)
             {
@@ -89,11 +91,12 @@ class ACBoard: public CaBoardUnitTest
         /*******************************************************************************************
         ** MEMBERS
         *******************************************************************************************/
-        
+
         ADC_HandleTypeDef hadc;
-        
+        CRC_HandleTypeDef hwcrc;
+
         SerialStatusTest sst = {
-            .boundInit = bind(ACBoardInit, &hadc),
+            .boundInit = bind(ACBoardInit, &hadc, &hwcrc, bootMsg),
             .testFixture = this
         };
 };
@@ -167,7 +170,7 @@ TEST_F(ACBoard, printSerial) {
 
 TEST_F(ACBoard, calibrationUpdate)
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
     hostUSBread(true);
 
@@ -199,7 +202,7 @@ TEST_F(ACBoard, incorrectBoardParams) {
 ** perfect */
 TEST_F(ACBoard, fanInput) 
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
 
     EXPECT_FALSE(isFanForceOn);
@@ -239,7 +242,7 @@ TEST_F(ACBoard, GpioInit)
     expectStmNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNull(&heaterPorts[i].heater);
 
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
 
     expectStmNotNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNotNull(&heaterPorts[i].heater);
@@ -288,7 +291,7 @@ TEST_F(ACBoard, GpioInit)
 
 TEST_F(ACBoard, InvalidCommands)
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
     hostUSBread(true); /* Flush USB buffer */
 
@@ -320,7 +323,7 @@ TEST_F(ACBoard, UsbTimeout)
     static const int TEST_LENGTH_MS = 10000;
     static const int TIMEOUT_LENGTH_MS = 5000;
 
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
     writeBoardMessage("all on 60\n");
 
@@ -349,7 +352,7 @@ TEST_F(ACBoard, UsbTimeout)
 
 TEST_F(ACBoard, heatsinkLoop) 
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
 
     setPowerStatus(true);
@@ -395,7 +398,7 @@ TEST_F(ACBoard, heatsinkLoop)
 
 TEST_F(ACBoard, efuse_tripOnOvercurrent)
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
 
     /* Let calibration run at tick 100 with all-zero ADC buffer → zero bias */
@@ -421,7 +424,7 @@ TEST_F(ACBoard, efuse_tripOnOvercurrent)
 
 TEST_F(ACBoard, efuse_noTripBelowLimit)
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
 
     simTicks(100); /* calibration */
@@ -439,7 +442,7 @@ TEST_F(ACBoard, efuse_noTripBelowLimit)
 
 TEST_F(ACBoard, efuse_clearOnNextCommand)
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
 
     simTicks(100); /* calibration */
@@ -473,7 +476,7 @@ TEST_F(ACBoard, efuse_clearOnNextCommand)
 
 TEST_F(ACBoard, efuse_clearWithTwoChannels)
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
 
     simTicks(100); /* calibration */
@@ -511,7 +514,7 @@ TEST_F(ACBoard, efuse_clearWithTwoChannels)
 
 TEST_F(ACBoard, efuse_configurableLimit)
 {
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
 
     simTicks(100); /* calibration */
@@ -533,9 +536,9 @@ TEST_F(ACBoard, efuse_configurableLimit)
 TEST_F(ACBoard, faultInfoPrintout) {
     depositUnit_t tmp = {};
     tmp.fault_info.fault = HARD_FAULT;
-    writeToFlash(FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
+    writeToFlashCRC(nullptr, FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
 
-    ACBoardInit(&hadc);
+    ACBoardInit(&hadc, &hwcrc, bootMsg);
     ACBoardLoop(bootMsg);
 
     EXPECT_FLUSH_USB(ElementsAre(

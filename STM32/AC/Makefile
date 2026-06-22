@@ -56,6 +56,7 @@ C_SOURCES =  \
 ../../CA_Embedded_Libraries/STM32/Util/Src/StmGpio.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/systeminfo.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/time32.c \
+../../CA_Embedded_Libraries/STM32/Util/Src/uptime.c \
 ../../CA_Embedded_Libraries/STM32/Util/Src/faultHandlers.c \
 Core/Src/main.c \
 Core/Src/stm32f4xx_it.c \
@@ -95,7 +96,8 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
 HeatCtrl/Src/HeatCtrl.c \
-Core/Src/flashHandler.c
+Core/Src/flashHandler.c \
+Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_crc.c
 
 # ASM sources
 ASM_SOURCES =  \

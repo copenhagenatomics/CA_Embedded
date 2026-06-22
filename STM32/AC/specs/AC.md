@@ -32,11 +32,16 @@ This document contains the specification for the AC board/box project. Sub-compo
   * If the heatsink temperature rises above 70 degC, set the overheat error bit and enable the fan
   * If the heatsink temperature sinks below 50 degC, disable the fan
 * E-fuse
-  * If the monitored current on a particular channel exceeds 12A average, measured over 0.1s, the channel shall be disabled and the overcurrent error bit set.
+  * If the monitored current on a particular channel exceeds 12A RMS, measured over 0.1s, the channel shall be disabled and the overcurrent error bit set.
   * The limit should be assessed and action taken as frequently as possible
   * The overcurrent bit should be cleared at the next command affecting that channel
   * The channel should continue to work as normal at the next command
   * The current limit should be configurable, per channel, in calibration memory (calibration items 1, 2, 3 and 4)
+* Calibration
+  * Calibration inputs which are out of range should be detected and rejected with an error message
+  * Calibration data should be saved using a CRC to detect data corruption. If corrupted data is detected, issue a warning and reset to the default.
+* Uptime
+  * uptime data should record on time and PWM on-time per channel, in minutes
 * Fault recording
   * Fatal fault exceptions should trigger an appropriate exception handler
   * The exception handler should capture stack and register traces and record them at the end of calibration memory
