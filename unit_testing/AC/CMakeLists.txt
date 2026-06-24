@@ -87,7 +87,7 @@ add_executable(AC_tests AC_tests.cpp
                  ${UT_FAKES}/fake_HAL_otp.cpp
                  ${UT_FAKES}/fake_FLASH_readwrite.cpp
                  ${UT_LIB}/Util/serialStatus_tests.cpp)
-target_include_directories(AC_tests PRIVATE 
+target_include_directories(AC_tests PRIVATE .
                              ${UT_FAKES} 
                              ${UT_STUBS} 
                              ${SRC}/AC/Core/Src 
