@@ -19,12 +19,13 @@
 #include "HeatCtrl.h"
 #include "StmGpio.h"
 #include "USBprint.h"
-#include "array-math.h"
 #include "faultHandlers.h"
 #include "flashHandler.h"
+#include "githash.h"
 #include "main.h"
 #include "pcbversion.h"
 #include "systemInfo.h"
+#include "uptime.h"
 
 /***************************************************************************************************
 ** DEFINES
@@ -40,8 +41,14 @@
 
 #define USB_COMMS_TIMEOUT_MS 5000
 
-#define EFUSE_DEFAULT_CURRENT_LIMIT_A 10.0f
-#define EFUSE_MA_WINDOW               10  // samples per PWM period (10 Hz × 1 s)
+/* According to the fuse document, 12 A can be held for > 10000 s */
+#define EFUSE_DEFAULT_CURRENT_RMS_LIMIT_A 12.0f
+
+/* Custom uptime channel indices (after the NUM_DEFAULT_CHANNELS defaults) */
+#define AC_NUM_CUSTOM_UPTIME_CHANNELS (AC_BOARD_NUM_PORTS * 2)
+#define AC_UPTIME_FULL_ON_CH(port)    (NUM_DEFAULT_CHANNELS + (port) * 2)
+#define AC_UPTIME_PWM_ON_CH(port)     (NUM_DEFAULT_CHANNELS + (port) * 2 + 1)
+#define UPTIME_1_MIN_MS               60000
 
 /***************************************************************************************************
 ** PRIVATE TYPEDEFS
@@ -61,6 +68,7 @@ typedef struct ActuationInfo {
 static void CAallOn(bool isOn, int duration);
 static void CAportState(int port, bool state, int percent, int duration);
 static void ACInputHandler(const char* input);
+static void ACUptimeHandler(const char* input);
 static void printAcStatus();
 static void updateBoardStatus();
 static void printAcHeader();
@@ -76,6 +84,7 @@ static void ACcalibration(int noOfCalibrations, const CACalibration* calibration
 static void ACcalibrationRW(bool write);
 static void efuseLoop(const double* currents);
 static void clearOvercurrentFields(int field);
+static void updatePortUptime();
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -93,8 +102,17 @@ static double heatSinkMaxTemp                         = 0;
 static float isMainsConnected                         = 0;
 static bool isFanForceOn                              = false;
 static float* efuseCurrentLimits                      = NULL;
-static moving_avg_cbuf_t efuseMaFilter[AC_BOARD_NUM_PORTS];
-static double efuseMaBuffer[AC_BOARD_NUM_PORTS][EFUSE_MA_WINDOW];
+
+/* Per-port uptime tracking */
+static const char* acUptimeChannelDesc[AC_NUM_CUSTOM_UPTIME_CHANNELS] = {
+    "Port 1 full on minutes", "Port 1 PWM on minutes",
+    "Port 2 full on minutes", "Port 2 PWM on minutes",
+    "Port 3 full on minutes", "Port 3 PWM on minutes",
+    "Port 4 full on minutes", "Port 4 PWM on minutes",
+};
+static uint32_t portFullOnCounter[AC_BOARD_NUM_PORTS] = {0};
+static uint32_t portPwmOnCounter[AC_BOARD_NUM_PORTS]  = {0};
+static uint32_t last_uptime_check                     = 0;
 
 static ACDCProtocolCtx acProto = {.allOn = CAallOn, .portState = CAportState};
 
@@ -102,11 +120,12 @@ static CAProtocolCtx caProto = {.undefined        = ACInputHandler,
                                 .printHeader      = printAcHeader,
                                 .printStatus      = printAcStatus,
                                 .printStatusDef   = printAcStatusDef,
-        .jumpToBootLoader = HALJumpToBootloader,
+                                .jumpToBootLoader = HALJumpToBootloader,
                                 .calibration      = ACcalibration,
                                 .calibrationRW    = ACcalibrationRW,
                                 .logging          = NULL,
-                                .otpRead          = CAotpRead};
+                                .otpRead          = CAotpRead,
+                                .uptime           = ACUptimeHandler};
 
 /***************************************************************************************************
 ** PRIVATE FUNCTIONS
@@ -149,15 +168,11 @@ static void ACcalibrationRW(bool write) {
 }
 
 /*!
-** @brief Checks per-channel average current and trips the e-fuse if exceeded.
-**
-** Uses a sliding window average over the last EFUSE_MA_WINDOW callbacks (= 1 PWM period),
-** checked on every ADC callback for the fastest possible response.
+** @brief Checks per-channel RMS current and trips the e-fuse if exceeded.
 */
 static void efuseLoop(const double* currents) {
     for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
-        double avg = maMean(&efuseMaFilter[i], currents[i]);
-        if (avg > efuseCurrentLimits[i]) {
+        if (currents[i] > efuseCurrentLimits[i]) {
             turnOffPin(i);
             bsSetError(AC_EFUSE_OVERCURRENT_Msk(i + 1));
             bsSetError(BS_OVER_CURRENT_Msk);
@@ -171,6 +186,41 @@ static void efuseLoop(const double* currents) {
 static void printAcHeader() {
     CAPrintHeader();
     ACcalibrationRW(false);
+}
+
+/*!
+** @brief Handles the "uptime" command
+*/
+static void ACUptimeHandler(const char* input) {
+    uptime_inputHandler(input, printAcHeader);
+}
+
+/*!
+** @brief Increments per-port uptime counters based on the current PWM state.
+*/
+static void updatePortUptime() {
+    uint32_t now  = HAL_GetTick();
+    uint32_t diff = now - last_uptime_check;
+    last_uptime_check = now;
+
+    for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
+        uint8_t pct = getPWMPinPercent(i);
+
+        if (pct == 100) {
+            portFullOnCounter[i] += diff;
+            if (portFullOnCounter[i] >= UPTIME_1_MIN_MS) {
+                uptime_incChannel(AC_UPTIME_FULL_ON_CH(i));
+                portFullOnCounter[i] -= UPTIME_1_MIN_MS;
+            }
+        }
+        else if (pct > 0) {
+            portPwmOnCounter[i] += diff;
+            if (portPwmOnCounter[i] >= UPTIME_1_MIN_MS) {
+                uptime_incChannel(AC_UPTIME_PWM_ON_CH(i));
+                portPwmOnCounter[i] -= UPTIME_1_MIN_MS;
+            }
+        }
+    }
 }
 
 /*!
@@ -193,7 +243,7 @@ static void printAcStatus() {
 
 /*!
  * @brief Definition of status definition information when the 'StatusDef' command is received
-*/
+ */
 static void printAcStatusDef() {
     static char buf[600] = {0};
     int len              = 0;
@@ -272,7 +322,7 @@ static void printCurrentArray(int16_t* pData, int noOfChannels, int noOfSamples)
     static int16_t current_calibration[ADC_CHANNELS];
     static uint32_t port_close_time = 0;
 
-    /* If the USB port is not open, no messages should be printed. Also if the USB port has been 
+    /* If the USB port is not open, no messages should be printed. Also if the USB port has been
     ** closed for more than a timeout, everything should be turned off as a safety measure */
     if (!isUsbPortOpen()) {
         if (port_close_time == 0) {
@@ -314,17 +364,19 @@ static void printCurrentArray(int16_t* pData, int noOfChannels, int noOfSamples)
 
     efuseLoop(currents);
 
+    /* clang-format off */
     USBnprintf("%.4f, %.4f, %.4f, %.4f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n", 
                currents[0], currents[1], currents[2], currents[3], 
                heatSinkTemperatures[0], heatSinkTemperatures[1], 
                heatSinkTemperatures[2], heatSinkTemperatures[3],
                bsGetStatus());
+    /* clang-format on */
 }
 
 /*!
 ** @brief Calls appropriate backend function based on inputs
 **
-** Depending on the inputs (which are received from communication link), chooses the appropriate 
+** Depending on the inputs (which are received from communication link), chooses the appropriate
 ** backend function and calls it.
 */
 static void actuatePins(ActuationInfo actuationInfo) {
@@ -339,7 +391,7 @@ static void actuatePins(ActuationInfo actuationInfo) {
             allOn(actuationInfo.timeOn);
         }
         /* It doesn't really make sense to allow setting all pins to the same PWM */
-    } 
+    }
     else {
         if (actuationInfo.pwmDutyCycle == 0) {
             // pX off
@@ -432,7 +484,7 @@ static void heatSinkLoop() {
         bsClearField(BS_OVER_TEMPERATURE_Msk);
     }
     else {
-        /* Board is running above max temperature 
+        /* Board is running above max temperature
         ** NOTE: As the max on time per request is 10 seconds, it is deemed safe
         **       to let the board run until the next timeout (<=10 sec) occurs.
         **       While the board is above max temperature it ignores any new requests. */
@@ -479,7 +531,7 @@ static void updateBoardStatus() {
 ** Printing is synchronised with ADC, so it must be started in order to print anything over the USB
 ** link
 */
-void ACBoardInit(ADC_HandleTypeDef* hadc) {
+void ACBoardInit(ADC_HandleTypeDef* hadc, CRC_HandleTypeDef* hcrc, const char* bootMsg) {
     // Pin out has changed from PCB V6.4 - older versions need other software.
     boardSetup(AC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, AC_BOARD_No_Error_Msk);
 
@@ -492,27 +544,29 @@ void ACBoardInit(ADC_HandleTypeDef* hadc) {
     ADCMonitorInit(hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(int16_t));
     GpioInit();
 
+    uptime_init(hcrc, AC_NUM_CUSTOM_UPTIME_CHANNELS, acUptimeChannelDesc, bootMsg, GIT_VERSION);
+    last_uptime_check = HAL_GetTick();
+
     /* Setup flash handling */
-    fhLoadDeposit();
+    fhLoadDeposit(hcrc);
     setLocalFaultInfo(fhGetFaultInfo());
 
     /* Initialise e-fuse current limits; use default for any channel not yet written to flash */
     efuseCurrentLimits = fhGetCurrentLimits();
     for (int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
         if (!isfinite(efuseCurrentLimits[i]) || efuseCurrentLimits[i] <= 0) {
-            efuseCurrentLimits[i] = EFUSE_DEFAULT_CURRENT_LIMIT_A;
+            efuseCurrentLimits[i] = EFUSE_DEFAULT_CURRENT_RMS_LIMIT_A;
         }
-        maInit(&efuseMaFilter[i], efuseMaBuffer[i], EFUSE_MA_WINDOW);
     }
 }
 
 /*!
 ** @brief Loop function called repeatedly throughout
-** 
+**
 ** * Responds to user input
-** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the 
+** * Checks for ADC buffer switches (the ADC sample rate is synchronised with USB print rate - the
 **   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
-** * Runs the closed loop control system for board temperature and PWMs the heaters as per user 
+** * Runs the closed loop control system for board temperature and PWMs the heaters as per user
 **   input
 */
 void ACBoardLoop(const char* bootMsg) {
@@ -527,6 +581,9 @@ void ACBoardLoop(const char* bootMsg) {
     updateBoardStatus();
     ADCMonitorLoop(printCurrentArray);
     heatSinkLoop();
+
+    uptime_update();
+    updatePortUptime();
 
     // Toggle pins if needed when in pwm mode
     heaterLoop();

@@ -79,15 +79,15 @@ gtest_discover_tests(heatCtrl_test)
 add_executable(AC_tests AC_tests.cpp
                  ${UT_STUBS}/stub_jumpToBootloader.cpp
                  ${LIB}/Util/Src/systeminfo.c
-                 ${LIB}/Filtering/Src/array-math.c
+                 ${LIB}/Crc/Src/crc.c
                  ${UT_FAKES}/fake_USBprint.cpp
                  ${LIB}/Util/Src/time32.c
-                 ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
-                 ${UT_FAKES}/fake_StmGpio.cpp 
-                 ${UT_FAKES}/fake_HAL_otp.cpp  
-                 ${UT_FAKES}/fake_FLASH_readwrite.cpp 
+                 ${UT_FAKES}/fake_stm32xxxx_hal.cpp
+                 ${UT_FAKES}/fake_StmGpio.cpp
+                 ${UT_FAKES}/fake_HAL_otp.cpp
+                 ${UT_FAKES}/fake_FLASH_readwrite.cpp
                  ${UT_LIB}/Util/serialStatus_tests.cpp)
-target_include_directories(AC_tests PRIVATE 
+target_include_directories(AC_tests PRIVATE .
                              ${UT_FAKES} 
                              ${UT_STUBS} 
                              ${SRC}/AC/Core/Src 
