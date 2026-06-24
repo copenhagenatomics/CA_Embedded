@@ -23,8 +23,8 @@
 #include "faultHandlers.c"
 
 /* Prevents attempting to access non-existent linker script variables */
-#define FLASH_ADDR_CAL ((uint32_t) 0U)
-uint32_t _FlashAddrUptime = 0;
+#define FLASH_ADDR_CAL ((uint32_t) 1U)
+#define FLASH_ADDR_UPTIME ((uint32_t) 2U)
 
 #include "flashHandler.c"
 #include "uptime.c"
@@ -55,7 +55,13 @@ class ACBoard: public CaBoardUnitTest
             /* Prevent fault info triggering automatically at startup */
             depositUnit_t tmp = {};
             tmp.fault_info.fault = NO_FAULT;
-            writeToFlashCRC(nullptr, FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
+            for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) {
+                tmp.currentLimits[i] = EFUSE_DEFAULT_CURRENT_RMS_LIMIT_A;
+            }
+            writeToFlashCRC(&hwcrc, FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
+
+            ACBoardInit(&hadc, &hwcrc, bootMsg);
+            setPowerStatus(true);
         }
 
         void simTick()
@@ -73,7 +79,6 @@ class ACBoard: public CaBoardUnitTest
 
         void setPowerStatus(bool state)
         {
-            ACBoardInit(&hadc, &hwcrc, bootMsg);
             powerStatus.state = state;
             for (int i = 0; i < 1000; i++)
             {
@@ -113,14 +118,10 @@ static const int16_t ADC_MID_CURRENT   = 950;
 ***************************************************************************************************/
 
 TEST_F(ACBoard, CorrectBoardParams) {
-    setPowerStatus(true);
-
     goldenPathTest(sst, "-0.0100, -0.0100, -0.0100, -0.0100, -50.00, -50.00, -50.00, -50.00, 0x00000000\r");
 }
 
 TEST_F(ACBoard, printStatus) {
-    setPowerStatus(true);
-
     statusPrintoutTest(sst, {"The board is operating normally.\r",
                              "Fan     On: 0\r",
                              "Port 0: On: 0, PWM percent: 0\r", 
@@ -227,22 +228,11 @@ TEST_F(ACBoard, fanInput)
 ** perfect */
 TEST_F(ACBoard, GpioInit) 
 {
-    auto expectStmNull = [](StmGpio* stm) {
-        EXPECT_EQ(stm->set,    nullptr);
-        EXPECT_EQ(stm->get,    nullptr);
-        EXPECT_EQ(stm->toggle, nullptr);
-    };
-
     auto expectStmNotNull = [](StmGpio* stm) {
         EXPECT_NE(stm->set,    nullptr);
         EXPECT_NE(stm->get,    nullptr);
         EXPECT_NE(stm->toggle, nullptr);
     };
-
-    expectStmNull(&fanCtrl);
-    for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNull(&heaterPorts[i].heater);
-
-    ACBoardInit(&hadc, &hwcrc, bootMsg);
 
     expectStmNotNull(&fanCtrl);
     for(int i = 0; i < AC_BOARD_NUM_PORTS; i++) expectStmNotNull(&heaterPorts[i].heater);
@@ -352,11 +342,6 @@ TEST_F(ACBoard, UsbTimeout)
 
 TEST_F(ACBoard, heatsinkLoop) 
 {
-    ACBoardInit(&hadc, &hwcrc, bootMsg);
-    ACBoardLoop(bootMsg);
-
-    setPowerStatus(true);
-
     EXPECT_FALSE(stmGetGpio(fanCtrl));
 
     const int TEMP_CHANNEL = 4;
@@ -391,6 +376,8 @@ TEST_F(ACBoard, heatsinkLoop)
     /* Fill the temperature buffer with ~71 degC - fan should turn on and PWM of heaters should be reduced */
     writeBoardMessage("p1 on 10\n");
     for(unsigned i = 0; i < hadc.dma_length / hadc.Init.NbrOfConversion; i++) *((int16_t*)hadc.dma_address + TEMP_CHANNEL +  ADC_CHANNELS*i) = 1500;
+    goToTick(500);
+    (void) hostUSBread(true);
     goToTick(600);
     EXPECT_FLUSH_USB(Contains("-0.0100, -0.0100, -0.0100, -0.0100, 70.90, -50.00, -50.00, -50.00, 0xc0000003\r"));
     EXPECT_TRUE(stmGetGpio(fanCtrl));
@@ -398,9 +385,6 @@ TEST_F(ACBoard, heatsinkLoop)
 
 TEST_F(ACBoard, efuse_tripOnOvercurrent)
 {
-    ACBoardInit(&hadc, &hwcrc, bootMsg);
-    ACBoardLoop(bootMsg);
-
     /* Let calibration run at tick 100 with all-zero ADC buffer → zero bias */
     simTicks(100);
 
@@ -424,9 +408,6 @@ TEST_F(ACBoard, efuse_tripOnOvercurrent)
 
 TEST_F(ACBoard, efuse_noTripBelowLimit)
 {
-    ACBoardInit(&hadc, &hwcrc, bootMsg);
-    ACBoardLoop(bootMsg);
-
     simTicks(100); /* calibration */
 
     /* Set channel 0 to ~9.2A (below the 10A default limit) */
@@ -442,9 +423,6 @@ TEST_F(ACBoard, efuse_noTripBelowLimit)
 
 TEST_F(ACBoard, efuse_clearOnNextCommand)
 {
-    ACBoardInit(&hadc, &hwcrc, bootMsg);
-    ACBoardLoop(bootMsg);
-
     simTicks(100); /* calibration */
 
     /* Trip the e-fuse on channel 1 */
@@ -476,9 +454,6 @@ TEST_F(ACBoard, efuse_clearOnNextCommand)
 
 TEST_F(ACBoard, efuse_clearWithTwoChannels)
 {
-    ACBoardInit(&hadc, &hwcrc, bootMsg);
-    ACBoardLoop(bootMsg);
-
     simTicks(100); /* calibration */
 
     /* Trip the e-fuse on channel 1 */
@@ -514,9 +489,6 @@ TEST_F(ACBoard, efuse_clearWithTwoChannels)
 
 TEST_F(ACBoard, efuse_configurableLimit)
 {
-    ACBoardInit(&hadc, &hwcrc, bootMsg);
-    ACBoardLoop(bootMsg);
-
     simTicks(100); /* calibration */
 
     /* Raise channel 1 limit to 15A via calibration command (format: port,current,x,x) */
@@ -535,11 +507,12 @@ TEST_F(ACBoard, efuse_configurableLimit)
 
 TEST_F(ACBoard, faultInfoPrintout) {
     depositUnit_t tmp = {};
+    readFromFlashCRC(&hwcrc, FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
     tmp.fault_info.fault = HARD_FAULT;
-    writeToFlashCRC(nullptr, FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
+    writeToFlashCRC(&hwcrc, FLASH_ADDR_CAL, (uint8_t*)&tmp, sizeof(depositUnit_t));
 
     ACBoardInit(&hadc, &hwcrc, bootMsg);
-    ACBoardLoop(bootMsg);
+    this->_loopFunction(bootMsg);
 
     EXPECT_FLUSH_USB(ElementsAre(
         "Boot Unit Test\r", 
@@ -554,4 +527,8 @@ TEST_F(ACBoard, faultInfoPrintout) {
         "0x00000000, 0x00000000, 0x00000000, 0x00000000\r", 
         "End of fault info\r"
     ));
+}
+
+TEST_F(ACBoard, uptime) {
+    uptimeTest(sst, FLASH_ADDR_UPTIME);
 }
