@@ -88,6 +88,18 @@ SECTIONS
     . = ALIGN(4);
   } >FLASHISR
 
+  .calData (NOLOAD) :
+  {
+    KEEP(*(.calData))
+    . = . + 0x4000;
+  } > FLASHCAL
+
+  .upTimeData (NOLOAD) :
+  {
+    KEEP(*(.upTimeData))
+    . = . + 0x4000;
+  } > FLASHUPTIME
+
   /* The program code and other data goes into FLASH */
   .text :
   {
