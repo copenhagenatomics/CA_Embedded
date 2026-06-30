@@ -120,7 +120,8 @@ CP = $(PREFIX)objcopy
 SZ = $(PREFIX)size
 endif
 HEX = $(CP) -O ihex
-BIN = $(CP) -O binary -S
+BIN_FLASHISR = $(CP) -O binary -j .isr_vector
+BIN_FLASH = $(CP) -O binary -R .isr_vector -R .calData -R .upTimeData
  
 #######################################
 # CFLAGS
@@ -196,7 +197,7 @@ LIBDIR =
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections,--print-memory-usage -u_printf_float -u_scanf_float
 
 # default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET)_FLASHISR.bin $(BUILD_DIR)/$(TARGET)_FLASH.bin
 
 
 #######################################
@@ -208,11 +209,17 @@ vpath %.c $(sort $(dir $(C_SOURCES)))
 # list of ASM program objects
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
+OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASMM_SOURCES:.S=.o)))
+vpath %.S $(sort $(dir $(ASMM_SOURCES)))
+OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASMMC_SOURCES:.c=.o)))
+vpath %.S $(sort $(dir $(ASMMC_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	$(AS) -c $(CFLAGS) $< -o $@
+$(BUILD_DIR)/%.o: %.S Makefile | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
@@ -222,8 +229,11 @@ $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(HEX) $< $@
 	
-$(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
-	$(BIN) $< $@	
+$(BUILD_DIR)/%_FLASHISR.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	$(BIN_FLASHISR) $< $@
+
+$(BUILD_DIR)/%_FLASH.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
+	$(BIN_FLASH) $< $@
 	
 $(BUILD_DIR):
 	mkdir $@		
