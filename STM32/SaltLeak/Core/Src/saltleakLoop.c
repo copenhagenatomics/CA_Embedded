@@ -155,7 +155,7 @@ static void printLeaks(int16_t *pData, int noOfChannels, int noOfSamples) {
     }
 
     if (status & BS_VERSION_ERROR_Msk) {
-        USBnprintf("0x%08\r\n" PRIx32, status);
+        USBnprintf("0x%08" PRIx32 "\r\n", status);
         return;
     }
 
