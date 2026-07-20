@@ -41,6 +41,8 @@ static struct {
 
 static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
 
+static char buf[600] = {0};
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
@@ -48,10 +50,14 @@ static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
 static void userInput(const char *input);
 static void updateBoardStatus();
 static void printStatus();
+static void printStatusDef();
+static void printOutputDef();
 
 static CAProtocolCtx caProto = {.undefined = userInput,
                                 .printHeader = CAPrintHeader,
                                 .printStatus = printStatus,
+                                .printStatusDef = printStatusDef,
+                                .printOutputDef = printOutputDef,
                                 .jumpToBootLoader = HALJumpToBootloader,
                                 .calibration = NULL,
                                 .calibrationRW = NULL,
@@ -63,12 +69,39 @@ static CAProtocolCtx caProto = {.undefined = userInput,
 ** @brief Verbosely prints the board status
 */
 static void printStatus() {
-    static char buf[600] = {0};
     int len = 0;
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "Boost mode active: %d\r\n",
-                    boostController.inSwitchBoostMode);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Boost mode pin: %d\r\n", boostController.isOn);
+    CA_SNPRINTF(buf, len, "Boost mode active: %d\r\n", boostController.inSwitchBoostMode);
+    CA_SNPRINTF(buf, len, "Boost mode pin: %d\r\n", boostController.isOn);
+
+    writeUSB(buf, len);
+}
+
+/*!
+** @brief Verbosely prints the board status definition
+*/
+static void printStatusDef() {
+    int len = 0;
+
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Boost mode active\r\n", (uint32_t)BOOST_ACTIVE_Msk);
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Boost mode pin\r\n", (uint32_t)BOOST_PIN_HIGH_Msk);
+
+    writeUSB(buf, len);
+}
+
+/*!
+ * @brief Definition of output printed when the 'OutputDef' command is received
+ */
+static void printOutputDef() {
+    int len = 0;
+
+    for (int i = 1; i <= 10; i++) {
+        CA_SNPRINTF(buf, len, "ADC port %d,-\r\n", i);
+    }
+    for (int i = 1; i <= 10; i++) {
+        CA_SNPRINTF(buf, len, "Leak port %d,bin\r\n", i);
+    }
+    CA_SNPRINTF(buf, len, "Output voltage ON,bin\r\n");
 
     writeUSB(buf, len);
 }
@@ -122,26 +155,26 @@ static void printLeaks(int16_t *pData, int noOfChannels, int noOfSamples) {
     }
 
     if (status & BS_VERSION_ERROR_Msk) {
-        USBnprintf("0x%08" PRIx32, status);
+        USBnprintf("0x%08" PRIx32 "\r\n", status);
         return;
     }
 
-    char buf[150] = {0};
     int len = 0;
 
     // Take mean of ADC measurements
     for (int i = 0; i <= 9; i++) {
-        len += sprintf(&buf[len], "%.2f, ", ADCMean(pData, i));
+        CA_SNPRINTF(buf, len, "%.2f, ", ADCMean(pData, i));
     }
 
     // Leak detection
     for (int i = 0; i <= 9; i++) {
-        len += sprintf(&buf[len], "%d, ", isLeakDetected(ADCMean(pData, i)));
+        CA_SNPRINTF(buf, len, "%d, ", isLeakDetected(ADCMean(pData, i)));
     }
 
-    // Vref ADC + board status
-    len += sprintf(&buf[len], "%d, 0x%08" PRIx32, stmGetGpio(VrefGpio), status);
-    USBnprintf(buf);
+    // Vref GPIO + board status
+    CA_SNPRINTF(buf, len, "%d, 0x%08" PRIx32 "\r\n", stmGetGpio(VrefGpio), status);
+    
+    writeUSB(buf, len);
 }
 
 static void toggleBoostPin() {

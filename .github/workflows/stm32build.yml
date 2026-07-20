@@ -5,7 +5,7 @@ on:
     branches: [ 'patch/saltleak-1.3' ]
     paths: ['STM32/**', '.github/workflows/stm32build.yml']
   pull_request:
-    branches: [ 'patch/saltleak-1.3' ]
+    branches: [ 'main' ]
     paths: ['STM32/**', '.github/workflows/stm32build.yml']
 
 jobs:
@@ -97,7 +97,7 @@ jobs:
       - uses: copenhagenatomics/mono_release_on_push_action@master
         id: release-on-push-1
         with:
-          bump_version_scheme: minor
+          bump_version_scheme: patch
           # Tag prefix required for this action to update the most relevant version number
           tag_prefix: "${{ matrix.package }}-"
           # Note: This is a dry_run, because if something goes wrong in the build (next step), we
@@ -125,7 +125,7 @@ jobs:
         # tag only pushes to the main branch
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/patch/saltleak-1.3' }}
         with:
-          bump_version_scheme: minor
+          bump_version_scheme: patch
           use_github_release_notes: true
           tag_prefix: "${{ matrix.package }}-"
         env:

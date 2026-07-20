@@ -79,11 +79,12 @@ class SaltLeakBoard : public CaBoardUnitTest {
 ***************************************************************************************************/
 
 TEST_F(SaltLeakBoard, CorrectBoardParams) {
-    goldenPathTest(sst, "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000002");
+    goldenPathTest(sst, "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000002\r");
 }
 
 TEST_F(SaltLeakBoard, printStatusOk) {
     statusPrintoutTest(sst, {
+        "The board is operating normally.\r",
         "Boost mode active: 0\r",
         "Boost mode pin: 0\r",
     });
@@ -105,19 +106,19 @@ TEST_F(SaltLeakBoard, Boostmode) {
     /* Boost GPIO set to "ON" by default, so entering boost mode starts by turning the GPIO off */
     goToTick(1100);
     EXPECT_FALSE(stmGetGpio(boostGpio));
-    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000001\r"));
     goToTick(1999);
     EXPECT_FALSE(stmGetGpio(boostGpio));
-    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000001\r"));
 
     goToTick(3000);
     EXPECT_TRUE(stmGetGpio(boostGpio));
-    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000003"));
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000003\r"));
     goToTick(3999);
     EXPECT_TRUE(stmGetGpio(boostGpio));
-    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000003"));
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000003\r"));
 
     goToTick(4000);
     EXPECT_FALSE(stmGetGpio(boostGpio));
-    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000001"));
+    EXPECT_FLUSH_USB(Contains("0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0x00000001\r"));
 }
