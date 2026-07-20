@@ -71,9 +71,8 @@ static CAProtocolCtx caProto = {.undefined = userInput,
 static void printStatus() {
     int len = 0;
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "Boost mode active: %d\r\n",
-                    boostController.inSwitchBoostMode);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Boost mode pin: %d\r\n", boostController.isOn);
+    CA_SNPRINTF(buf, len, "Boost mode active: %d\r\n", boostController.inSwitchBoostMode);
+    CA_SNPRINTF(buf, len, "Boost mode pin: %d\r\n", boostController.isOn);
 
     writeUSB(buf, len);
 }
@@ -156,26 +155,26 @@ static void printLeaks(int16_t *pData, int noOfChannels, int noOfSamples) {
     }
 
     if (status & BS_VERSION_ERROR_Msk) {
-        USBnprintf("0x%08" PRIx32, status);
+        USBnprintf("0x%08\r\n" PRIx32, status);
         return;
     }
 
-    char buf[150] = {0};
     int len = 0;
 
     // Take mean of ADC measurements
     for (int i = 0; i <= 9; i++) {
-        len += sprintf(&buf[len], "%.2f, ", ADCMean(pData, i));
+        CA_SNPRINTF(buf, len, "%.2f, ", ADCMean(pData, i));
     }
 
     // Leak detection
     for (int i = 0; i <= 9; i++) {
-        len += sprintf(&buf[len], "%d, ", isLeakDetected(ADCMean(pData, i)));
+        CA_SNPRINTF(buf, len, "%d, ", isLeakDetected(ADCMean(pData, i)));
     }
 
-    // Vref ADC + board status
-    len += sprintf(&buf[len], "%d, 0x%08" PRIx32, stmGetGpio(VrefGpio), status);
-    USBnprintf(buf);
+    // Vref GPIO + board status
+    CA_SNPRINTF(buf, len, "%d, 0x%08" PRIx32 "\r\n", stmGetGpio(VrefGpio), status);
+
+    writeUSB(buf, len);
 }
 
 static void toggleBoostPin() {
