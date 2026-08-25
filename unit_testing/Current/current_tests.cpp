@@ -204,6 +204,22 @@ TEST_F(CurrentTest, printStatus) {
     ));
 }
 
+TEST_F(CurrentTest, printOutputDef) {
+    outputDefPrintoutTest(sst,{
+        "Current phase 1,Arms\r",
+        "Current phase 2,Arms\r",
+        "Current phase 3,Arms\r",
+        "Fault resistance,ohm\r",
+        "Direction,-\r",
+        "Frequency phase 1,Hz\r",
+        "Frequency phase 2,Hz\r",
+        "Frequency phase 3,Hz\r",
+        "RoCoF phase 1,Hz/s\r",
+        "RoCoF phase 2,Hz/s\r",
+        "RoCoF phase 3,Hz/s\r"
+    });
+}
+
 TEST_F(CurrentTest, faultChannelCurrent) {
     goldenPathTest(sst, "0.00, 0.00, 0.00, 1000000.00, 0, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000\r", 600);
     /* Flush the USB buffer */
