@@ -2,6 +2,22 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Build and Flash Firmware",
+      "type": "shell",
+      "linux": {
+        "command": ".venv/bin/python util/dfu.py -b ${workspaceFolderBasename} -p auto -j $(nproc)",
+        "options": {
+          "cwd": "${workspaceFolder}/../../"
+        }
+      },
+      "group": {
+        "kind": "build",
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
       "label": "Build Firmware",
       "type": "shell",
       "windows": {

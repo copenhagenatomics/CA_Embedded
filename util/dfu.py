@@ -7,11 +7,12 @@ from time import sleep
 from elftools.elf.elffile import ELFFile
 import paramiko
 import serial
+from serial.tools import list_ports
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Compile/download firmware to board.')
     parser.add_argument('-b', '--board', help='The board to compile for')
-    parser.add_argument('-p', '--port',  help='The port the board is on')
+    parser.add_argument('-p', '--port',  help='The port the board is on. Set to "auto" for auto detection')
     parser.add_argument('-d', '--dfu', action="store_true", help='Use instead of -p if the board is in DFU mode')
     parser.add_argument('-R', '--remote', help='The hostname for the port (e.g. loop name)')
     parser.add_argument('-P', '--password', help='The password for the host')
@@ -113,12 +114,29 @@ if __name__ == "__main__":
                 else:
                     # Open the port and put the device in DFU mode
                     if args.port:
-                        with serial.Serial(str(args.port), 115200, timeout=1) as ser:
+                        port = args.port
+
+                        if port == "auto":
+                            # Detects STM32 serial devices
+                            ports = [p.device for p in list_ports.comports() if p.vid == 0x0483]
+
+                            if len(ports) == 1:
+                                port = ports[0]
+                                print(f"Using {port}")
+                            elif len(ports) == 0:
+                                raise RuntimeError("No STMicroelectronics serial device found.")
+                            else:
+                                raise RuntimeError(f"Multiple STMicroelectronics devices found: {', '.join(ports)}")
+    
+                        with serial.Serial(str(port), 115200, timeout=1) as ser:
                             ser.write(b'DFU\n')
                         sleep(1.0)
 
                     for f, a in bin_dict.items():
                         subprocess.run(f"dfu-util -a 0 -D build/{f} -s {a}", shell=True, check=True)
+
+                    if os.path.exists("temp.bin"):
+                        os.remove("temp.bin")
                     subprocess.run("dfu-util -a 0 -s 0x08000000:leave -U temp.bin", shell=True, check=True)
                     subprocess.run("rm -rf temp.bin", shell=True, check=True)
 

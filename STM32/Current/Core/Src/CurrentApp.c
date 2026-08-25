@@ -50,6 +50,7 @@ typedef struct
 ***************************************************************************************************/
 
 static void CurrentPrintHeader();
+static void CurrentPrintOutputDef();
 
 static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples);
 static void updateAdcAmps();
@@ -106,6 +107,7 @@ static CAProtocolCtx caProto =
     .printHeader = CurrentPrintHeader,
     .printStatus = NULL,
     .printStatusDef = NULL,
+    .printOutputDef = CurrentPrintOutputDef,
     .jumpToBootLoader = HALJumpToBootloader,
     .calibration = ADCcalibration,
     .calibrationRW = ADCcalibrationRW,
@@ -124,6 +126,25 @@ static void CurrentPrintHeader()
 {
     CAPrintHeader();
     ADCcalibrationRW(false);
+}
+
+static void CurrentPrintOutputDef() {
+    char buf[300];
+    int len = 0;
+
+    for (uint32_t i = 1; i <= 3; i++) {
+        CA_SNPRINTF(buf, len, "Current phase %" PRIu32 ",Arms\r\n", i);
+    }
+    CA_SNPRINTF(buf, len, "Fault resistance,ohm\r\n");
+    CA_SNPRINTF(buf, len, "Direction,-\r\n");
+    for (uint32_t i = 1; i <= 3; i++) {
+        CA_SNPRINTF(buf, len, "Frequency phase %" PRIu32 ",Hz\r\n", i);
+    }
+    for (uint32_t i = 1; i <= 3; i++) {
+        CA_SNPRINTF(buf, len, "RoCoF phase %" PRIu32 ",Hz/s\r\n", i);
+    }
+
+    writeUSB(buf, len);
 }
 
 static void pDataToValues(int16_t *pData, int noOfChannels, int noOfSamples)
