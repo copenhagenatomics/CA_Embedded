@@ -31,9 +31,12 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../../STM32)
 set(LIB ../../CA_Embedded_Libraries/STM32)
-set(INC_LIB ${LIB}/FLASH_readwrite/Inc ${LIB}/jumpToBootloader/Inc 
-            ${LIB}/SPI/Inc ${LIB}/SPI/Src
-            ${LIB}/USBprint/Inc ${LIB}/Util/Inc)
+set(INC_LIB ${LIB}/Crc/Inc
+            ${LIB}/FLASH_readwrite/Inc
+            ${LIB}/jumpToBootloader/Inc 
+            ${LIB}/SPI/Inc
+            ${LIB}/USBprint/Inc
+            ${LIB}/Util/Inc)
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
 set(UT_STUBS ${UT_LIB}/stubs)
@@ -48,18 +51,29 @@ enable_testing()
 include(GoogleTest)
 
 # Temperature tests
-add_executable(temperature_test Temperature_tests.cpp ${UT_STUBS}/stub_jumpToBootloader.cpp 
-                                ${LIB}/Util/Src/systeminfo.c ${UT_FAKES}/fake_USBprint.cpp 
-                                ${LIB}/Util/Src/time32.c ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
-                                ${UT_FAKES}/fake_StmGpio.cpp ${UT_FAKES}/fake_HAL_otp.cpp 
-                                ${UT_FAKES}/fake_FLASH_readwrite.cpp ${UT_LIB}/Util/serialStatus_tests.cpp 
-                                ${UT_FAKES}/fake_ADS1120.cpp)
-target_include_directories(temperature_test PRIVATE 
-                                ${UT_FAKES} ${UT_STUBS} ${SRC}/Temperature/Core/Src 
-                                ${SRC}/Temperature/Core/Inc ${LIB}/Util/Src ${INC_LIB} 
-                                ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include 
-                                ${UT_LIB}/Util)
-target_link_libraries(temperature_test GTest::gtest_main gmock_main)
-target_compile_definitions(temperature_test PUBLIC UNIT_TESTING)
-target_compile_options(temperature_test PRIVATE -Wall)
-gtest_discover_tests(temperature_test)
+add_executable(temperature_tests temperature_tests.cpp
+            ${UT_STUBS}/stub_jumpToBootloader.cpp 
+            ${LIB}/Util/Src/systeminfo.c
+            ${UT_FAKES}/fake_USBprint.cpp 
+            ${LIB}/Util/Src/time32.c
+            ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
+            ${UT_FAKES}/fake_StmGpio.cpp
+            ${UT_FAKES}/fake_HAL_otp.cpp 
+            ${UT_FAKES}/fake_FLASH_readwrite.cpp
+            ${UT_LIB}/Util/serialStatus_tests.cpp 
+            ${UT_FAKES}/fake_ADS1120.cpp)
+target_include_directories(temperature_tests PRIVATE 
+            ${UT_FAKES}
+            ${UT_STUBS}
+            ${SRC}/Temperature/Core/Src 
+            ${SRC}/Temperature/Core/Inc
+            ${LIB}/Crc/Src
+            ${LIB}/Util/Src
+            ${INC_LIB} 
+            ${DRIV}/Inc
+            ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include 
+            ${UT_LIB}/Util)
+target_link_libraries(temperature_tests GTest::gtest_main gmock_main)
+target_compile_definitions(temperature_tests PUBLIC UNIT_TESTING)
+target_compile_options(temperature_tests PRIVATE -Wall)
+gtest_discover_tests(temperature_tests)
