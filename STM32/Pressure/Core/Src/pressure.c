@@ -90,23 +90,19 @@ static void printPressureStatus() {
 
     for (int i = 0; i < 6; i++) {
         if (bsGetField(PORT_MEASUREMENT_TYPE(i))) {
-            len += snprintf(&buf[len], sizeof(buf) - len, "Port %d measures current [4-20mA]\r\n",
-                            i + 1);
+            CA_SNPRINTF(buf, len, "Port %d measures current [4-20mA]\r\n", i + 1);
         }
         else {
-            len += snprintf(&buf[len], sizeof(buf) - len, "Port %d measures voltage [0-5V]\r\n",
-                            i + 1);
+            CA_SNPRINTF(buf, len, "Port %d measures voltage [0-5V]\r\n", i + 1);
         }
     }
 
     if (bsGetField(VCC_ERROR_Msk)) {
-        len += snprintf(&buf[len], sizeof(buf) - len, "VCC is: %.2f. It should be >=5.05V \r\n",
-                        volts[6]);
+        CA_SNPRINTF(buf, len, "VCC is: %.2f. It should be >=5.05V \r\n", volts[6]);
     }
 
     if (bsGetField(VCC_RAW_ERROR_Msk)) {
-        len += snprintf(&buf[len], sizeof(buf) - len, "VCC raw is: %.2f. It should be >=4.6V \r\n",
-                        volts[7]);
+        CA_SNPRINTF(buf, len, "VCC raw is: %.2f. It should be >=4.6V \r\n", volts[7]);
     }
     writeUSB(buf, len);
 }
@@ -119,15 +115,13 @@ static void printPressureStatusDef() {
 
     int len = 0;
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",VBUS FB\r\n",
-                    (uint32_t)VCC_RAW_ERROR_Msk);
-    len += snprintf(&buf[len], sizeof(buf) - len, "0x%08" PRIx32 ",5V FB\r\n",
-                    (uint32_t)VCC_ERROR_Msk);
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",VBUS FB\r\n", (uint32_t)VCC_RAW_ERROR_Msk);
+
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",5V FB\r\n", (uint32_t)VCC_ERROR_Msk);
 
     for (int i = 5; i >= 0; i--) {
-        len += snprintf(&buf[len], sizeof(buf) - len,
-                        "0x%08" PRIx32 ",Port %d measure type [Voltage/Current]\r\n",
-                        (uint32_t)PORT_MEASUREMENT_TYPE(i), i + 1);
+        CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Port %d measure type [Voltage/Current]\r\n",
+                    (uint32_t)PORT_MEASUREMENT_TYPE(i), i + 1);
     }
 
     writeUSB(buf, len);
@@ -161,7 +155,7 @@ static void calibrateSensorOrBoard(int noOfCalibrations, const CACalibration *ca
     // 		calibrations->threshold == 1 -> board port calibration
     if (calibrations->threshold == 2) {
         if (loggingMode != 1) {
-            USBnprintf("To calibrate board, first enter voltLogging mode by typing: 'LOG p1'");
+            USBnprintf("To calibrate board, first enter voltLogging mode by typing: 'LOG p1'\r\n");
             return;
         }
         calibrateBoard(noOfCalibrations, calibrations, &cal, ADCMeansRaw, sizeof(cal));
@@ -218,7 +212,7 @@ static void ADCtoVolt(float *adcMeans, int noOfChannels) {
  * @param   portValues Array of values to plot
  */
 static void printPorts(float *portValues) {
-    USBnprintf("%0.6f, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, 0x%08" PRIx32, *portValues,
+    USBnprintf("%0.6f, %0.6f, %0.6f, %0.6f, %0.6f, %0.6f, 0x%08" PRIx32 "\r\n", *portValues,
                *(portValues + 1), *(portValues + 2), *(portValues + 3), *(portValues + 4),
                *(portValues + 5), bsGetStatus());
 }
@@ -261,7 +255,7 @@ static void adcCallback(int16_t *pData, int noOfChannels, int noOfSamples) {
 
     /* If the version is incorrect only print out status code */
     if (bsGetField(BS_VERSION_ERROR_Msk)) {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 

@@ -21,7 +21,6 @@ extern "C" {
 #include "fake_StmGpio.h"
 
 /* Real supporting units */
-#include "stm32f4xx_hal_gpio.c"
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
 #include "sht45.c"
@@ -157,7 +156,7 @@ TEST_F(HumidityUnitTest, goldenPath) {
     humiditySensor2->setHumidity(0x8000);
 
     sst.boundInit();
-    goldenPathTest(sst, "42.50, 56.50, 32.76, 42.50, 56.50, 32.76, 0x00000000");
+    goldenPathTest(sst, "42.50, 56.50, 32.76, 42.50, 56.50, 32.76, 0x00000000\r");
 }
 
 TEST_F(HumidityUnitTest, incorrectBoard) {
@@ -169,6 +168,7 @@ TEST_F(HumidityUnitTest, printStatus) {
     fakeHAL_I2C_addDevice(humiditySensor2);
 
     statusPrintoutTest(sst, {
+        "The board is operating normally.\r",
         "Serial number sensor 0: 0x1234789a.\r", 
         "Serial number sensor 1: 0xbcdef012.\r", 
         "Humidity sensor 0 is operating normally.\r", 

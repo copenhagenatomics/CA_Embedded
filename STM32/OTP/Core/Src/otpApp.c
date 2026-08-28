@@ -31,7 +31,7 @@ static CAProtocolCtx caProto =
 static void otpWrite(BoardInfo *boardInfo)
 {
     if (HAL_otpWrite(boardInfo)) {
-        USBnprintf("OTP: Failed to write productions data");
+        USBnprintf("OTP: Failed to write productions data\r\n");
     }
 }
 

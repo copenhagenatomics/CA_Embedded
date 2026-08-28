@@ -170,8 +170,8 @@ void turnOnPin(int pin, int duration_ms) {
 ** @param[in] pwmPct      The pwmPct to use
 ** @param[in] duration_ms The length of time to keep all the port on, in ms
 **
-** PWM has an effective resolution of 100 Hz, as the AC can only be enabled / disabled at 0 
-** crossings. Setting a PWM always takes effect on the next PWM period, not immediately.
+** PWM has an effective resolution of 100 steps, as the AC can only be enabled / disabled at 0 
+** crossings (50 Hz). Setting a PWM always takes effect on the next PWM period, not immediately.
 */
 void setPWMPin(int pin, int pwmPct, int duration_ms)
 {

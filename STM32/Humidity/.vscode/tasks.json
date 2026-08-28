@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Firmware",
+      "type": "shell",
+      "windows": {
+        "command": "powershell",
+        "args": [
+          "-Command",
+          "make"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      },
+      "linux": {
+        "command": "make",
+        "args": [
+          "-j$(nproc)"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        }
+      },
+      "group": {
+        "kind": "build",
+      },
+      "problemMatcher": [
+        "$gcc"
+      ]
+    },
+    {
+      "label": "Clean Firmware",
+      "type": "shell",
+      "command": "make clean",
+      "group": {
+                "kind": "build"
+            },
+    }
+  ]
+}

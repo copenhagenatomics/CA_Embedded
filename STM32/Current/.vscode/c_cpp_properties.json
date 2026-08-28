@@ -5,15 +5,12 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/ADCMonitor/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/CaCMSISInterface/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Filtering/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/SPI/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/USBprint/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/**"
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**"
             ],
             "defines": [
                 "_DEBUG",
@@ -36,15 +33,12 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/ADCMonitor/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/CaCMSISInterface/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/circularBuffer/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Filtering/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FLASH_readwrite/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/jumpToBootloader/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/SPI/**",
                 "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/USBprint/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**",
-                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/Drivers/CMSIS/DSP/**"
+                "${workspaceFolder}/../../CA_Embedded_Libraries/STM32/Util/**"
             ],
             "defines": [
                 "_DEBUG",

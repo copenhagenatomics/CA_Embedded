@@ -109,18 +109,18 @@ static void HumidityPrintStatus()
     static char buf[600] = { 0 };
     int len = 0;
 
-    len += snprintf(&buf[len], sizeof(buf) - len, "Serial number sensor %d: 0x%08" PRIx32 ".\r\n", 0, humiditySensors[0].serial_number);
-    len += snprintf(&buf[len], sizeof(buf) - len, "Serial number sensor %d: 0x%08" PRIx32 ".\r\n", 1, humiditySensors[1].serial_number);
+    CA_SNPRINTF(buf, len, "Serial number sensor %d: 0x%08" PRIx32 ".\r\n", 0, humiditySensors[0].serial_number);
+    CA_SNPRINTF(buf, len, "Serial number sensor %d: 0x%08" PRIx32 ".\r\n", 1, humiditySensors[1].serial_number);
 
     for (int i = 0; i < NUM_SENSORS; i++)
     {
         if (bsGetField(SHT45_ERROR_Msk(i)))
         {
-            len += snprintf(&buf[len], sizeof(buf) - len, "Humidity sensor %d is not responding.\r\n", i);
+            CA_SNPRINTF(buf, len, "Humidity sensor %d is not responding.\r\n", i);
         }
         else
         {
-            len += snprintf(&buf[len], sizeof(buf) - len, "Humidity sensor %d is operating normally.\r\n", i);
+            CA_SNPRINTF(buf, len, "Humidity sensor %d is operating normally.\r\n", i);
         }
     }
     writeUSB(buf, len);
@@ -456,11 +456,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
     if (bsGetField(BS_VERSION_ERROR_Msk))
     {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32, 
+    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n", 
                 mvgMeasurement[0].temp, mvgMeasurement[0].rh, mvgMeasurement[0].ah,
                 mvgMeasurement[1].temp, mvgMeasurement[1].rh, mvgMeasurement[1].ah,
                 bsGetStatus());
@@ -492,7 +492,7 @@ void InitHumidity(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2c2, WWDG_Handl
     hwwdg_ = hwwdg;
 
     // PCB V1.6 of the humidity board uses SHT45 i.e. not functional on older PCB versions.
-    if(boardSetup(HumidityChip, (pcbVersion) {BREAKING_MAJOR, BREAKING_MINOR}) == -1) {
+    if(boardSetup(HumidityChip, (pcbVersion) {BREAKING_MAJOR, BREAKING_MINOR}, 0) == -1) {
         return;
     }
 

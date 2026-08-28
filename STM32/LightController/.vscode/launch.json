@@ -4,13 +4,13 @@
         {
             "name": "Cortex Debug",
             "cwd": "${workspaceRoot}",
-            "executable": "./build/LightController.elf",
+            "executable": "./build/${workspaceFolderBasename}.elf",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
             "device": "STM32F401CCU6",
             "configFiles": [
-                "interface/stlink.cfg",
+                "interface/stlink-v2.cfg",
                 "target/stm32f4x.cfg"
             ],
             "svdFile": "STM32F401.svd",

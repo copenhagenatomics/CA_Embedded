@@ -64,7 +64,7 @@ class TachoUnitTest: public CaBoardUnitTest, public WithParamInterface<int>
 ***************************************************************************************************/
 
 TEST_F(TachoUnitTest, CorrectBoardParams) {
-    goldenPathTest(sst, "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000");
+    goldenPathTest(sst, "0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000\r");
 }
 
 TEST_F(TachoUnitTest, incorrectBoard) {
@@ -72,7 +72,7 @@ TEST_F(TachoUnitTest, incorrectBoard) {
 }
 
 TEST_F(TachoUnitTest, printStatus) {
-    statusPrintoutTest(sst, {});
+    statusPrintoutTest(sst, {"The board is operating normally.\r"});
 }
 
 TEST_F(TachoUnitTest, printSerial) {
@@ -93,22 +93,7 @@ TEST_P(TachoUnitTest, testTacho) {
         pulse_train[i] = pulse_train[i-1] + 100 * i;
     }
 
-    uint32_t gpio_param;
-    switch(GetParam()) {
-        case 0: gpio_param = GPIO_PIN_5;
-                break;
-        case 1: gpio_param = GPIO_PIN_4;
-                break;
-        case 2: gpio_param = GPIO_PIN_3;
-                break;
-        case 3: gpio_param = GPIO_PIN_2;
-                break;
-        case 4: gpio_param = GPIO_PIN_1;
-                break;
-        case 5: gpio_param = GPIO_PIN_0;
-                break;
-        default:FAIL();
-    }
+    uint32_t gpio_param = gpio_pins[GetParam()];
 
     for(int i = 0; i < len_pulse_train; i++) {
         /* Set the timer to the latest count and generate the event */
@@ -123,10 +108,10 @@ TEST_P(TachoUnitTest, testTacho) {
     }
 
     /* Get data from USB into array */
-    vector<string>* vs = hostUSBread(true);
+    vector<string> vs = hostUSBread(true);
     vector<vector<string>*>* os = new vector<vector<string>*>;
     for(int i = 0; i < 4; i++) {
-        string s = vs->at(i+2);
+        string s = vs.at(i+1);
         os->push_back(new vector<string>);
         
         /* Retrieve all values from the string into a 2D vector */
@@ -171,7 +156,7 @@ TEST_F(TachoUnitTest, tachoRollover) {
 
     goToTick(100);
 
-    EXPECT_READ_USB(Contains("10.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000"));
+    EXPECT_READ_USB(Contains("10.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0x00000000\r"));
 }
 
 TEST_F(TachoUnitTest, reverse_channels) {
@@ -207,12 +192,11 @@ TEST_F(TachoUnitTest, reverse_channels) {
 
     /* Get data from USB into array */
     EXPECT_READ_USB(ElementsAre(
-        "\r",
         "Boot Unit Test\r",
         "0.00, 0.00, 0.00, 0.00, 0.00, 976.66, 0x00000000\r",
         "0.00, 0.00, 0.00, 0.00, 0.00, 226.83, 0x00000000\r",
         "0.00, 0.00, 0.00, 0.00, 0.00, 147.95, 0x00000000\r",
-        "0.00, 0.00, 0.00, 0.00, 0.00, 122.12, 0x00000000"
+        "0.00, 0.00, 0.00, 0.00, 0.00, 122.12, 0x00000000\r"
     ));
 
     /* Memory leaks from VS/OS cleared by test runner */

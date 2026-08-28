@@ -40,7 +40,7 @@
   /* #define HAL_CRYP_MODULE_ENABLED */
 #define HAL_ADC_MODULE_ENABLED
 /* #define HAL_CAN_MODULE_ENABLED */
-/* #define HAL_CRC_MODULE_ENABLED */
+#define HAL_CRC_MODULE_ENABLED
 /* #define HAL_CAN_LEGACY_MODULE_ENABLED */
 /* #define HAL_DAC_MODULE_ENABLED */
 /* #define HAL_DCMI_MODULE_ENABLED */
@@ -69,7 +69,7 @@
 /* #define HAL_IRDA_MODULE_ENABLED */
 /* #define HAL_SMARTCARD_MODULE_ENABLED */
 /* #define HAL_SMBUS_MODULE_ENABLED */
-#define HAL_WWDG_MODULE_ENABLED
+/* #define HAL_WWDG_MODULE_ENABLED */
 #define HAL_PCD_MODULE_ENABLED
 /* #define HAL_HCD_MODULE_ENABLED */
 /* #define HAL_DSI_MODULE_ENABLED */
@@ -214,7 +214,7 @@
 #define MAC_ADDR5   0U
 
 /* Definition of the Ethernet driver buffers size and count */
-#define ETH_RX_BUF_SIZE                 /* buffer size for receive               */
+#define ETH_RX_BUF_SIZE                ETH_MAX_PACKET_SIZE /* buffer size for receive               */
 #define ETH_TX_BUF_SIZE                ETH_MAX_PACKET_SIZE /* buffer size for transmit              */
 #define ETH_RXBUFNB                    4U       /* 4 Rx buffers of size ETH_RX_BUF_SIZE  */
 #define ETH_TXBUFNB                    4U       /* 4 Tx buffers of size ETH_TX_BUF_SIZE  */
