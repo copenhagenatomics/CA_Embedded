@@ -77,6 +77,7 @@ static void MX_CRC_Init(void);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -215,7 +216,7 @@ static void MX_IWDG_Init(void)
   /* USER CODE END IWDG_Init 1 */
   hiwdg.Instance = IWDG;
   hiwdg.Init.Prescaler = IWDG_PRESCALER_16;
-  hiwdg.Init.Reload = 2499;
+  hiwdg.Init.Reload = 4095;
   if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();
@@ -302,8 +303,8 @@ static void MX_WWDG_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
@@ -311,18 +312,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, Test1_Pin|Test2_Pin|LED_Pin|CS1_Pin
-                          |CS2_Pin|CS4_Pin|CS5_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, CS1_Pin|CS2_Pin|CS4_Pin|CS5_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(CS3_GPIO_Port, CS3_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : Test1_Pin Test2_Pin LED_Pin */
-  GPIO_InitStruct.Pin = Test1_Pin|Test2_Pin|LED_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : CS1_Pin CS2_Pin CS4_Pin CS5_Pin */
   GPIO_InitStruct.Pin = CS1_Pin|CS2_Pin|CS4_Pin|CS5_Pin;
@@ -350,8 +343,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(CS3_GPIO_Port, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -372,8 +365,7 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
