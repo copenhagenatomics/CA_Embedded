@@ -181,7 +181,7 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi) {
     // Now configure the devices.
     for (int i = 0; i < NO_SPI_DEVICES; i++) {
         initConnection(&ads1120[i], i);
-        ads1120[i].sensor_type = subtype == 0? ST_THERMOCOUPLE : ST_RTD; 
+        ads1120[i].sensor_type = (subtype == 1 || subtype == 2) ? ST_RTD : ST_THERMOCOUPLE;
     }
 }
 
@@ -243,27 +243,26 @@ static void enableWWDG() {
     }
 }
 
-void initSensorCalibration()
-{
-    if (readFromFlashCRC(hcrc, (uint32_t) FLASH_ADDR_CAL, (uint8_t *) portCalVal, sizeof(portCalVal)) != 0) {
+void initSensorCalibration() {
+    if (readFromFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
+                         sizeof(portCalVal)) != 0) {
         // If nothing is stored in FLASH defaults are:
         if (subtype == 2) {
             // 1.8 kOhm resistor on the board, 0.60 total measured lead resistance.
-            for (int i = 0; i < NO_SPI_DEVICES*2; i++) {
+            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
                 portCalVal[i][0] = 1.8e3;
                 portCalVal[i][1] = 0.60;
             }
         }
         else if (subtype == 1) {
             // 2.7 kOhm resistor on the board, 0.60 total measured lead resistance.
-            for (int i = 0; i < NO_SPI_DEVICES*2; i++) {
+            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
                 portCalVal[i][0] = 2.7e3;
                 portCalVal[i][1] = 0.60;
             }
         }
         else {
-            for (int i = 0; i < NO_SPI_DEVICES*2; i++) 
-            {
+            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
                 portCalVal[i][0] = TYPE_K_DELTA;
                 portCalVal[i][1] = TYPE_K_CJ_DELTA;
             }
@@ -298,8 +297,7 @@ static void calibrateReadWrite(bool write) {
             if (i == 0) {
                 CA_SNPRINTF(buf, len, "Calibration: CAL");
             }
-            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f", i + 1,
-                            portCalVal[i][0], portCalVal[i][1]);
+            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f", i + 1, portCalVal[i][0], portCalVal[i][1]);
         }
         CA_SNPRINTF(buf, len, "\r\n");
         writeUSB(buf, len);
