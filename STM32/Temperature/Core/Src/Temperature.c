@@ -43,6 +43,7 @@ typedef struct _gpio {
 static void printTempHeader();
 static void printTempStatus();
 static void printTempStatusDef();
+static void printTempOutputDef();
 
 static void initPinLayout(pcbVersion ver);
 static void initConnection(ADS1120Device* ads1120, int channel);
@@ -63,6 +64,7 @@ static CAProtocolCtx caProto = {.undefined        = HALundefined,
                                 .printHeader      = printTempHeader,
                                 .printStatus      = printTempStatus,
                                 .printStatusDef   = printTempStatusDef,
+                                .printOutputDef   = printTempOutputDef,
                                 .jumpToBootLoader = HALJumpToBootloader,
                                 .calibration      = calibrateTypeInput,
                                 .calibrationRW    = calibrateReadWrite,
@@ -114,6 +116,21 @@ static void printTempStatusDef() {
         CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Status ADC %u\r\n",
                     (uint32_t)TEMP_ADS1120_x_Error_Msk(i), i + 1);
     }
+    writeUSB(buf, len);
+}
+
+/*!
+** @brief   Print the output definition for the temperature board.
+*/
+static void printTempOutputDef() {
+    int len = 0;
+
+    for (int i = 1; i <= NO_SPI_DEVICES; i++) {
+        CA_SNPRINTF(buf, len, "Temperature p%d,degC\r\n", 2 * i - 1);
+        CA_SNPRINTF(buf, len, "Temperature p%d,degC\r\n", 2 * i);
+    }
+    CA_SNPRINTF(buf, len, "Internal Temperature,degC\r\n");
+
     writeUSB(buf, len);
 }
 
@@ -243,7 +260,7 @@ static void enableWWDG() {
     }
 }
 
-void initSensorCalibration() {
+static void initSensorCalibration() {
     if (readFromFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
                          sizeof(portCalVal)) != 0) {
         // If nothing is stored in FLASH defaults are:

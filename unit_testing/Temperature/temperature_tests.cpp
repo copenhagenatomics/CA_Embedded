@@ -98,6 +98,21 @@ TEST_F(TemperatureBoardTest, printStatusDef) {
          "0x00000300,Status ADC 5\r"});
 }
 
+TEST_F(TemperatureBoardTest, printOutputDef) {
+    outputDefPrintoutTest(sst,
+        {"Temperature p1,degC\r",
+         "Temperature p2,degC\r",
+         "Temperature p3,degC\r",
+         "Temperature p4,degC\r",
+         "Temperature p5,degC\r",
+         "Temperature p6,degC\r",
+         "Temperature p7,degC\r",
+         "Temperature p8,degC\r",
+         "Temperature p9,degC\r",
+         "Temperature p10,degC\r",
+         "Internal Temperature,degC\r"});
+}
+
 TEST_F(TemperatureBoardTest, printSerial) {
     /* Default calibration string */
     serialPrintoutTest(sst, "Temperature", "Calibration: CAL 1,0.0000412760,0.0000407300 2,0.0000412760,0.0000407300 3,0.0000412760,0.0000407300 4,0.0000412760,0.0000407300 5,0.0000412760,0.0000407300 6,0.0000412760,0.0000407300 7,0.0000412760,0.0000407300 8,0.0000412760,0.0000407300 9,0.0000412760,0.0000407300 10,0.0000412760,0.0000407300\r");
