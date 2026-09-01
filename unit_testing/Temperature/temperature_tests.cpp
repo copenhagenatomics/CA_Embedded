@@ -29,6 +29,8 @@ extern "C" {
 
 using namespace std;
 
+using ::testing::Contains;
+
 /***************************************************************************************************
 ** TEST FIXTURES
 ***************************************************************************************************/
@@ -96,7 +98,45 @@ TEST_F(TemperatureBoardTest, printStatusDef) {
          "0x00000300,Status ADC 5\r"});
 }
 
+TEST_F(TemperatureBoardTest, printOutputDef) {
+    outputDefPrintoutTest(sst,
+        {"Temperature p1,degC\r",
+         "Temperature p2,degC\r",
+         "Temperature p3,degC\r",
+         "Temperature p4,degC\r",
+         "Temperature p5,degC\r",
+         "Temperature p6,degC\r",
+         "Temperature p7,degC\r",
+         "Temperature p8,degC\r",
+         "Temperature p9,degC\r",
+         "Temperature p10,degC\r",
+         "Internal Temperature,degC\r"});
+}
+
 TEST_F(TemperatureBoardTest, printSerial) {
     /* Default calibration string */
     serialPrintoutTest(sst, "Temperature", "Calibration: CAL 1,0.0000412760,0.0000407300 2,0.0000412760,0.0000407300 3,0.0000412760,0.0000407300 4,0.0000412760,0.0000407300 5,0.0000412760,0.0000407300 6,0.0000412760,0.0000407300 7,0.0000412760,0.0000407300 8,0.0000412760,0.0000407300 9,0.0000412760,0.0000407300 10,0.0000412760,0.0000407300\r");
+
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
+        EXPECT_EQ(ads1120[i].sensor_type, ST_THERMOCOUPLE);
+    }
+
+    /* Subboard types have different calibration values */
+    bi.v2.subBoardType = 1;
+    HAL_otpWrite(&bi);
+    sst.boundInit();
+
+    for (int i = 0; i < NO_SPI_DEVICES; i++) {
+        EXPECT_EQ(ads1120[i].sensor_type, ST_RTD);
+    }
+
+    writeBoardMessage("CAL r\r\n");
+    EXPECT_FLUSH_USB(Contains("Calibration: CAL 1,2700.0000000000,0.6000000238 2,2700.0000000000,0.6000000238 3,2700.0000000000,0.6000000238 4,2700.0000000000,0.6000000238 5,2700.0000000000,0.6000000238 6,2700.0000000000,0.6000000238 7,2700.0000000000,0.6000000238 8,2700.0000000000,0.6000000238 9,2700.0000000000,0.6000000238 10,2700.0000000000,0.6000000238\r"));
+
+    /* Subboard types have different calibration values */
+    bi.v2.subBoardType = 2;
+    HAL_otpWrite(&bi);
+    sst.boundInit();
+    writeBoardMessage("CAL r\r\n");
+    EXPECT_FLUSH_USB(Contains("Calibration: CAL 1,1800.0000000000,0.6000000238 2,1800.0000000000,0.6000000238 3,1800.0000000000,0.6000000238 4,1800.0000000000,0.6000000238 5,1800.0000000000,0.6000000238 6,1800.0000000000,0.6000000238 7,1800.0000000000,0.6000000238 8,1800.0000000000,0.6000000238 9,1800.0000000000,0.6000000238 10,1800.0000000000,0.6000000238\r"));
 }

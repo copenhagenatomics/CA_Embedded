@@ -43,6 +43,7 @@ typedef struct _gpio {
 static void printTempHeader();
 static void printTempStatus();
 static void printTempStatusDef();
+static void printTempOutputDef();
 
 static void initPinLayout(pcbVersion ver);
 static void initConnection(ADS1120Device* ads1120, int channel);
@@ -63,6 +64,7 @@ static CAProtocolCtx caProto = {.undefined        = HALundefined,
                                 .printHeader      = printTempHeader,
                                 .printStatus      = printTempStatus,
                                 .printStatusDef   = printTempStatusDef,
+                                .printOutputDef   = printTempOutputDef,
                                 .jumpToBootLoader = HALJumpToBootloader,
                                 .calibration      = calibrateTypeInput,
                                 .calibrationRW    = calibrateReadWrite,
@@ -72,6 +74,8 @@ static CAProtocolCtx caProto = {.undefined        = HALundefined,
 
 static ADS1120Device ads1120[NO_SPI_DEVICES];
 static float portCalVal[NO_SPI_DEVICES * 2][2];
+SubBoardType subtype = 0;
+
 static char buf[600] = {0};  // Shared by printTempStatus and printTempStatusDef
 
 static SPI_HandleTypeDef* hspi   = NULL;
@@ -112,6 +116,21 @@ static void printTempStatusDef() {
         CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Status ADC %u\r\n",
                     (uint32_t)TEMP_ADS1120_x_Error_Msk(i), i + 1);
     }
+    writeUSB(buf, len);
+}
+
+/*!
+** @brief   Print the output definition for the temperature board.
+*/
+static void printTempOutputDef() {
+    int len = 0;
+
+    for (int i = 1; i <= NO_SPI_DEVICES; i++) {
+        CA_SNPRINTF(buf, len, "Temperature p%d,degC\r\n", 2 * i - 1);
+        CA_SNPRINTF(buf, len, "Temperature p%d,degC\r\n", 2 * i);
+    }
+    CA_SNPRINTF(buf, len, "Internal Temperature,degC\r\n");
+
     writeUSB(buf, len);
 }
 
@@ -179,6 +198,7 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi) {
     // Now configure the devices.
     for (int i = 0; i < NO_SPI_DEVICES; i++) {
         initConnection(&ads1120[i], i);
+        ads1120[i].sensor_type = (subtype == 1 || subtype == 2) ? ST_RTD : ST_THERMOCOUPLE;
     }
 }
 
@@ -243,10 +263,26 @@ static void enableWWDG() {
 static void initSensorCalibration() {
     if (readFromFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
                          sizeof(portCalVal)) != 0) {
-        // If nothing is stored in FLASH default to type K thermocouple
-        for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
-            portCalVal[i][0] = TYPE_K_DELTA;
-            portCalVal[i][1] = TYPE_K_CJ_DELTA;
+        // If nothing is stored in FLASH defaults are:
+        if (subtype == 2) {
+            // 1.8 kOhm resistor on the board, 0.60 total measured lead resistance.
+            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
+                portCalVal[i][0] = 1.8e3;
+                portCalVal[i][1] = 0.60;
+            }
+        }
+        else if (subtype == 1) {
+            // 2.7 kOhm resistor on the board, 0.60 total measured lead resistance.
+            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
+                portCalVal[i][0] = 2.7e3;
+                portCalVal[i][1] = 0.60;
+            }
+        }
+        else {
+            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
+                portCalVal[i][0] = TYPE_K_DELTA;
+                portCalVal[i][1] = TYPE_K_CJ_DELTA;
+            }
         }
     }
 }
@@ -278,8 +314,7 @@ static void calibrateReadWrite(bool write) {
             if (i == 0) {
                 CA_SNPRINTF(buf, len, "Calibration: CAL");
             }
-            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f", i + 1,
-                            portCalVal[i][0], portCalVal[i][1]);
+            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f", i + 1, portCalVal[i][0], portCalVal[i][1]);
         }
         CA_SNPRINTF(buf, len, "\r\n");
         writeUSB(buf, len);
@@ -302,6 +337,9 @@ void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_,
     pcbVersion ver;
     getPcbVersion(&ver);
     initPinLayout(ver);
+
+    /* Get subtype for checking if this is an RTD board or not */
+    getBoardInfo(NULL, &subtype);
 
     initSensorCalibration();
     initSpiDevices(hspi);
