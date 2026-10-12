@@ -1,3 +1,0 @@
-pyelftools>=0.32
-paramiko>=3.5.1
-pyserial>=3.5
