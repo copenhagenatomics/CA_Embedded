@@ -5,8 +5,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(unit_testing)
 
-# GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 14)
+# GoogleTest requires at least C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set timestamp policy to avoid warning (default value)
@@ -15,10 +15,11 @@ if(POLICY CMP0135)
 	set(CMAKE_POLICY_DEFAULT_CMP0135 NEW)
 endif()
 
+# Include GoogleTest v1.18.0
 include(FetchContent)
 FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+    googletest
+    URL https://github.com/google/googletest/archive/063de7e9578f82b369302001269680b4b1553359.zip
 )
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings
@@ -31,26 +32,31 @@ FetchContent_MakeAvailable(googletest)
 
 set(SRC ../../STM32)
 set(LIB ../../CA_Embedded_Libraries/STM32)
-set(INC_LIB_CAL ${LIB}/Crc/Inc 
-                ${LIB}/FLASH_readwrite/Inc 
-                ${LIB}/USBprint/Inc 
-                ${LIB}/Util/Inc)
-set(INC_LIB     ${LIB}/ADCMonitor/Inc
-                ${LIB}/circularBuffer/Inc
-                ${LIB}/Crc/Inc
-                ${LIB}/Filtering/Inc 
-                ${LIB}/FLASH_readwrite/Inc
-                ${LIB}/I2C/Inc
-                ${LIB}/jumpToBootloader/Inc 
-                ${LIB}/Regulation/Inc
-                ${LIB}/SPI/Inc
-                ${LIB}/TransformationFunctions/Inc 
-                ${LIB}/USBprint/Inc
-                ${LIB}/Util/Inc)
+
+set(INC_LIB_CAL
+    ${LIB}/Crc/Inc 
+    ${LIB}/FLASH_readwrite/Inc 
+    ${LIB}/USBprint/Inc 
+    ${LIB}/Util/Inc)
+
+set(INC_LIB
+    ${LIB}/ADCMonitor/Inc
+    ${LIB}/circularBuffer/Inc
+    ${LIB}/Crc/Inc
+    ${LIB}/Filtering/Inc 
+    ${LIB}/FLASH_readwrite/Inc
+    ${LIB}/I2C/Inc
+    ${LIB}/jumpToBootloader/Inc 
+    ${LIB}/Regulation/Inc
+    ${LIB}/SPI/Inc
+    ${LIB}/TransformationFunctions/Inc 
+    ${LIB}/USBprint/Inc
+    ${LIB}/Util/Inc)
+
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
 set(UT_STUBS ${UT_LIB}/stubs)
-set(DRIV ../../STM32/AnalogInput/Drivers/STM32F4xx_HAL_Driver)
+set(DRIV ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/FW_1.28.3/Drivers/STM32F4xx_HAL_Driver)
 
 ####################################################################################################
 ## List of tests to run
@@ -61,48 +67,58 @@ enable_testing()
 include(GoogleTest)
 
 # Analog calibration tests
-add_executable(analog_calibration_test analog_calibration_tests.cpp
-                                          ${UT_FAKES}/fake_stm32xxxx_hal.cpp
-                                          ${UT_FAKES}/fake_StmGpio.cpp
-                                          ${UT_FAKES}/fake_USBprint.cpp
-                                          ${UT_FAKES}/fake_HAL_otp.cpp
-                                          ${UT_FAKES}/fake_FLASH_readwrite.cpp
-                                          ${LIB}/Crc/Src/crc.c)
-target_include_directories(analog_calibration_test PRIVATE
-                                          ${UT_FAKES} ${UT_STUBS} ${INC_LIB_CAL}
-                                          ${SRC}/AnalogInput/Core/Src ${SRC}/AnalogInput/Core/Inc
-                                          ${DRIV}/Inc ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
-target_link_libraries(analog_calibration_test GTest::gtest_main gmock_main)
-target_compile_definitions(analog_calibration_test PUBLIC UNIT_TESTING)
-target_compile_options(analog_calibration_test PRIVATE -Wall)
-gtest_discover_tests(analog_calibration_test)
+add_executable(analog_calibration_tests
+    analog_calibration_tests.cpp
+    ${UT_FAKES}/fake_stm32xxxx_hal.cpp
+    ${UT_FAKES}/fake_StmGpio.cpp
+    ${UT_FAKES}/fake_USBprint.cpp
+    ${UT_FAKES}/fake_HAL_otp.cpp
+    ${UT_FAKES}/fake_FLASH_readwrite.cpp
+    ${LIB}/Crc/Src/crc.c)
+
+target_include_directories(analog_calibration_tests PRIVATE
+    ${UT_FAKES}
+    ${UT_STUBS}
+    ${INC_LIB_CAL}
+    ${SRC}/AnalogInput/Core/Src
+    ${SRC}/AnalogInput/Core/Inc
+    ${DRIV}/Inc
+    ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
+
+target_link_libraries(analog_calibration_tests GTest::gtest_main gmock_main)
+target_compile_definitions(analog_calibration_tests PUBLIC UNIT_TESTING STM32F401xC)
+target_compile_options(analog_calibration_tests PRIVATE -Wall)
+gtest_discover_tests(analog_calibration_tests)
 
 # AnalogInput tests
-add_executable(analog_input_tests analog_input_tests.cpp
-                                          ${LIB}/Util/Src/systeminfo.c
-                                          ${LIB}/Util/Src/time32.c
-                                          ${UT_LIB}/Util/serialStatus_tests.cpp
-                                          ${UT_STUBS}/stub_jumpToBootloader.cpp
-                                          ${UT_FAKES}/fake_HAL_otp.cpp
-                                          ${UT_FAKES}/fake_stm32xxxx_hal.cpp
-                                          ${UT_FAKES}/fake_StmGpio.cpp
-                                          ${UT_FAKES}/fake_USBprint.cpp
-                                          ${UT_FAKES}/fake_FLASH_readwrite.cpp
-                                          ${LIB}/Crc/Src/crc.c)
+add_executable(analog_input_tests
+    analog_input_tests.cpp
+    ${LIB}/Util/Src/systeminfo.c
+    ${LIB}/Util/Src/time32.c
+    ${UT_LIB}/Util/serialStatus_tests.cpp
+    ${UT_STUBS}/stub_jumpToBootloader.cpp
+    ${UT_FAKES}/fake_HAL_otp.cpp
+    ${UT_FAKES}/fake_stm32xxxx_hal.cpp
+    ${UT_FAKES}/fake_StmGpio.cpp
+    ${UT_FAKES}/fake_USBprint.cpp
+    ${UT_FAKES}/fake_FLASH_readwrite.cpp
+    ${LIB}/Crc/Src/crc.c)
+
 target_include_directories(analog_input_tests PRIVATE
-                                          .
-                                          ${UT_FAKES}
-                                          ${UT_STUBS}
-                                          ${INC_LIB}
-                                          ${UT_LIB}/Util
-                                          ${SRC}/AnalogInput/Core/Src
-                                          ${SRC}/AnalogInput/Core/Inc
-                                          ${LIB}/ADCMonitor/Src
-                                          ${LIB}/I2C/Src
-                                          ${LIB}/Util/Src
-                                          ${DRIV}/Inc
-                                          ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
+    .
+    ${UT_FAKES}
+    ${UT_STUBS}
+    ${INC_LIB}
+    ${UT_LIB}/Util
+    ${SRC}/AnalogInput/Core/Src
+    ${SRC}/AnalogInput/Core/Inc
+    ${LIB}/ADCMonitor/Src
+    ${LIB}/I2C/Src
+    ${LIB}/Util/Src
+    ${DRIV}/Inc
+    ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
+
 target_link_libraries(analog_input_tests GTest::gtest_main gmock_main)
-target_compile_definitions(analog_input_tests PUBLIC UNIT_TESTING)
+target_compile_definitions(analog_input_tests PUBLIC UNIT_TESTING STM32F401xC)
 target_compile_options(analog_input_tests PRIVATE -Wall)
 gtest_discover_tests(analog_input_tests)

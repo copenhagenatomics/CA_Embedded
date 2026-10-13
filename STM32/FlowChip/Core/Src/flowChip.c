@@ -65,7 +65,7 @@ static void flowChipStatus() {
     }
 
     if (bsGetField(FLOWCHIP_ERROR_WRONG_OTP_Msk)) {
-        len += snprintf(&buf[len], sizeof(buf) - len, "OTP is out of date. Update to OTP version %u", OTP_VERSION_2);
+        len += snprintf(&buf[len], sizeof(buf) - len, "OTP is out of date. Update to OTP version %u\r\n", OTP_VERSION_2);
     }
 
     writeUSB(buf, len);
@@ -86,7 +86,7 @@ void uploadData()
     float flowData = 0;
 
     if ((BS_VERSION_ERROR_Msk | FLOWCHIP_ERROR_WRONG_OTP_Msk) & bsGetStatus()) {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
@@ -103,7 +103,7 @@ void uploadData()
     }
     /* No board status output as this error is captured by the flow going to 10000 */
 
-    USBnprintf("%0.2f, %0.2f, 0x%08" PRIx32, flow, accumulatedFlow, bsGetStatus()); // print over USB
+    USBnprintf("%0.2f, %0.2f, 0x%08" PRIx32 "\r\n", flow, accumulatedFlow, bsGetStatus()); // print over USB
 }
 
 // Read calibration offset from FLASH
@@ -120,7 +120,7 @@ static void calibrateSensor(int noOfCalibrations, const CACalibration* calibrati
 {
     if (noOfCalibrations != 1 || calibrations[0].port != 1)
     {
-        USBnprintf("Invalid calibration format. Standard format: CAL 1,targetFlow,0");
+        USBnprintf("Invalid calibration format. Standard format: CAL 1,targetFlow,0\r\n");
         return;
     }
 
@@ -130,7 +130,7 @@ static void calibrateSensor(int noOfCalibrations, const CACalibration* calibrati
 
     if (ret != HAL_OK)
     {
-        USBnprintf("Could not communicate with sensor. Try again...");
+        USBnprintf("Could not communicate with sensor. Try again...\r\n");
         return;
     }
 
@@ -145,12 +145,12 @@ static void calibrationRW(bool write)
     if (write) {
         if (writeToFlashCRC(hcrc_, (uint32_t) FLASH_ADDR_CAL, (uint8_t*) &offset, sizeof(offset)) == 0)
         {
-            USBnprintf("Calibration was not stored in FLASH");
+            USBnprintf("Calibration was not stored in FLASH\r\n");
             bsClearField(FLOWCHIP_WARNING_NO_CAL_Msk);
         }
     }
     else {
-        USBnprintf("Calibration offset: %.2f", offset);
+        USBnprintf("Calibration offset: %.2f\r\n", offset);
     }
 }
 
@@ -167,7 +167,7 @@ HAL_StatusTypeDef flowChipInit(I2C_HandleTypeDef *hi2c_, WWDG_HandleTypeDef *hww
     HAL_StatusTypeDef ret = honeywellZephyrSerial(hi2c, &serialNB);
     if (ret); // TBD: What should be done with the serial??. Why read it during init ??
 
-    if(-1 == boardSetup(GasFlow, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR})) {
+    if(-1 == boardSetup(GasFlow, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, FLOWCHIP_ERROR_Msk)) {
         return HAL_BUSY;
     }
 
