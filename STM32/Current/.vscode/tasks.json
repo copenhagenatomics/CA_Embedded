@@ -5,7 +5,7 @@
       "label": "Build and Flash Firmware",
       "type": "shell",
       "linux": {
-        "command": ".venv/bin/python util/dfu.py -b ${workspaceFolderBasename} -p auto -j $(nproc)",
+        "command": ".venv/bin/python CA_Embedded_Libraries/util/dfu.py -b ${workspaceFolderBasename} -p auto -j $(nproc)",
         "options": {
           "cwd": "${workspaceFolder}/../../"
         }

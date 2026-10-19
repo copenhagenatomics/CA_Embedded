@@ -18,10 +18,8 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -64,6 +62,7 @@
   */
 void HAL_MspInit(void)
 {
+
   /* USER CODE BEGIN MspInit 0 */
 
   /* USER CODE END MspInit 0 */
@@ -79,63 +78,64 @@ void HAL_MspInit(void)
 }
 
 /**
-* @brief CRC MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hcrc: CRC handle pointer
-* @retval None
-*/
+  * @brief CRC MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hcrc: CRC handle pointer
+  * @retval None
+  */
 void HAL_CRC_MspInit(CRC_HandleTypeDef* hcrc)
 {
   if(hcrc->Instance==CRC)
   {
-  /* USER CODE BEGIN CRC_MspInit 0 */
+    /* USER CODE BEGIN CRC_MspInit 0 */
 
-  /* USER CODE END CRC_MspInit 0 */
+    /* USER CODE END CRC_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_CRC_CLK_ENABLE();
-  /* USER CODE BEGIN CRC_MspInit 1 */
+    /* USER CODE BEGIN CRC_MspInit 1 */
 
-  /* USER CODE END CRC_MspInit 1 */
+    /* USER CODE END CRC_MspInit 1 */
+
   }
 
 }
 
 /**
-* @brief CRC MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param hcrc: CRC handle pointer
-* @retval None
-*/
+  * @brief CRC MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hcrc: CRC handle pointer
+  * @retval None
+  */
 void HAL_CRC_MspDeInit(CRC_HandleTypeDef* hcrc)
 {
   if(hcrc->Instance==CRC)
   {
-  /* USER CODE BEGIN CRC_MspDeInit 0 */
+    /* USER CODE BEGIN CRC_MspDeInit 0 */
 
-  /* USER CODE END CRC_MspDeInit 0 */
+    /* USER CODE END CRC_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_CRC_CLK_DISABLE();
-  /* USER CODE BEGIN CRC_MspDeInit 1 */
+    /* USER CODE BEGIN CRC_MspDeInit 1 */
 
-  /* USER CODE END CRC_MspDeInit 1 */
+    /* USER CODE END CRC_MspDeInit 1 */
   }
 
 }
 
 /**
-* @brief I2C MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hi2c: I2C handle pointer
-* @retval None
-*/
+  * @brief I2C MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hi2c: I2C handle pointer
+  * @retval None
+  */
 void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   if(hi2c->Instance==I2C1)
   {
-  /* USER CODE BEGIN I2C1_MspInit 0 */
+    /* USER CODE BEGIN I2C1_MspInit 0 */
 
-  /* USER CODE END I2C1_MspInit 0 */
+    /* USER CODE END I2C1_MspInit 0 */
 
     __HAL_RCC_GPIOB_CLK_ENABLE();
     /**I2C1 GPIO Configuration
@@ -151,26 +151,27 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 
     /* Peripheral clock enable */
     __HAL_RCC_I2C1_CLK_ENABLE();
-  /* USER CODE BEGIN I2C1_MspInit 1 */
+    /* USER CODE BEGIN I2C1_MspInit 1 */
 
-  /* USER CODE END I2C1_MspInit 1 */
+    /* USER CODE END I2C1_MspInit 1 */
+
   }
 
 }
 
 /**
-* @brief I2C MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param hi2c: I2C handle pointer
-* @retval None
-*/
+  * @brief I2C MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param hi2c: I2C handle pointer
+  * @retval None
+  */
 void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
 {
   if(hi2c->Instance==I2C1)
   {
-  /* USER CODE BEGIN I2C1_MspDeInit 0 */
+    /* USER CODE BEGIN I2C1_MspDeInit 0 */
 
-  /* USER CODE END I2C1_MspDeInit 0 */
+    /* USER CODE END I2C1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_I2C1_CLK_DISABLE();
 
@@ -182,75 +183,77 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
 
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
 
-  /* USER CODE BEGIN I2C1_MspDeInit 1 */
+    /* USER CODE BEGIN I2C1_MspDeInit 1 */
 
-  /* USER CODE END I2C1_MspDeInit 1 */
+    /* USER CODE END I2C1_MspDeInit 1 */
   }
 
 }
 
 /**
-* @brief TIM_Base MSP Initialization
-* This function configures the hardware resources used in this example
-* @param htim_base: TIM_Base handle pointer
-* @retval None
-*/
+  * @brief TIM_Base MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param htim_base: TIM_Base handle pointer
+  * @retval None
+  */
 void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 {
   if(htim_base->Instance==TIM1)
   {
-  /* USER CODE BEGIN TIM1_MspInit 0 */
+    /* USER CODE BEGIN TIM1_MspInit 0 */
 
-  /* USER CODE END TIM1_MspInit 0 */
+    /* USER CODE END TIM1_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_TIM1_CLK_ENABLE();
-  /* USER CODE BEGIN TIM1_MspInit 1 */
+    /* USER CODE BEGIN TIM1_MspInit 1 */
 
-  /* USER CODE END TIM1_MspInit 1 */
+    /* USER CODE END TIM1_MspInit 1 */
+
   }
 
 }
 
 /**
-* @brief TIM_Base MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param htim_base: TIM_Base handle pointer
-* @retval None
-*/
+  * @brief TIM_Base MSP De-Initialization
+  * This function freeze the hardware resources used in this example
+  * @param htim_base: TIM_Base handle pointer
+  * @retval None
+  */
 void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
 {
   if(htim_base->Instance==TIM1)
   {
-  /* USER CODE BEGIN TIM1_MspDeInit 0 */
+    /* USER CODE BEGIN TIM1_MspDeInit 0 */
 
-  /* USER CODE END TIM1_MspDeInit 0 */
+    /* USER CODE END TIM1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM1_CLK_DISABLE();
-  /* USER CODE BEGIN TIM1_MspDeInit 1 */
+    /* USER CODE BEGIN TIM1_MspDeInit 1 */
 
-  /* USER CODE END TIM1_MspDeInit 1 */
+    /* USER CODE END TIM1_MspDeInit 1 */
   }
 
 }
 
 /**
-* @brief WWDG MSP Initialization
-* This function configures the hardware resources used in this example
-* @param hwwdg: WWDG handle pointer
-* @retval None
-*/
+  * @brief WWDG MSP Initialization
+  * This function configures the hardware resources used in this example
+  * @param hwwdg: WWDG handle pointer
+  * @retval None
+  */
 void HAL_WWDG_MspInit(WWDG_HandleTypeDef* hwwdg)
 {
   if(hwwdg->Instance==WWDG)
   {
-  /* USER CODE BEGIN WWDG_MspInit 0 */
+    /* USER CODE BEGIN WWDG_MspInit 0 */
 
-  /* USER CODE END WWDG_MspInit 0 */
+    /* USER CODE END WWDG_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_WWDG_CLK_ENABLE();
-  /* USER CODE BEGIN WWDG_MspInit 1 */
+    /* USER CODE BEGIN WWDG_MspInit 1 */
 
-  /* USER CODE END WWDG_MspInit 1 */
+    /* USER CODE END WWDG_MspInit 1 */
+
   }
 
 }

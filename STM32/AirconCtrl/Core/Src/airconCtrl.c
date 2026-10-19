@@ -89,12 +89,12 @@ static void printACTemperature()
     }
 
     if (bsGetStatus() & BS_VERSION_ERROR_Msk) {
-        USBnprintf("0x%08" PRIx32, bsGetStatus());
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
 
     getACStates(&temp);
-    USBnprintf("%d, 0x%08" PRIx32, temp, bsGetStatus());
+    USBnprintf("%d, 0x%08" PRIx32 "\r\n", temp, bsGetStatus());
 }
 
 static void finishWord(bool endOfMessage)
@@ -110,7 +110,7 @@ static void finishWord(bool endOfMessage)
             int len = snprintf(buf, 10, "%x ", tempCodeArr[i]);
             writeUSB(buf, len);
         }
-        USBnprintf("");
+        USBnprintf("\r\n");
         arrIdx = 0;
         irqCnt = 0;
     }
@@ -186,7 +186,7 @@ void airconCtrlInit(TIM_HandleTypeDef *ctx, TIM_HandleTypeDef *loopTimer_, WWDG_
     timerCtx  = ctx;
 
     // Pin out has changed from PCB V1.8 - older versions need other software.
-    if(-1 == boardSetup(AirCondition, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR})) {
+    if(-1 == boardSetup(AirCondition, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, AIRCON_BOARD_No_Error_Msk)) {
         return;
     }
 

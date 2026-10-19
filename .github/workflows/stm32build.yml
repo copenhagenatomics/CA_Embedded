@@ -21,11 +21,11 @@ jobs:
       packages: ${{ steps.filter.outputs.changes }}
     steps:
     # gets file environment with submodule included for libraries
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         submodules: 'true'
     # For pull requests it's not necessary to checkout the code
-    - uses: dorny/paths-filter@v3
+    - uses: dorny/paths-filter@v4
       id: filter
       with:
         filters: |
@@ -52,7 +52,7 @@ jobs:
         package: ${{ fromJSON(needs.changes.outputs.packages) }}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4   # gets file environment with submodule included for libraries
+    - uses: actions/checkout@v7   # gets file environment with submodule included for libraries
       with:
         submodules: 'true'
     # Check whether the unittest folder exist in the modified project. If so, run unittests.
@@ -64,7 +64,7 @@ jobs:
         else
           echo 'exist=0' >> $GITHUB_ENV
         fi
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v7
       with: 
         python-version: '3.10'
     # Build and run unittests. If the unittest fails the line number is output.
@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # gets file environment with submodule included for libraries
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: 'true'
       # Install arm-none-eabi toolchain from developer.arm.com (link to be changed if the version changes)
@@ -127,7 +127,7 @@ jobs:
         env:
           VERSION_TAG: ${{ steps.tagfilter.outputs.version }}
       # Upload the .elf and .bin file under the summary tab
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.package }}
           path: |
@@ -149,12 +149,12 @@ jobs:
         run: |
           if [[ -e STM32/${{ matrix.package }}/Core/Inc/pcbversion.h ]]; then
             echo "versionfile=STM32/${{ matrix.package }}/Core/Inc/pcbversion.h" >> $GITHUB_OUTPUT
-            echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h latest both")" >> $GITHUB_OUTPUT
-            echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h breaking both")" >> $GITHUB_OUTPUT
+            echo "latest=$(eval "./CA_Embedded_Libraries/util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h latest both")" >> $GITHUB_OUTPUT
+            echo "breaking=$(eval "./CA_Embedded_Libraries/util/pcbversion.py STM32/${{ matrix.package }}/Core/Inc/pcbversion.h breaking both")" >> $GITHUB_OUTPUT
           else
             echo "versionfile=STM32/${{ matrix.package }}/pcbversion" >> $GITHUB_OUTPUT
-            echo "latest=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion latest both")" >> $GITHUB_OUTPUT
-            echo "breaking=$(eval "./util/pcbversion.py STM32/${{ matrix.package }}/pcbversion breaking both")" >> $GITHUB_OUTPUT
+            echo "latest=$(eval "./CA_Embedded_Libraries/util/pcbversion.py STM32/${{ matrix.package }}/pcbversion latest both")" >> $GITHUB_OUTPUT
+            echo "breaking=$(eval "./CA_Embedded_Libraries/util/pcbversion.py STM32/${{ matrix.package }}/pcbversion breaking both")" >> $GITHUB_OUTPUT
           fi
       - name: Rename build files for Github release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
@@ -170,7 +170,7 @@ jobs:
           done
       - name: Release
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # upload only pushes to the main branch
-        uses: softprops/action-gh-release@v0.1.15
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             **/${{ steps.release-on-push-2.outputs.tag_name }}-PCBv${{ steps.pcbversion.outputs.latest }}.elf
@@ -183,17 +183,17 @@ jobs:
         run: zip -j ${{ matrix.package }}.zip STM32/${{ matrix.package }}/build/${{ matrix.package }}.elf STM32/${{ matrix.package }}/build/${{ matrix.package }}*.bin
         shell: bash
       - name: Set up Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
           python-version: "3.10"
-      - run: pip install -r release_mgmt/requirements.txt
+      - run: pip install -r CA_Embedded_Libraries/requirements.txt
       - name: Test PCB file
-        run: python release_mgmt/updatePcbVersionList.py "${{ steps.pcbversion.outputs.versionfile }}"
+        run: python CA_Embedded_Libraries/release_mgmt/updatePcbVersionList.py "${{ steps.pcbversion.outputs.versionfile }}"
         env :
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}
           MODULE_NAME : ${{ matrix.package }}
       - name: Manage PCB Versioning
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }} # File only updated on merge into main (not on pull-request)
-        run: python release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.latest }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.pcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
+        run: python CA_Embedded_Libraries/release_mgmt/managePcbVersions.py -c $(echo "${{ steps.pcbversion.outputs.latest }}" | sed 's/[a-zA-Z]//g') -b $(echo "${{ steps.pcbversion.outputs.breaking }}" | sed 's/[a-zA-Z]//g') -fw ${{ steps.tagfilter.outputs.version }} -m ${{ matrix.package }}
         env :
           AZURE_BLOB_QUERYSTRING : ${{ secrets.AZURE_BLOB_QUERYSTRING }}

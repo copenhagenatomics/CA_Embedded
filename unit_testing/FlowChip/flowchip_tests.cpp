@@ -21,6 +21,7 @@ extern "C" {
 /* Real supporting units */
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
+#include "crc.c"
 
 /* UUT */
 #include "flowChip.c"
@@ -50,7 +51,7 @@ class FlowChipBoard: public CaBoardUnitTest
 
         void storeCalibrationInFlash() {
             uint32_t offset = 0;
-            writeToFlash(FLASH_ADDR_CAL, (uint8_t*) &offset, sizeof(uint32_t));
+            writeToFlashCRC(&hcrc, FLASH_ADDR_CAL, (uint8_t*) &offset, sizeof(uint32_t));
         }
 
         /*******************************************************************************************
@@ -74,12 +75,12 @@ class FlowChipBoard: public CaBoardUnitTest
 TEST_F(FlowChipBoard, CorrectBoardParams) {
     // Store calibration value to remove status bit warning
     storeCalibrationInFlash();
-    goldenPathTest(sst, "0.00, 0.00, 0x00000000");
+    goldenPathTest(sst, "0.00, 0.00, 0x00000000\r");
 }
 
 TEST_F(FlowChipBoard, NoCalibration) {
     // Don't store calibration to ensure the warning is set
-    goldenPathTest(sst, "0.00, 0.00, 0x00000001");
+    goldenPathTest(sst, "0.00, 0.00, 0x00000001\r");
 }
 
 TEST_F(FlowChipBoard, incorrectBoard) {
@@ -89,7 +90,7 @@ TEST_F(FlowChipBoard, incorrectBoard) {
 TEST_F(FlowChipBoard, printStatusOk) {
     // Store calibration value to remove status bit warning
     storeCalibrationInFlash();
-    statusPrintoutTest(sst, {});
+    statusPrintoutTest(sst, {"The board is operating normally.\r"});
 }
 
 TEST_F(FlowChipBoard, printSerial) {
@@ -113,13 +114,12 @@ TEST_F(FlowChipBoard, wrongotp) {
     goToTick(101);
 
     /* Check the printout is correct */
-    EXPECT_FLUSH_USB(Contains("0x80000002"));
+    EXPECT_FLUSH_USB(Contains("0x80000002\r"));
 
     writeBoardMessage("Status\n");
     EXPECT_FLUSH_USB(ElementsAre(
-        "\r", 
-        "Start of board status:\r", 
+        "Start of board status:\r",
         "OTP is out of date. Update to OTP version 2\r",
-        "End of board status. \r"
+        "End of board status.\r"
     ));
 }
