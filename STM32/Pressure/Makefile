@@ -142,6 +142,9 @@ C_DEFS =  \
 -DUSE_HAL_DRIVER \
 -DSTM32F401xC
 
+ifeq ($(DEBUG), 0)
+C_DEFS += -DNDEBUG
+endif
 
 # AS includes
 AS_INCLUDES = 
@@ -173,8 +176,6 @@ CFLAGS += $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
-else
-CFLAGS += -DNDEBUG
 endif
 
 
