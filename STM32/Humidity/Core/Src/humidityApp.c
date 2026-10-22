@@ -63,6 +63,9 @@ typedef struct sht45_heating_state
 
 sht45_heating_state heating_state[2];
 
+// Print buffer shared
+static char buf[600];
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION PROTOTYPES
 ***************************************************************************************************/
@@ -70,6 +73,8 @@ sht45_heating_state heating_state[2];
 typedef sht_state (*humidityCb)(sht4x_handle_t* dev, int channel);
 
 static void HumidityPrintStatus();
+static void HumidityPrintStatusDef();
+static void HumidityPrintOutputDef();
 static void userInputs(const char *input);
 static void setMeasurementError(int channel);
 static void resetI2C(sht4x_handle_t* dev, int channel);
@@ -87,6 +92,8 @@ static CAProtocolCtx caProto =
         .undefined = userInputs,
         .printHeader = CAPrintHeader,
         .printStatus = HumidityPrintStatus,
+        .printStatusDef = HumidityPrintStatusDef,
+        .printOutputDef = HumidityPrintOutputDef,
         .jumpToBootLoader = HALJumpToBootloader,
         .calibration = NULL,
         .calibrationRW = NULL,
@@ -106,7 +113,6 @@ static humidityCb humidityRead = updateHumidity;
 */
 static void HumidityPrintStatus()
 {
-    static char buf[600] = { 0 };
     int len = 0;
 
     CA_SNPRINTF(buf, len, "Serial number sensor %d: 0x%08" PRIx32 ".\r\n", 0, humiditySensors[0].serial_number);
@@ -123,6 +129,34 @@ static void HumidityPrintStatus()
             CA_SNPRINTF(buf, len, "Humidity sensor %d is operating normally.\r\n", i);
         }
     }
+    writeUSB(buf, len);
+}
+
+/*!
+ * @brief Definition of status information when the 'StatusDef' command is received
+ */
+static void HumidityPrintStatusDef() {
+    int len = 0;
+
+    for (uint16_t i = 0; i < NUM_SENSORS; i++) {
+        CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Humidity sensor %u error\r\n", (uint32_t)SHT45_ERROR_Msk(i), i + 1);
+    }
+    
+    writeUSB(buf, len);
+}
+
+/*!
+ * @brief Definition of output printed when the 'OutputDef' command is received
+ */
+static void HumidityPrintOutputDef() {
+    int len = 0;
+
+    for (uint16_t i = 1; i <= NUM_SENSORS; i++) {
+        CA_SNPRINTF(buf, len, "Temperature %u,degC\r\n", i);
+        CA_SNPRINTF(buf, len, "Relative humidity %u,pct\r\n", i);
+        CA_SNPRINTF(buf, len, "Absolute humidity %u,g/m3\r\n", i);
+    }
+
     writeUSB(buf, len);
 }
 
@@ -492,7 +526,7 @@ void InitHumidity(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2c2, WWDG_Handl
     hwwdg_ = hwwdg;
 
     // PCB V1.6 of the humidity board uses SHT45 i.e. not functional on older PCB versions.
-    if(boardSetup(HumidityChip, (pcbVersion) {BREAKING_MAJOR, BREAKING_MINOR}, 0) == -1) {
+    if(boardSetup(HumidityChip, (pcbVersion) {BREAKING_MAJOR, BREAKING_MINOR}, HUMIDITY_NO_ERROR_Msk) == -1) {
         return;
     }
 

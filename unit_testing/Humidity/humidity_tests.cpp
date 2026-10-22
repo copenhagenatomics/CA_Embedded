@@ -163,6 +163,10 @@ TEST_F(HumidityUnitTest, incorrectBoard) {
     incorrectBoardTest(sst);
 }
 
+TEST_F(HumidityUnitTest, incorrectBoardVersion) {
+    incorrectBoardVersionTest(sst);
+}
+
 TEST_F(HumidityUnitTest, printStatus) {
     fakeHAL_I2C_addDevice(humiditySensor1);
     fakeHAL_I2C_addDevice(humiditySensor2);
@@ -176,6 +180,25 @@ TEST_F(HumidityUnitTest, printStatus) {
     });
 }
 
+TEST_F(HumidityUnitTest, printStatusDef) {
+    statusDefPrintoutTest(
+        sst, "0x7e000003,System errors\r", {
+            "0x00000001,Humidity sensor 1 error\r",
+            "0x00000002,Humidity sensor 2 error\r",
+        });
+}
+
 TEST_F(HumidityUnitTest, printSerial) {
     serialPrintoutTest(sst, "HumidityChip");
+}
+
+TEST_F(HumidityUnitTest, printOutputDef) {
+    outputDefPrintoutTest(sst,{
+        "Temperature 1,degC\r",
+        "Relative humidity 1,pct\r",
+        "Absolute humidity 1,g/m3\r",
+        "Temperature 2,degC\r",
+        "Relative humidity 2,pct\r",
+        "Absolute humidity 2,g/m3\r"
+    });
 }
