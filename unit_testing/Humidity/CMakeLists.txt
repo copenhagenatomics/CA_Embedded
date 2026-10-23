@@ -37,6 +37,7 @@ set(INC_LIB
     ${LIB}/circularBuffer/Inc
     ${LIB}/Crc/Inc 
     ${LIB}/FLASH_readwrite/Inc
+    ${LIB}/Humidity/Inc
     ${LIB}/I2C/Inc
     ${LIB}/jumpToBootloader/Inc 
     ${LIB}/USBprint/Inc
@@ -65,7 +66,8 @@ add_executable(humidity_tests
     ${UT_FAKES}/fake_stm32xxxx_hal.cpp
     ${UT_STUBS}/stub_jumpToBootloader.cpp
     ${UT_LIB}/Util/serialStatus_tests.cpp
-    ${LIB}/Util/Src/systeminfo.c)
+    ${LIB}/Util/Src/systeminfo.c
+    ${LIB}/Util/Src/time32.c)
 
 target_include_directories(humidity_tests PRIVATE
     ${INC_LIB}
@@ -76,6 +78,7 @@ target_include_directories(humidity_tests PRIVATE
     ${DRIV}/Src
     ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
     ${LIB}/Util/Src
+    ${LIB}/Humidity/Src
     ${LIB}/I2C/Src
     ${LIB}/Crc/Src
     ${UT_LIB}/Util)
