@@ -67,8 +67,8 @@ static CAProtocolCtx caProto = {.undefined        = userInputs,
 ***************************************************************************************************/
 
 /*!
-** @brief Verbose print of the Humidity board status.
-*/
+ * @brief Verbose print of the Humidity board status.
+ */
 static void HumidityPrintStatus() {
     int len = 0;
 
@@ -115,8 +115,9 @@ static void HumidityPrintOutputDef() {
 }
 
 /*!
-** @brief User input handler that allows to go into burn-in mode.
-*/
+ * @brief User input handler that allows to go into burn-in mode.
+ * @param input User input buffer
+ */
 static void userInputs(const char* input) {
     if (strncmp(input, "burnin", 6) == 0) {
         for (uint16_t i = 0; i < NUM_SENSORS; i++) {
@@ -134,15 +135,16 @@ static void userInputs(const char* input) {
 }
 
 /*!
-** @brief Handles the "uptime" command
-*/
+ * @brief Handles the "uptime" command
+ * @param input User input buffer
+ */
 static void humidityUptimeHandler(const char* input) {
     uptime_inputHandler(input, CAPrintHeader);
 }
 
 /*!
-**  @brief State machine for humidity measurements.
-*/
+ *  @brief State machine for humidity measurements.
+ */
 static void humidityStateMachine() {
     for (uint16_t i = 0; i < NUM_SENSORS; i++) {
         humidity_sm_run(&humiditySensors[i]);
@@ -152,9 +154,11 @@ static void humidityStateMachine() {
 }
 
 /*!
-** @brief Assigns SPI handles to sensor handles and tries to read the SHT45 serial
-**        information to determine whether it has a valid connection.
-*/
+ * @brief Assigns I2C handles to sensor handles and tries to read the SHT45 serial
+ *        information to determine whether it has a valid connection.
+ * @param hi2c1 First I2C
+ * @param hi2c2 Second I2C
+ */
 static void initHumiditySensors(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2c2) {
     humidity_sm_init(&humiditySensors[0], hi2c1, GPIOB, GPIO_PIN_6, GPIOB, GPIO_PIN_7,
                      SHT45_ERROR_Msk(0));
@@ -167,9 +171,10 @@ static void initHumiditySensors(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2
 ***************************************************************************************************/
 
 /*!
-** @brief Timer interrupt with an interrupt frequency of 10 Hz. The function is responsible for
-**        printing measurement data and board status over USB.
-*/
+ * @brief Timer interrupt with an interrupt frequency of 10 Hz. The function is responsible for
+ *        printing measurement data and board status over USB.
+ * @param htim Timer calling the interrupt
+ */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
     if (!isUsbPortOpen()) {
         return;
@@ -193,12 +198,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef* htim) {
 }
 
 /*!
-** @brief Loop function called repeatedly in main loop
-**
-** * Responds to user input
-** * Initiates measurements, waits in a non-blocking manner for conversions
-**   to finish and gets new measurements depending on current sensor state.
-*/
+ * @brief Loop function called repeatedly in main loop
+ *
+ * * Responds to user input
+ * * Initiates measurements, waits in a non-blocking manner for conversions
+ *   to finish and gets new measurements depending on current sensor state.
+ */
 void LoopHumidity(const char* bootMsg) {
     CAhandleUserInputs(&caProto, bootMsg);
     uptime_update();
@@ -211,16 +216,17 @@ void LoopHumidity(const char* bootMsg) {
 }
 
 /*!
-** @brief Setup function called at startup
-**
-** Checks the hardware matches this FW version, starts the USB communication and establishes
-** communication with the humidity sensors.
-*/
+ * @brief Setup function called at startup
+ * @param hi2c1 First I2C handler
+ * @param hi2c2 Second I2C handler
+ * @param hcrc CRC Handler
+ * @param bootMsg CA boot message
+ */
 void InitHumidity(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2c2, CRC_HandleTypeDef* hcrc,
                   const char* bootMsg) {
     initCAProtocol(&caProto, usbRx);
 
-    /* Initialise basic uptime counters */
+    // Initialises basic uptime counters
     uptime_init(hcrc, 0, NULL, bootMsg, GIT_VERSION);
 
     // PCB V1.6 of the humidity board uses SHT45 i.e. not functional on older PCB versions.

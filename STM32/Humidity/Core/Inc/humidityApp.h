@@ -1,8 +1,8 @@
 /*!
- *  @file humidityApp.h
- *
- *  @date Apr 6, 2022
- *  @author matias
+ * @file    humidityApp.h
+ * @brief   Header file of humidityApp.c
+ * @date    06/04/2022
+ * @author  matias
  */
 
 #ifndef INC_HUMIDITYAPP_H_
