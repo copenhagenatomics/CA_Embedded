@@ -70,6 +70,7 @@ add_executable(humidity_tests
     ${LIB}/Util/Src/time32.c)
 
 target_include_directories(humidity_tests PRIVATE
+    .
     ${INC_LIB}
     ${UT_FAKES}
     ${SRC}/Core/Src
