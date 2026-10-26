@@ -147,8 +147,8 @@ void calibrateSensor(int noOfCalibrations, const CACalibration *calibrations, Fl
         const int channel                  = calibrations[i].port - 1;
         cal->sensorCalVal[channel * 2]     = calibrations[i].alpha;
         cal->sensorCalVal[channel * 2 + 1] = calibrations[i].beta;
-        cal->measurementType[channel]      = calibrations->threshold;
-        setMeasurementType(channel, calibrations->threshold);
+        cal->measurementType[channel]      = calibrations[i].threshold;
+        setMeasurementType(channel, calibrations[i].threshold);
     }
     // Calibrations are stored in flash
     calibrationRW(true, cal, calSize);

@@ -256,6 +256,28 @@ TEST_F(PressureCalibrationTest, testCalibrateSensor)
     }       
 }
 
+TEST_F(PressureCalibrationTest, testCalibrateSensorMixedMeasurementTypes)
+{
+    calibrationInit(&hcrc, &cal, sizeof(cal));
+
+    // Cover mixed modes with either voltage or current as the first entry.
+    for (int firstMode = 0; firstMode <= 1; firstMode++) {
+        SCOPED_TRACE(firstMode);
+        CACalibration calibrations[NO_CALIBRATION_CHANNELS];
+        for (int channel = 0; channel < NO_CALIBRATION_CHANNELS; channel++) {
+            calibrations[channel] = {channel + 1, 1.0, 0.0, (channel + firstMode) % 2};
+        }
+
+        calibrateSensor(NO_CALIBRATION_CHANNELS, calibrations, &cal, sizeof(cal));
+
+        for (int channel = 0; channel < NO_CALIBRATION_CHANNELS; channel++) {
+            const int expectedMode = calibrations[channel].threshold;
+            EXPECT_EQ(cal.measurementType[channel], expectedMode) << "Channel " << channel + 1;
+            EXPECT_EQ(stmGetGpio(CH_Ctrl[channel]), expectedMode) << "Channel " << channel + 1;
+        }
+    }
+}
+
 TEST_F(PressureCalibrationTest, testCalibrationRW)
 {
     calibrationInit(&hcrc, &cal, sizeof(cal));
