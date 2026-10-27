@@ -8,21 +8,22 @@ Provide review hints, explanations or discussion points/todos.
 
 ### Primary Changes
 
-* List the changes here in order of decreasing importance
-* Does this code fix a bug or address an issue?
-* Is a block diagram required?
-* Links to datasheets [datasheet1](www.mydatasheet.com) 
-* Associated Library PR: https://www.github.com/path/to/your/pr
+- List the changes here in order of decreasing importance
+- Does this code fix a bug or address an issue?
+- Is a block diagram required?
+- Links to datasheets [datasheet1](www.mydatasheet.com) 
+- Associated Library PR: https://www.github.com/path/to/your/pr
 
 ### Secondary Changes
 
-* Should these be in a separate PR?
+- Should these be in a separate PR?
 
 ### Checklist
 
 - [ ] Ran CLANG format on touched code snippets
 - [ ] Added /*! @brief function documentation */
 - [ ] AI generated code has a spec folder
+- [ ] Updated product datasheet, if necessary
 
 ### Testing
 
