@@ -23,6 +23,7 @@ Provide review hints, explanations or discussion points/todos.
 - [ ] Ran CLANG format on touched code snippets
 - [ ] Added /*! @brief function documentation */
 - [ ] AI generated code has a spec folder
+- [ ] Updated product datasheet, if necessary
 
 ### Testing
 
