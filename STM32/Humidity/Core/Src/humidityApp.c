@@ -17,6 +17,7 @@
 #include "githash.h"
 #include "humidityApp.h"
 #include "humiditySm.h"
+#include "main.h"
 #include "pcbversion.h"
 #include "systemInfo.h"
 #include "time32.h"
@@ -76,11 +77,12 @@ static void HumidityPrintStatus() {
         CA_SNPRINTF(buf, len, "Serial number sensor %u: 0x%08" PRIx32 ".\r\n", i + 1,
                     humidity_sm_get_serial(&humiditySensors[i]));
     }
-
     for (uint16_t i = 0; i < NUM_SENSORS; i++) {
         CA_SNPRINTF(buf, len, "Humidity sensor %u is %s.\r\n", i + 1,
-                    bsGetField(SHT45_ERROR_Msk(i)) ? "not responding" : "operating normally");
+                    bsGetField(BS_SHT45_ERROR_Msk(i)) ? "not responding" : "operating normally");
     }
+    CA_SNPRINTF(buf, len, "Humidity sensor burnin: %s.\r\n",
+                bsGetField(BS_HUMIDITY_BURNIN_Msk) ? "YES" : "NO");
 
     writeUSB(buf, len);
 }
@@ -93,8 +95,9 @@ static void HumidityPrintStatusDef() {
 
     for (uint16_t i = 0; i < NUM_SENSORS; i++) {
         CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Humidity sensor %u error\r\n",
-                    (uint32_t)SHT45_ERROR_Msk(i), i + 1);
+                    (uint32_t)BS_SHT45_ERROR_Msk(i), i + 1);
     }
+    CA_SNPRINTF(buf, len, "0x%08" PRIx32 ",Humidity burnin\r\n", (uint32_t)BS_HUMIDITY_BURNIN_Msk);
 
     writeUSB(buf, len);
 }
@@ -149,8 +152,10 @@ static void humidityStateMachine() {
     for (uint16_t i = 0; i < NUM_SENSORS; i++) {
         humidity_sm_run(&humiditySensors[i]);
     }
+    bsUpdateField(BS_HUMIDITY_BURNIN_Msk, humidity_sm_in_burnin(&humiditySensors[0]) |
+                                              humidity_sm_in_burnin(&humiditySensors[1]));
 
-    bsClearError(HUMIDITY_NO_ERROR_Msk);
+    bsClearError(BS_HUMIDITY_NO_ERROR_Msk);
 }
 
 /*!
@@ -160,10 +165,10 @@ static void humidityStateMachine() {
  * @param hi2c2 Second I2C
  */
 static void initHumiditySensors(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2c2) {
-    humidity_sm_init(&humiditySensors[0], hi2c1, GPIOB, GPIO_PIN_6, GPIOB, GPIO_PIN_7,
-                     SHT45_ERROR_Msk(0));
-    humidity_sm_init(&humiditySensors[1], hi2c2, GPIOB, GPIO_PIN_10, GPIOB, GPIO_PIN_3,
-                     SHT45_ERROR_Msk(1));
+    humidity_sm_init(&humiditySensors[0], hi2c1, SCL1_GPIO_Port, SCL1_Pin, SDA1_GPIO_Port, SDA1_Pin,
+                     BS_SHT45_ERROR_Msk(0));
+    humidity_sm_init(&humiditySensors[1], hi2c2, SCL2_GPIO_Port, SCL2_Pin, SDA2_GPIO_Port, SDA2_Pin,
+                     BS_SHT45_ERROR_Msk(1));
 }
 
 /***************************************************************************************************
@@ -231,7 +236,7 @@ void InitHumidity(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2c2, CRC_Handle
 
     // PCB V1.6 of the humidity board uses SHT45 i.e. not functional on older PCB versions.
     if (boardSetup(HumidityChip, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR},
-                   HUMIDITY_NO_ERROR_Msk) != 0) {
+                   BS_HUMIDITY_NO_ERROR_Msk) != 0) {
         return;
     }
 

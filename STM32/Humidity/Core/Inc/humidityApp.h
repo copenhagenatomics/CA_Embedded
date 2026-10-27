@@ -14,8 +14,11 @@
 ** DEFINES
 ***************************************************************************************************/
 
-#define SHT45_ERROR_Msk(x)    (1U << (x))
-#define HUMIDITY_NO_ERROR_Msk (BS_SYSTEM_ERRORS_Msk | 0x03)
+#define BS_SHT45_ERROR_Msk(x)  (1U << (x))
+#define BS_HUMIDITY_BURNIN_Msk 0x004U
+
+#define BS_HUMIDITY_NO_ERROR_Msk \
+    (BS_SYSTEM_ERRORS_Msk | BS_SHT45_ERROR_Msk(0) | BS_SHT45_ERROR_Msk(1))
 
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS

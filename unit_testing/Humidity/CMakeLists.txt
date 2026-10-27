@@ -46,7 +46,7 @@ set(INC_LIB
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
 set(UT_STUBS ${UT_LIB}/stubs)
-set(DRIV ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/FW_1.27.1/Drivers/STM32F4xx_HAL_Driver)
+set(DRIV ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/FW_1.28.3/Drivers/STM32F4xx_HAL_Driver)
 
 ####################################################################################################
 ## List of tests to run
