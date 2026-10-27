@@ -9,7 +9,8 @@
 #include <vector>
 
 extern "C" {
-uint32_t _FlashAddrCal = 0;
+uint32_t _FlashAddrCal    = 0;
+uint32_t _FlashAddrUptime = 0;
 }
 
 #include "caBoardUnitTests.h"
@@ -24,12 +25,9 @@ uint32_t _FlashAddrCal = 0;
 #include "CAProtocol.c"
 #include "CAProtocolStm.c"
 #include "crc.c"
+#include "humiditySm.c"
 #include "sht45.c"
-
-#define __NOP()   \
-    do {          \
-        continue; \
-    } while (0)
+#include "uptime.c"
 
 /* UUT */
 #include "humidityApp.c"
@@ -98,6 +96,14 @@ class HumidityUnitTest : public CaBoardUnitTest {
         : CaBoardUnitTest(&LoopHumidity, HumidityChip, {LATEST_MAJOR, LATEST_MINOR}) {
         humiditySensor1 = new mockSht45(0x1234789A, I2C1);
         humiditySensor2 = new mockSht45(0xBCDEF012, I2C2);
+
+        fakeHAL_I2C_addDevice(humiditySensor1);
+        humiditySensor1->setTemp(0x8000);
+        humiditySensor1->setHumidity(0x8000);
+
+        fakeHAL_I2C_addDevice(humiditySensor2);
+        humiditySensor2->setTemp(0x7000);
+        humiditySensor2->setHumidity(0x7000);
     }
 
     void simTick() {
@@ -115,33 +121,25 @@ class HumidityUnitTest : public CaBoardUnitTest {
     ** MEMBERS
     *******************************************************************************************/
 
-    WWDG_HandleTypeDef wwdg;
     I2C_HandleTypeDef i2cHumidity2 = {.Instance = I2C2};
     I2C_HandleTypeDef i2cHumidity1 = {.Instance = I2C1};
     TIM_HandleTypeDef printTim     = {.Instance = TIM2};
+    CRC_HandleTypeDef hcrc;
 
     mockSht45* humiditySensor1;
     mockSht45* humiditySensor2;
 
-    SerialStatusTest sst = {.boundInit   = bind(InitHumidity, &i2cHumidity1, &i2cHumidity2, &wwdg),
-                            .testFixture = this};
+    SerialStatusTest sst = {
+        .boundInit   = bind(InitHumidity, &i2cHumidity1, &i2cHumidity2, &hcrc, bootMsg),
+        .testFixture = this};
 };
 
 /***************************************************************************************************
-** TESTS
+** GENERIC CA TESTS
 ***************************************************************************************************/
 
 TEST_F(HumidityUnitTest, goldenPath) {
-    fakeHAL_I2C_addDevice(humiditySensor1);
-    humiditySensor1->setTemp(0x8000);
-    humiditySensor1->setHumidity(0x8000);
-
-    fakeHAL_I2C_addDevice(humiditySensor2);
-    humiditySensor2->setTemp(0x8000);
-    humiditySensor2->setHumidity(0x8000);
-
-    sst.boundInit();
-    goldenPathTest(sst, "42.50, 56.50, 32.76, 42.50, 56.50, 32.76, 0x00000000\r");
+    goldenPathTest(sst, "42.50, 56.50, 32.76, 31.56, 48.69, 16.08, 0x00000000\r");
 }
 
 TEST_F(HumidityUnitTest, incorrectBoard) {
@@ -158,15 +156,13 @@ TEST_F(HumidityUnitTest, printSerial) {
 
 // clang-format off
 TEST_F(HumidityUnitTest, printStatus) {
-    fakeHAL_I2C_addDevice(humiditySensor1);
-    fakeHAL_I2C_addDevice(humiditySensor2);
-
     statusPrintoutTest(sst, {
         "The board is operating normally.\r",
-        "Serial number sensor 0: 0x1234789a.\r", 
-        "Serial number sensor 1: 0xbcdef012.\r", 
-        "Humidity sensor 0 is operating normally.\r", 
-        "Humidity sensor 1 is operating normally.\r",
+        "Serial number sensor 1: 0x1234789a.\r", 
+        "Serial number sensor 2: 0xbcdef012.\r", 
+        "Humidity sensor 1 is operating normally.\r", 
+        "Humidity sensor 2 is operating normally.\r",
+        "Humidity sensor burnin: NO.\r"
     });
 }
 
@@ -175,6 +171,7 @@ TEST_F(HumidityUnitTest, printStatusDef) {
         sst, "0x7e000003,System errors\r", {
             "0x00000001,Humidity sensor 1 error\r",
             "0x00000002,Humidity sensor 2 error\r",
+            "0x00000004,Humidity burnin\r"
         });
 }
 
@@ -189,3 +186,33 @@ TEST_F(HumidityUnitTest, printOutputDef) {
     });
 }
 // clang-format on
+
+TEST_F(HumidityUnitTest, uptime) {
+    uptimeTest(sst, (uintptr_t)&_FlashAddrUptime);
+}
+
+/***************************************************************************************************
+** USER INPUT COMMAND TESTS
+***************************************************************************************************/
+
+TEST_F(HumidityUnitTest, burninMode) {
+    sst.boundInit();
+    simTicks(100);
+    EXPECT_FALSE(flushAndGetUSBStatus() & BS_HUMIDITY_BURNIN_Msk);
+
+    writeBoardMessage("burnin\n");
+    simTicks(100);
+    EXPECT_TRUE(flushAndGetUSBStatus() & BS_HUMIDITY_BURNIN_Msk);
+
+    writeBoardMessage("normal\n");
+    simTicks(100);
+    EXPECT_FALSE(flushAndGetUSBStatus() & BS_HUMIDITY_BURNIN_Msk);
+
+    writeBoardMessage("burnin\n");
+    simTicks(100);
+    EXPECT_TRUE(flushAndGetUSBStatus() & BS_HUMIDITY_BURNIN_Msk);
+
+    // Check Burnin timeout works
+    simTicks(4800000 + 100);
+    EXPECT_FALSE(flushAndGetUSBStatus() & BS_HUMIDITY_BURNIN_Msk);
+}

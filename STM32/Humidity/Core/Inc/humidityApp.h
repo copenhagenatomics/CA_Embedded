@@ -1,8 +1,8 @@
 /*!
- *  @file humidityApp.h
- *
- *  @date Apr 6, 2022
- *  @author matias
+ * @file    humidityApp.h
+ * @brief   Header file of humidityApp.c
+ * @date    06/04/2022
+ * @author  matias
  */
 
 #ifndef INC_HUMIDITYAPP_H_
@@ -13,29 +13,19 @@
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
-#define NUM_SENSORS 2
 
-#define HEATING_INTERVAL      60000  // 1 minute
-#define HEATING_SETTLING_TIME 55000  // 55 seconds
-#define RH_THRESHOLD_HIGH     85     // Start heating at 85% RH
+#define BS_SHT45_ERROR_Msk(x)  (1U << (x))
+#define BS_HUMIDITY_BURNIN_Msk 0x004U
 
-#define MAX_TEMP_BEFORE_HEATING 80       // Maximum temperature before heating
-#define BURN_IN_TIME            4800000  // 80 minutes
-
-#define SHT45_ERROR_Msk(x)    (1U << (x))
-#define HUMIDITY_NO_ERROR_Msk (BS_SYSTEM_ERRORS_Msk | 0x03)
-
-typedef struct Measurement {
-    float temp;  // temperature
-    float rh;    // relative humidity
-    float ah;    // absolute humidity
-} Measurement;
+#define BS_HUMIDITY_NO_ERROR_Msk \
+    (BS_SYSTEM_ERRORS_Msk | BS_SHT45_ERROR_Msk(0) | BS_SHT45_ERROR_Msk(1))
 
 /***************************************************************************************************
 ** PUBLIC FUNCTIONS
 ***************************************************************************************************/
 
-void InitHumidity(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2c2, WWDG_HandleTypeDef* hwwdg);
+void InitHumidity(I2C_HandleTypeDef* hi2c1, I2C_HandleTypeDef* hi2c2, CRC_HandleTypeDef* hcrc,
+                  const char* bootMsg);
 void LoopHumidity(const char* bootMsg);
 
 #endif /* INC_HUMIDITYAPP_H_ */

@@ -37,6 +37,7 @@ set(INC_LIB
     ${LIB}/circularBuffer/Inc
     ${LIB}/Crc/Inc 
     ${LIB}/FLASH_readwrite/Inc
+    ${LIB}/Humidity/Inc
     ${LIB}/I2C/Inc
     ${LIB}/jumpToBootloader/Inc 
     ${LIB}/USBprint/Inc
@@ -45,7 +46,7 @@ set(INC_LIB
 set(UT_LIB ../../CA_Embedded_Libraries/unit_testing)
 set(UT_FAKES ${UT_LIB}/fakes)
 set(UT_STUBS ${UT_LIB}/stubs)
-set(DRIV ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/FW_1.27.1/Drivers/STM32F4xx_HAL_Driver)
+set(DRIV ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/FW_1.28.3/Drivers/STM32F4xx_HAL_Driver)
 
 ####################################################################################################
 ## List of tests to run
@@ -65,9 +66,11 @@ add_executable(humidity_tests
     ${UT_FAKES}/fake_stm32xxxx_hal.cpp
     ${UT_STUBS}/stub_jumpToBootloader.cpp
     ${UT_LIB}/Util/serialStatus_tests.cpp
-    ${LIB}/Util/Src/systeminfo.c)
+    ${LIB}/Util/Src/systeminfo.c
+    ${LIB}/Util/Src/time32.c)
 
 target_include_directories(humidity_tests PRIVATE
+    .
     ${INC_LIB}
     ${UT_FAKES}
     ${SRC}/Core/Src
@@ -76,6 +79,7 @@ target_include_directories(humidity_tests PRIVATE
     ${DRIV}/Src
     ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include
     ${LIB}/Util/Src
+    ${LIB}/Humidity/Src
     ${LIB}/I2C/Src
     ${LIB}/Crc/Src
     ${UT_LIB}/Util)
