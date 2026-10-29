@@ -1,9 +1,18 @@
-/*
- * otpApp.h
- * Description: Read/write various information from OTP memory.
+/*!
+ * @file    otpApp.h
+ * @brief   Header file of otpApp.c
+ * @date    29/10/2026
+ * @author  Timothé Dodin
  */
-#pragma once
+
+#ifndef INC_OTP_APP_H_
+#define INC_OTP_APP_H_
+
+/***************************************************************************************************
+** PUBLIC FUNCTION DECLARATIONS
+***************************************************************************************************/
 
 void otpInit();
 void otpLoop();
 
+#endif /* INC_OTP_APP_H_ */
