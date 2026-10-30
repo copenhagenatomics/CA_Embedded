@@ -2,7 +2,7 @@
 #define PCB_VERSION_H_ 
 
 #define LATEST_MAJOR    6
-#define LATEST_MINOR    5
+#define LATEST_MINOR    6
 #define BREAKING_MAJOR  6
 #define BREAKING_MINOR  5
 
