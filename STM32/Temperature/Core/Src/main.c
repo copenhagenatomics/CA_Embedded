@@ -108,8 +108,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   // Disable wwdg until print frequency has stabilised after first run.
   // Enabled again in LoopTemperature.
-  __HAL_RCC_WWDG_CLK_DISABLE();
-  InitTemperature(&hspi1, &hwwdg, &hcrc);
+  InitTemperature(&hspi1, &hcrc, bootMsg);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -119,7 +118,7 @@ int main(void)
 	  // Update the watchdog if the SPI communication to the
 	  // ADS1120 chips work as expected.
 	  HAL_IWDG_Refresh(&hiwdg);
-      LoopTemperature(bootMsg);
+    LoopTemperature(bootMsg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

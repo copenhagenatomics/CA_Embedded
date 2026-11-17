@@ -48,8 +48,7 @@ extern uint32_t _FlashAddrCal;  // Starting address of calibration values in FLA
 ** PUBLIC FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_,
-                     CRC_HandleTypeDef* hcrc_);
+void InitTemperature(SPI_HandleTypeDef* hspi_, CRC_HandleTypeDef* hcrc_, const char* bootMsg);
 void LoopTemperature(const char* bootMsg);
 
 #endif /* INC_TEMPERATURE_H_ */

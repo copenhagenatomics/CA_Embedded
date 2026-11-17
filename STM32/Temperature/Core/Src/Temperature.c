@@ -51,10 +51,6 @@ static void initSpiDevices(SPI_HandleTypeDef* hspi);
 static void monitorBoardStatus();
 static void getPeripheralTemperatures();
 static float getInternalTemperature();
-static void enableWWDG();
-static void initSensorCalibration();
-static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations);
-static void calibrateReadWrite(bool write);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -252,86 +248,44 @@ static float getInternalTemperature() {
     return internalTemp / count;
 }
 
-static void enableWWDG() {
-    static int isWWDGEnabled = 0;
-    if (!isWWDGEnabled) {
-        isWWDGEnabled = 1;
-        __HAL_RCC_WWDG_CLK_ENABLE();
+static void printValues() {
+    if (!isUsbPortOpen()) {
+        return;
     }
-}
 
-static void initSensorCalibration() {
-    if (readFromFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
-                         sizeof(portCalVal)) != 0) {
-        // If nothing is stored in FLASH defaults are:
-        if (subtype == 2) {
-            // 1.8 kOhm resistor on the board, 0.60 total measured lead resistance.
-            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
-                portCalVal[i][0] = 1.8e3;
-                portCalVal[i][1] = 0.60;
-            }
-        }
-        else if (subtype == 1) {
-            // 2.7 kOhm resistor on the board, 0.60 total measured lead resistance.
-            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
-                portCalVal[i][0] = 2.7e3;
-                portCalVal[i][1] = 0.60;
-            }
-        }
-        else {
-            for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
-                portCalVal[i][0] = TYPE_K_DELTA;
-                portCalVal[i][1] = TYPE_K_CJ_DELTA;
-            }
-        }
+    if (bsGetField(BS_VERSION_ERROR_Msk)) {
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
+        return;
     }
-}
 
-static void calibrateTypeInput(int noOfCalibrations, const CACalibration* calibrations) {
-    __HAL_RCC_WWDG_CLK_DISABLE();
-    for (int count = 0; count < noOfCalibrations; count++) {
-        if (1 <= calibrations[count].port && calibrations[count].port <= 10) {
-            portCalVal[calibrations[count].port - 1][0] = calibrations[count].alpha;
-            portCalVal[calibrations[count].port - 1][1] = calibrations[count].beta;
-        }
-    }
-    // Update automatically when receiving new calibration values
-    calibrateReadWrite(true);
-    __HAL_RCC_WWDG_CLK_ENABLE();
-}
+    int len = 0;
 
-static void calibrateReadWrite(bool write) {
-    if (write) {
-        if (writeToFlashCRC(hcrc, (uint32_t)FLASH_ADDR_CAL, (uint8_t*)portCalVal,
-                            sizeof(portCalVal)) != 0) {
-            USBnprintf("Calibration was not stored in FLASH\r\n");
-        }
+    for (uint32_t i = 0; i < NO_SPI_DEVICES; i++) {
+        CA_SNPRINTF(buf, len, "%.2f, %.2f, ", ads1120[i].data.chA, ads1120[i].data.chB);
     }
-    else {
-        char buf[512];
-        int len = 0;
-        for (int i = 0; i < NO_SPI_DEVICES * 2; i++) {
-            if (i == 0) {
-                CA_SNPRINTF(buf, len, "Calibration: CAL");
-            }
-            CA_SNPRINTF(buf, len, " %d,%.10f,%.10f", i + 1, portCalVal[i][0], portCalVal[i][1]);
-        }
-        CA_SNPRINTF(buf, len, "\r\n");
-        writeUSB(buf, len);
-    }
+    CA_SNPRINTF(buf, len, "%.2f, 0x%08" PRIx32 "\r\n", internalTemp, bsGetStatus());
+    
+
+    USBnprintf(
+        "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n",
+        ads1120[0].data.chA, ads1120[0].data.chB, ads1120[1].data.chA, ads1120[1].data.chB,
+        ads1120[2].data.chA, ads1120[2].data.chB, ads1120[3].data.chA, ads1120[3].data.chB,
+        ads1120[4].data.chA, ads1120[4].data.chB, internalTemp, bsGetStatus());
 }
 
 /***************************************************************************************************
 ** PUBLIC FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
-void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_,
-                     CRC_HandleTypeDef* hcrc_) {
-    boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, TEMP_ERRORS_Msk);
+void InitTemperature(SPI_HandleTypeDef* hspi_, CRC_HandleTypeDef* hcrc_, const char* bootMsg) {
+    
     initCAProtocol(&caProto, usbRx);
 
+    if (boardSetup(Temperature, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, TEMP_ERRORS_Msk) != 0) {
+        return;
+    }
+
     hspi  = hspi_;
-    hwwdg = hwwdg_;
     hcrc  = hcrc_;
 
     pcbVersion ver;
@@ -341,7 +295,6 @@ void InitTemperature(SPI_HandleTypeDef* hspi_, WWDG_HandleTypeDef* hwwdg_,
     /* Get subtype for checking if this is an RTD board or not */
     getBoardInfo(NULL, &subtype);
 
-    initSensorCalibration();
     initSpiDevices(hspi);
 }
 
@@ -360,19 +313,7 @@ void LoopTemperature(const char* bootMsg) {
     // Upload data every "tsUpload" ms.
     if (tdiff_u32(HAL_GetTick(), timeStamp) >= tsUpload) {
         timeStamp = HAL_GetTick();
-        HAL_WWDG_Refresh(hwwdg);
 
-        if (!isUsbPortOpen()) {
-            return;
-        }
-
-        // Enable wwdg now that print frequency has stabilised.
-        enableWWDG();
-
-        USBnprintf(
-            "%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08" PRIx32 "\r\n",
-            ads1120[0].data.chA, ads1120[0].data.chB, ads1120[1].data.chA, ads1120[1].data.chB,
-            ads1120[2].data.chA, ads1120[2].data.chB, ads1120[3].data.chA, ads1120[3].data.chB,
-            ads1120[4].data.chA, ads1120[4].data.chB, internalTemp, bsGetStatus());
+        
     }
 }
