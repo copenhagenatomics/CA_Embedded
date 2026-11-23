@@ -21,7 +21,7 @@
 #include "DCBoard.h"
 #include "StmGpio.h"
 #include "USBprint.h"
-#include "flashHandler.h"
+#include "calibration.h"
 #include "githash.h"
 #include "main.h"
 #include "pcbversion.h"
@@ -51,7 +51,6 @@
 #define UNDER_VOLTAGE_THRESHOLD 10
 #define OVER_VOLTAGE_THRESHOLD  27
 
-#define MAX_MEASURABLE_CURRENT        6.25f
 #define EFUSE_DEFAULT_CURRENT_LIMIT_A (MAX_MEASURABLE_CURRENT - 0.25)
 
 /* Custom uptime channel indices (after the NUM_DEFAULT_CHANNELS defaults) */
@@ -64,16 +63,24 @@
 ** PRIVATE FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-static void DCInputHandler(const char* input);
-static void DCUptimeHandler(const char* input);
+static void printUptime(const char* input);
+static void printHeader();
+static void printStatus();
+static void printStatusDef();
+static void printOutputDef();
+
+static void calibration(int noOfCalibrations, const CACalibration* calibrations);
+static void readCalibrationFromRAM();
+static void readCalibrationFromFlash();
+static void writeCalibrationToFlash();
+static void userInput(const char* input);
+
 static void CAallOn(bool isOn, int duration_ms);
 static void CAportState(int port, bool state, int percent, int duration);
-static void DCcalibration(int noOfCalibrations, const CACalibration* calibrations);
-static void DCcalibrationRW(bool write);
 static void efuseLoop(const double* currents);
 static void clearOvercurrentFields(int port);
 static volatile uint32_t* getTimerCCR(int pinNumber);
-static void printDcStatus();
+
 static void updateBoardStatus();
 static double meanCurrent(const int16_t* pData, uint16_t channel);
 static double adcToInputVoltage(double adcMean);
@@ -90,8 +97,6 @@ static void updatePortUptime();
 static void autoOff();
 static void handleButtonPress();
 static void checkButtonPress();
-static void printDCHeader();
-static bool efuseCurrentInRange(double current);
 
 /***************************************************************************************************
 ** PRIVATE OBJECTS
@@ -99,16 +104,19 @@ static bool efuseCurrentInRange(double current);
 
 static ACDCProtocolCtx dcProto = {.allOn = CAallOn, .portState = CAportState};
 
-static CAProtocolCtx caProto = {.undefined        = DCInputHandler,
-                                .printHeader      = printDCHeader,
-                                .printStatus      = printDcStatus,
-                                .jumpToBootLoader = HALJumpToBootloader,
-                                .calibration      = DCcalibration,
-                                .calibrationRW    = DCcalibrationRW,
-                                .logging          = NULL,
-                                .otpRead          = CAotpRead,
-                                .otpWrite         = NULL,
-                                .uptime           = DCUptimeHandler};
+static CAProtocolCtx caProto = {.undefined                = userInput,
+                                .printHeader              = printHeader,
+                                .printStatus              = printStatus,
+                                .printStatusDef           = printStatusDef,
+                                .printOutputDef           = printOutputDef,
+                                .jumpToBootLoader         = HALJumpToBootloader,
+                                .calibration              = calibration,
+                                .readCalibrationFromRAM   = readCalibrationFromRAM,
+                                .readCalibrationFromFlash = readCalibrationFromFlash,
+                                .writeCalibrationToFlash  = writeCalibrationToFlash,
+                                .logging                  = NULL,
+                                .otpRead                  = CAotpRead,
+                                .uptime                   = printUptime};
 
 /* General */
 static int actuationDuration[DC_BOARD_NUM_PORTS]   = {0};
@@ -117,10 +125,7 @@ static uint32_t port_state[DC_BOARD_NUM_PORTS]     = {0};
 static uint32_t ccr_states[DC_BOARD_NUM_PORTS]     = {0};
 
 /* E-fuse */
-static float* efuseCurrentLimits = NULL;
-
-/* HAL handles */
-static CRC_HandleTypeDef* hcrc_ = NULL;
+static FlashCalibration_t cal;
 
 /* Button ports */
 static GPIO_TypeDef* button_ports[]           = {Btn_1_GPIO_Port, Btn_2_GPIO_Port, Btn_3_GPIO_Port,
@@ -143,72 +148,113 @@ static uint32_t portFullOnCounter[DC_BOARD_NUM_PORTS] = {0};
 static uint32_t portPwmOnCounter[DC_BOARD_NUM_PORTS]  = {0};
 static uint32_t last_check                            = 0;
 
+// Print buffer shared
+static char buff[700];
+
+static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
+
 /***************************************************************************************************
 ** PRIVATE FUNCTION DEFINITIONS
 ***************************************************************************************************/
 
 /*!
-** @brief Prints the DC board header information
+** @brief Handles the "uptime" command
 */
-static void printDCHeader() {
+static void printUptime(const char* input) {
+    uptime_inputHandler(input, printHeader);
+}
+
+/*!
+** @brief Definition of what is printed when the 'Serial' command is received
+*/
+static void printHeader() {
     CAPrintHeader();
-    DCcalibrationRW(false);
+    readCalibrationFromRAM();
+}
+
+/*!
+** @brief Definition of status information when the 'Status' command is received
+*/
+static void printStatus() {
+    int len = 0;
+
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
+        CA_SNPRINTF(buff, len, "Port %d: On: %" PRIu32 ", PWM percent: %" PRIu32 "\r\n", i,
+                    port_state[i], *getTimerCCR(i));
+    }
+
+    writeUSB(buff, len);
+}
+
+/*!
+ * @brief Definition of status information when the 'StatusDef' command is received
+ */
+static void printStatusDef() {
+    int len = 0;
+
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
+        CA_SNPRINTF(buff, len, "0x%08" PRIx32 ",Port %d state\r\n",
+                    (uint32_t)DC_BOARD_PORT_x_STATUS_Msk(i), i + 1);
+    }
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
+        CA_SNPRINTF(buff, len, "0x%08" PRIx32 ",Port %d e-fuse overcurrent\r\n",
+                    (uint32_t)DC_EFUSE_OVERCURRENT_Msk(i), i + 1);
+    }
+
+    writeUSB(buff, len);
+}
+
+/*!
+ * @brief Definition of output printed when the 'OutputDef' command is received
+ */
+static void printOutputDef() {
+    int len = 0;
+
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
+        CA_SNPRINTF(buff, len, "Current port %d,A\r\n", i + 1);
+    }
+
+    writeUSB(buff, len);
 }
 
 /*!
 ** @brief Call command handler for DC board
 */
-static void DCInputHandler(const char* input) {
+static void userInput(const char* input) {
     ACDCInputHandler(&dcProto, input);
 }
 
 /*!
-** @brief Handles the "uptime" command
-*/
-static void DCUptimeHandler(const char* input) {
-    uptime_inputHandler(input, printDCHeader);
+ * @brief Applies the calibration sent by the user
+ * @param noOfCalibrations Number of calibrations
+ * @param calibrations Pointer to the calibration structure
+ */
+static void calibration(int noOfCalibrations, const CACalibration* calibrations) {
+    calibrate(noOfCalibrations, calibrations, &cal);
 }
 
 /*!
-**  @brief Verifies a current is within the efuse range
-*/
-static bool efuseCurrentInRange(double current) {
-    return (current > 0) && (current < MAX_MEASURABLE_CURRENT);
+ * @brief Prints the calibration stored in RAM
+ * @note  Used when "Serial" or "CAL r" is received
+ */
+static void readCalibrationFromRAM() {
+    printCal(&cal);
 }
 
 /*!
-** @brief Updates calibration memory with per-channel e-fuse current limits.
-**        Command format: "CAL <N>,<limit_amps>,0,0"
-*/
-static void DCcalibration(int noOfCalibrations, const CACalibration* calibrations) {
-    for (int i = 0; i < noOfCalibrations; i++) {
-        int port = calibrations[i].port;
-        if (port >= 1 && port <= DC_BOARD_NUM_PORTS && efuseCurrentInRange(calibrations[i].alpha)) {
-            efuseCurrentLimits[port - 1] = (float)calibrations[i].alpha;
-        }
-        else {
-            USBnprintf("Invalid calibration input: %d,%.2f,0,0\r\n", port, calibrations[i].alpha);
-        }
-    }
+ * @brief Prints the calibration stored in flash
+ * @note  Used when "CAL m" is received
+ */
+static void readCalibrationFromFlash() {
+    readCalFromFlash();
 }
 
 /*!
-** @brief Reads or writes e-fuse current limits to/from flash.
-*/
-static void DCcalibrationRW(bool write) {
-    if (write) {
-        fhSaveDeposit(hcrc_);
-    }
-    else {
-        char buf[300];
-        int len = 0;
-        CA_SNPRINTF(buf, len, "Calibration: CAL");
-        for (int ch = 0; ch < DC_BOARD_NUM_PORTS; ch++) {
-            CA_SNPRINTF(buf, len, " %d,%.2f,0,0", ch + 1, efuseCurrentLimits[ch]);
-        }
-        CA_SNPRINTF(buf, len, "\r\n");
-        writeUSB(buf, len);
-    }
+ * @brief Write the calibration stored in RAM into flash
+ * @note  Used when "CAL w" is received
+ */
+static void writeCalibrationToFlash() {
+    writeCalToFlash(&cal, sizeof(cal));
 }
 
 /*!
@@ -227,28 +273,13 @@ static void clearOvercurrentFields(int port) {
 */
 static void efuseLoop(const double* currents) {
     for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
-        if (currents[i] > efuseCurrentLimits[i]) {
+        if (currents[i] > cal.currentLimits[i]) {
             turnOffPin(i);
             port_state[i] &= ~PORT_STATE_ON_BTN;
             bsSetError(DC_EFUSE_OVERCURRENT_Msk(i + 1));
             bsSetError(BS_OVER_CURRENT_Msk);
         }
     }
-}
-
-/*!
-** @brief Verbose print of the DC board status
-*/
-static void printDcStatus() {
-    static char buf[600] = {0};
-    int len              = 0;
-
-    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
-        CA_SNPRINTF(buf, len, "Port %d: On: %" PRIu32 ", PWM percent: %" PRIu32 "\r\n", i,
-                    port_state[i], *getTimerCCR(i));
-    }
-
-    writeUSB(buf, len);
 }
 
 /*!
@@ -321,10 +352,12 @@ static void printResult(int16_t* pBuffer, int noOfChannels, int noOfSamples) {
     }
 
     /* If the version is incorrect, there is no point printing data or doing maths */
-    if (bsGetStatus() & BS_VERSION_ERROR_Msk) {
-        USBnprintf("0x%08x\r\n", bsGetStatus());
+    if (bsGetField(BS_VERSION_ERROR_Msk)) {
+        USBnprintf("0x%08" PRIx32 "\r\n", bsGetStatus());
         return;
     }
+
+    updateBoardStatus();
 
     inputVoltage = adcToInputVoltage(ADCMean(pBuffer, INPUT_V_CHANNEL_IDX));
     setBoardVoltage(inputVoltage);
@@ -334,10 +367,16 @@ static void printResult(int16_t* pBuffer, int noOfChannels, int noOfSamples) {
         currents[i] = meanCurrent(pBuffer, i);
     }
 
-    USBnprintf("%.2f, %.2f, %.2f, %.2f, %.2f, %.2f, 0x%08x\r\n", currents[0], currents[1],
-               currents[2], currents[3], currents[4], currents[5], bsGetStatus());
-
     efuseLoop(currents);
+
+    int len = 0;
+
+    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
+        CA_SNPRINTF(buff, len, "%.2f, ", currents[i]);
+    }
+    CA_SNPRINTF(buff, len, "0x%08" PRIx32 "\r\n", bsGetStatus());
+
+    writeUSB(buff, len);
 }
 
 static void setPWMPin(int pinNumber, int pwmState, int duration) {
@@ -595,26 +634,24 @@ static void handlePorts() {
 ***************************************************************************************************/
 
 void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc, const char* bootMsg) {
-    boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, DC_BOARD_No_Error_Msk);
-    /* Always allow for DFU also if programmed on non-matching board or PCB version. */
+    // CA protocol
     initCAProtocol(&caProto, usbRx);
 
-    gpioInit();
-
-    static int16_t ADCBuffer[ADC_CHANNELS * ADC_CHANNEL_BUF_SIZE * 2];
+    // ADC
     ADCMonitorInit(_hadc, ADCBuffer, sizeof(ADCBuffer) / sizeof(ADCBuffer[0]));
-    hcrc_ = hcrc;
 
+    // Board type and version check
+    if (boardSetup(DC_Board, (pcbVersion){BREAKING_MAJOR, BREAKING_MINOR}, DC_BOARD_No_Error_Msk) !=
+        0) {
+        return;
+    }
+
+    // Calibration
+    calibrationInit(hcrc, &cal, sizeof(cal));
+
+    gpioInit();
     uptime_init(hcrc, DC_NUM_CUSTOM_UPTIME_CHANNELS, dcUptimeChannelDesc, bootMsg, GIT_VERSION);
     last_check = HAL_GetTick();
-
-    fhLoadDeposit(hcrc_);
-    efuseCurrentLimits = fhGetCurrentLimits();
-    for (int i = 0; i < DC_BOARD_NUM_PORTS; i++) {
-        if (!isfinite(efuseCurrentLimits[i]) || !efuseCurrentInRange(efuseCurrentLimits[i])) {
-            efuseCurrentLimits[i] = EFUSE_DEFAULT_CURRENT_LIMIT_A;
-        }
-    }
 }
 
 /*!
@@ -625,10 +662,12 @@ void DCBoardInit(ADC_HandleTypeDef* _hadc, CRC_HandleTypeDef* hcrc, const char* 
 **   USB print rate should be 10 Hz, so every 400 ADC samples the buffer switches).
 */
 void DCBoardLoop(const char* bootMsg) {
-    CAhandleUserInputs(&caProto, bootMsg);
-    updateBoardStatus();
-
+    (void)CAhandleUserInputs(&caProto, bootMsg);
     ADCMonitorLoop(printResult);
+
+    if (bsGetField(BS_VERSION_ERROR_Msk)) {
+        return;
+    }
 
     uptime_update();
 
