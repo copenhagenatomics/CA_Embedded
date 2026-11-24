@@ -278,6 +278,7 @@ static void efuseLoop(const double* currents) {
             port_state[i] &= ~PORT_STATE_ON_BTN;
             bsSetError(DC_EFUSE_OVERCURRENT_Msk(i + 1));
             bsSetError(BS_OVER_CURRENT_Msk);
+            setBoardCurrent(currents[i]);
         }
     }
 }
