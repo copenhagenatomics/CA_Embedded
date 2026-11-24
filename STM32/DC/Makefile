@@ -61,10 +61,10 @@ C_SOURCES =  \
 Core/Src/main.c \
 Core/Src/stm32f4xx_it.c \
 Core/Src/stm32f4xx_hal_msp.c \
+Core/Src/calibration.c \
 Core/Src/DCBoard.c \
 Core/Src/syscalls.c \
 Core/Src/system_stm32f4xx.c \
-Core/Src/flashHandler.c \
 Core/Src/sysmem.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/FW_1.28.3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c \
 ../../CA_Embedded_Libraries/STM32/FirmwarePackages/STM32F401CCUx/FW_1.28.3/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c \
