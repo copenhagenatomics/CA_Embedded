@@ -38,6 +38,7 @@ set(INC_LIB
     ${LIB}/FLASH_readwrite/Inc
     ${LIB}/jumpToBootloader/Inc 
     ${LIB}/SPI/Inc
+    ${LIB}/Temperature/Inc
     ${LIB}/USBprint/Inc
     ${LIB}/Util/Inc)
 
@@ -57,28 +58,30 @@ include(GoogleTest)
 # Temperature tests
 add_executable(temperature_tests
     temperature_tests.cpp
-    ${UT_STUBS}/stub_jumpToBootloader.cpp 
     ${LIB}/Util/Src/systeminfo.c
-    ${UT_FAKES}/fake_USBprint.cpp 
-    ${LIB}/Util/Src/time32.c
-    ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
-    ${UT_FAKES}/fake_StmGpio.cpp
+    ${UT_FAKES}/fake_ADS1120.cpp
     ${UT_FAKES}/fake_HAL_otp.cpp 
     ${UT_FAKES}/fake_FLASH_readwrite.cpp
-    ${UT_LIB}/Util/serialStatus_tests.cpp 
-    ${UT_FAKES}/fake_ADS1120.cpp)
+    ${UT_FAKES}/fake_stm32xxxx_hal.cpp 
+    ${UT_FAKES}/fake_StmGpio.cpp
+    ${UT_FAKES}/fake_USBprint.cpp
+    ${UT_LIB}/Util/serialStatus_tests.cpp
+    ${UT_STUBS}/stub_jumpToBootloader.cpp)
 
-target_include_directories(temperature_tests PRIVATE 
+target_include_directories(temperature_tests PRIVATE
+    .
     ${UT_FAKES}
     ${UT_STUBS}
+    ${INC_LIB} 
+    ${UT_LIB}/Util
     ${SRC}/Temperature/Core/Src 
     ${SRC}/Temperature/Core/Inc
     ${LIB}/Crc/Src
+    ${LIB}/Temperature/Src
     ${LIB}/Util/Src
-    ${INC_LIB} 
+    ${DRIV}/Src
     ${DRIV}/Inc
-    ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include 
-    ${UT_LIB}/Util)
+    ${DRIV}/../CMSIS/Device/ST/STM32F4xx/Include)
 
 target_link_libraries(temperature_tests GTest::gtest_main gmock_main)
 target_compile_definitions(temperature_tests PUBLIC UNIT_TESTING STM32F401xC)

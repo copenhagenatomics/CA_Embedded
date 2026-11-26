@@ -8,25 +8,11 @@
 #ifndef INC_TEMPERATURE_H_
 #define INC_TEMPERATURE_H_
 
-#include <stdbool.h>
-#include <stdint.h>
-
 #include "stm32f4xx_hal.h"
 
 /***************************************************************************************************
 ** DEFINES
 ***************************************************************************************************/
-
-// Extern value defined in .ld linker script
-extern uint32_t _FlashAddrCal;  // Starting address of calibration values in FLASH
-#define FLASH_ADDR_CAL ((uintptr_t) & _FlashAddrCal)
-
-// Industry standard values. Can be found in
-// https://datasheets.maximintegrated.com/en/ds/MAX31855.pdf
-#define TYPE_J_DELTA    0.000057953  // Sensitivity in V/C
-#define TYPE_J_CJ_DELTA 0.000052136  // Sensitivity at cold-junction in V/C
-#define TYPE_K_DELTA    0.000041276
-#define TYPE_K_CJ_DELTA 0.00004073
 
 // ---- Temperature board status register definitions ----
 
@@ -48,7 +34,7 @@ extern uint32_t _FlashAddrCal;  // Starting address of calibration values in FLA
 ** PUBLIC FUNCTION DECLARATIONS
 ***************************************************************************************************/
 
-void InitTemperature(SPI_HandleTypeDef* hspi_, CRC_HandleTypeDef* hcrc_, const char* bootMsg);
+void InitTemperature(SPI_HandleTypeDef* hspi, CRC_HandleTypeDef* hcrc, const char* bootMsg);
 void LoopTemperature(const char* bootMsg);
 
 #endif /* INC_TEMPERATURE_H_ */
