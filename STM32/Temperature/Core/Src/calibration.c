@@ -124,18 +124,18 @@ void calibrate(int noOfCalibrations, const CACalibration* calibrations, FlashCal
         CAL 10,0.000057953,0.000052136    - Type J
 
         Sets the type of thermocouple (0 = B, 1 = E, 2 = J, 3 = K, 4 = N, 5 = R, 6 = S, 7 = T)
-        CAL 1,0,0,type1
+        CAL 1,0,0,<type>
         ...
-        CAL 10,0,0,type10
+        CAL 10,0,0,<type>
 
         -------------------------------------------------------------------------
         RTD boards (subtype 1 and 2)
 
         Sets the type of RTD sensor (8 = Pt100, 9 = Pt1000)
         and the lead resistance to compensate for
-        CAL 1,leadRes1,0,type1
+        CAL 1,<leadRes>,0,<type>
         ...
-        CAL 10,leadRes10,0,type10
+        CAL 10,<leadRes>,0,<type>
         -------------------------------------------------------------------------
     */
 
